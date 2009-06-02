@@ -1,0 +1,6 @@
+src/CashingFrame.cpp
+src/CCLWin.cpp
+src/LogFrame.cpp
+src/NotpaidFrame.cpp
+src/ProductsFrame.cpp
+src/TarifFrame.cpp
