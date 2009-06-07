@@ -3,7 +3,9 @@
 #include <string.h>
 #include "ccls.h"
 #include "ccl_private.h"
-
+/*
+#define DEBUG 1
+*/
 extern CCL *ccl;
 
 /* Static functions */
@@ -20,10 +22,11 @@ static gboolean _CCL_member_store(gint member);
  * If a member with this name already exists, his id will be returned.
  */
 gint
-CCL_member_new(const gchar * name)
+CCL_member_new(const gchar * name, int emp)
 {
   gchar *cmd = NULL;
   gint id;
+  gchar *errstr = NULL;
 
   id = CCL_member_find(name);
 
@@ -33,13 +36,18 @@ CCL_member_new(const gchar * name)
 
       _CCL_member_init(member, name);
       cmd = sqlite3_mprintf("insert into members\n"
-			    "(name, sdate, flags) values(%Q, %ld, %d);",
-			    name, time(NULL), 0);
-      sqlite3_exec(ccl->db, cmd, NULL, NULL, NULL);
+			    "(name, sdate, empid, flags) values(%Q, %ld, %d, %d);",
+			    name, time(NULL),  emp, 0);
+      sqlite3_exec(ccl->db, cmd, NULL, NULL, &errstr);
       sqlite3_free(cmd);
       id = sqlite3_last_insert_rowid(ccl->db);
       g_datalist_id_set_data_full(&(ccl->members), id, member,
 				  _destroy_member);
+
+#ifdef DEBUG
+      printf("CCL_member_new(): cmd = %s\nerrstr = %s\n", cmd, errstr);
+#endif
+      sqlite3_free(errstr);
     }
 
   return id;
@@ -345,6 +353,41 @@ CCL_member_flags_toggle(gint member, gint flags, gboolean on)
   _CCL_member_store(member);
 }
 
+
+/**
+ * Gets the credit of a member.
+ *
+ * @param   member The member's id.
+ * @return The amount of credit
+ */
+int
+CCL_member_credit_get(gint member)
+{
+  CCL_member *m = g_datalist_id_get_data(&(ccl->members), member);
+
+  g_return_val_if_fail(m, -1);
+  
+  return m->credit;
+}
+
+/**
+ * Sets the credit of a member.
+ *
+ * @param   member The member's id.
+ * @param   credit The new credit.
+ */
+void
+CCL_member_credit_set(gint member, int credit)
+{
+  CCL_member *m = g_datalist_id_get_data(&(ccl->members), member);
+
+  g_return_if_fail(m);
+
+  m->credit = credit;
+  _CCL_member_store(member);
+}
+
+
 /**********************************************************/
 
 gboolean
@@ -353,14 +396,22 @@ _CCL_member_restore(gint member)
   CCL_member *m = g_datalist_id_get_data(&(ccl->members), member);
   gchar *cmd = NULL;
   sqlite3_stmt *stmt = NULL;
+  int retval=0;
 
   g_return_val_if_fail(m, FALSE);
       
-  cmd = sqlite3_mprintf("select name, tarif, email, other, flags\n"
+  cmd = sqlite3_mprintf("select name, tarif, email, other, credit, flags \n"
 			"from members where id = %d;", member);
-  sqlite3_prepare(ccl->db, cmd, -1, &stmt, NULL);
+  retval = sqlite3_prepare(ccl->db, cmd, -1, &stmt, NULL);
+  /*  retval = sqlite3_exec(ccl->db, cmd, NULL, NULL, &errstr);*/
+#ifdef DEBUG
+  {
+    gchar *errstr = NULL;
+    printf("_CCL_member_restore(): cmd=%s\n, [retval=%X] %s\n", cmd, 
+	   retval, errstr);
+  }
+#endif
   sqlite3_free(cmd);
-  
   if (sqlite3_step(stmt) == SQLITE_ROW)
     {
       if (m->name) g_free(m->name);
@@ -371,7 +422,8 @@ _CCL_member_restore(gint member)
       m->tarif = sqlite3_column_int(stmt, 1);
       m->email = g_strdup((gchar *)sqlite3_column_text(stmt, 2));
       m->other = g_strdup((gchar *)sqlite3_column_text(stmt, 3));
-      m->flags = sqlite3_column_int(stmt, 4);
+      m->credit = sqlite3_column_int(stmt, 4);
+      m->flags = sqlite3_column_int(stmt, 5);
     }
 
   sqlite3_finalize(stmt);
@@ -384,7 +436,7 @@ static gboolean
 _CCL_member_store(gint member)
 {
   CCL_member *m = g_datalist_id_get_data(&(ccl->members), member);
-  gchar *cmd = NULL;
+  gchar *cmd = NULL, *errstr = NULL;
 
   g_return_val_if_fail(m, FALSE);
       
@@ -393,11 +445,16 @@ _CCL_member_store(gint member)
 			"    name = %Q,\n"
 			"    email = %Q,\n"
 			"    other = %Q,\n"
+			"    credit = %d,\n"
 			"    flags = %d\n"
 			"where id = %d;", m->tarif, m->name, m->email,
-			m->other, m->flags, member);
-  sqlite3_exec(ccl->db, cmd, NULL, NULL, NULL);
+			m->other, (unsigned int)m->credit, m->flags, member);
+  sqlite3_exec(ccl->db, cmd, NULL, NULL, &errstr);
+#ifdef DEBUG
+  printf("_CCL_member_store(): cmd = %s\nerrstr = %s\n", cmd, errstr);
+#endif
   sqlite3_free(cmd);
+  sqlite3_free(errstr);
 
   return TRUE;
 }
@@ -421,6 +478,7 @@ _CCL_member_init(CCL_member * member, const gchar * name)
   member->tarif = 0;
   member->email = NULL;
   member->other = NULL;
+  member->credit = 0.0;
   member->flags = 0;
   member->data = NULL;
 }

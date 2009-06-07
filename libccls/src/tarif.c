@@ -2,7 +2,9 @@
 #include <stdio.h>
 #include "ccls.h"
 #include "ccl_private.h"
-
+/*
+#define DEBUG 1
+*/
 /* Static functions */
 static void _tarif_rebuild(gint tarif_id, GSList ** tarif);
 static void _tarif_clear(gint tarif_id);
@@ -24,7 +26,8 @@ extern CCL *ccl;
  * @return The new tarif's id, or -1 if failed.
  */
 gint
-CCL_tarif_new(guint hr, guint min, guint days, guint hourprice)
+CCL_tarif_new(guint hr, guint min, guint days, guint hourprice, 
+	      guint incprice, guint fafter, char *name)
 {
   gchar *cmd = NULL;
   sqlite3_stmt *stmt = NULL;
@@ -39,9 +42,9 @@ CCL_tarif_new(guint hr, guint min, guint days, guint hourprice)
   
   tarif_id = i ? 1 + CCL_tarif_get_nth(i - 1) : 1;
   cmd = sqlite3_mprintf("insert into tarifs\n"
-			"(tarif, days, stime, hourprice)\n"
-			"values(%d, %u, '%.2u:%.2u', %u);",
-			tarif_id, days, hr, min, hourprice);
+			"(tarif, days, stime, hourprice, incprice, fafter, tname)\n"
+			"values(%d, %u, '%.2u:%.2u', %u, %u, %d, %Q);",
+			tarif_id, days, hr, min, hourprice, incprice, fafter, name);
   sqlite3_prepare(ccl->db, cmd, -1, &stmt, NULL);
   sqlite3_free(cmd);
   sqlite3_step(stmt);
@@ -111,6 +114,32 @@ CCL_tarif_get_nth(guint nth)
 }
 
 /**
+ * Gets the tariff name
+ *
+ * @param   tarif id
+ * @return  pointer to tarif name - remember to free
+ *
+ */
+gchar *
+CCL_tarif_name_get(gint tarif)
+{
+  gchar *cmd = NULL;
+  sqlite3_stmt *stmt = NULL;
+  char *cp = NULL;
+
+  cmd = sqlite3_mprintf("select tname from tarifs\n"
+			"where tarif = %d;", tarif);
+  sqlite3_prepare(ccl->db, cmd, -1, &stmt, NULL);
+  sqlite3_free(cmd);
+
+  if (sqlite3_step(stmt) == SQLITE_ROW)
+    cp = g_strdup((gchar *) sqlite3_column_text(stmt, 0));
+  sqlite3_finalize(stmt);
+
+  return cp;
+}
+
+/**
  * Rebuild the current tarif from the data on the db.
  *
  * This should be used after you are done modifying the tarif.
@@ -151,6 +180,9 @@ CCL_tarif_rebuild_all(void)
       g_datalist_id_set_data(&ccl->tarifs, tarif_id, *tarif);
       g_free(tarif);
     }
+#ifdef DEBUG
+  printf("CCL_tarif_rebuild_all(): [ %d ] Tariffs found\n", i);
+#endif
 }
 
 /**
@@ -162,11 +194,22 @@ CCL_tarif_rebuild_all(void)
 gboolean
 CCL_tarif_set(gint tarif)
 {
+  int id;
+ 
   g_return_val_if_fail(CCL_tarif_exists(tarif), FALSE);
   g_assert(g_datalist_id_get_data(&ccl->tarifs, tarif));
 
   ccl->tarif_id = tarif;
   ccl->tarif = g_datalist_id_get_data(&ccl->tarifs, tarif);
+  /*added by bernard: sets also perminafter */
+  id = CCL_tarifpart_get_nth(0);
+  ccl->perminafter = CCL_tarifpart_fafter_get(id);
+#ifdef DEBUG
+  printf("Tarif: ");
+  for (int i=0; (id=CCL_tarifpart_get_nth(i))>0; i++)
+    printf("[%d] ", CCL_tarifpart_fafter_get(id));
+  printf("\n");
+#endif
 
   return TRUE;
 }
@@ -205,6 +248,33 @@ CCL_tarif_exists(gint tarif)
   sqlite3_finalize(stmt);
 
   return found;
+}
+
+/**
+ * Checks if a tarif's name exists.
+ *
+ * @param   tarif The tarif's name.
+ * @return  tarif id if found, -1 if not found
+ */
+gint
+CCL_tarif_name_exists(char *tarif)
+{
+  gchar *cmd = NULL;
+  sqlite3_stmt *stmt = NULL;
+  int tid;
+
+  tid = -1;
+  cmd = sqlite3_mprintf("select tarif from tarifs where \n"
+			"lower(tname) = lower(%Q);", tarif);
+  sqlite3_prepare(ccl->db, cmd, -1, &stmt, NULL);
+  sqlite3_free(cmd);
+
+  if (sqlite3_step(stmt) == SQLITE_ROW)
+    tid = sqlite3_column_int(stmt, 0);
+
+  sqlite3_finalize(stmt);
+
+  return tid;
 }
 
 /**
@@ -300,7 +370,7 @@ CCL_tarif_calc_with_tarifpart(gint id, guint mins, gboolean permin)
  * @return The tarifpart's id.
  */
 gint
-CCL_tarifpart_new(guint hour, guint min, guint days, guint hourprice)
+CCL_tarifpart_new(guint hour, guint min, guint days, guint hourprice, guint incprice)
 {
   gchar *cmd = NULL;
   sqlite3_stmt *stmt = NULL;
@@ -311,9 +381,9 @@ CCL_tarifpart_new(guint hour, guint min, guint days, guint hourprice)
   g_return_val_if_fail(1 <= ccl->tarif_id, -1);
 
   cmd = sqlite3_mprintf("insert into tarifs\n"
-			"(tarif, days, stime, hourprice)\n"
-			"values(%d, %u, '%.2u:%.2u', %u);",
-			ccl->tarif_id, days, hour, min, hourprice);
+			"(tarif, days, stime, hourprice, incprice)\n"
+			"values(%d, %u, '%.2u:%.2u', %u, %u);",
+			ccl->tarif_id, days, hour, min, hourprice, incprice);
   sqlite3_prepare(ccl->db, cmd, -1, &stmt, NULL);
   sqlite3_free(cmd);
   sqlite3_step(stmt);
@@ -427,7 +497,7 @@ CCL_tarifpart_conflicts(guint hour, guint min, guint days, guint * conflicts)
       guint m;
       guint d;
 
-      CCL_tarifpart_info_get(id, &h, &m, &d, NULL);
+      CCL_tarifpart_info_get(id, &h, &m, &d, NULL,NULL);
       if (h == hour && m == min && days & d)
 	{
 	  if (conflicts)
@@ -455,14 +525,14 @@ CCL_tarifpart_conflicts(guint hour, guint min, guint days, guint * conflicts)
  * Any of the [out] parameters can be NULL if you don't care about them.
  */
 gboolean
-CCL_tarifpart_info_get(gint id, guint * hour, guint * min,
-		       guint * days, guint * hourprice)
+CCL_tarifpart_info_get(gint id, guint *hour, guint *min, guint *days, 
+		       guint *hourprice, guint *incprice)
 {
   gchar *cmd = NULL;
   sqlite3_stmt *stmt = NULL;
   gboolean found = FALSE;
 
-  cmd = sqlite3_mprintf("select stime, days, hourprice from tarifs\n"
+  cmd = sqlite3_mprintf("select stime, days, hourprice, incprice from tarifs\n"
 			"where id = %d;", id);
   sqlite3_prepare(ccl->db, cmd, -1, &stmt, NULL);
   sqlite3_free(cmd);
@@ -480,6 +550,8 @@ CCL_tarifpart_info_get(gint id, guint * hour, guint * min,
 	*days = sqlite3_column_int(stmt, 1);
       if (hourprice)
 	*hourprice = sqlite3_column_double(stmt, 2);
+      if (incprice)
+	*incprice = sqlite3_column_double(stmt, 3);
       found = TRUE;
     }
   sqlite3_finalize(stmt);
@@ -496,7 +568,7 @@ CCL_tarifpart_info_get(gint id, guint * hour, guint * min,
 gboolean
 CCL_tarifpart_exists(gint id)
 {
-  return CCL_tarifpart_info_get(id, NULL, NULL, NULL, NULL);
+  return CCL_tarifpart_info_get(id, NULL, NULL, NULL, NULL, NULL);
 }
 
 /**
@@ -538,7 +610,7 @@ CCL_tarifpart_stime_set(gint id, guint hour, guint min)
 void
 CCL_tarifpart_stime_get(gint id, guint * hour, guint * min)
 {
-  CCL_tarifpart_info_get(id, hour, min, NULL, NULL);
+  CCL_tarifpart_info_get(id, hour, min, NULL, NULL, NULL);
 }
 
 /**
@@ -578,9 +650,25 @@ CCL_tarifpart_days_get(gint id)
 {
   guint days = 0;
 
-  CCL_tarifpart_info_get(id, NULL, NULL, &days, NULL);
+  CCL_tarifpart_info_get(id, NULL, NULL, &days, NULL, NULL);
 
   return days;
+}
+
+/**
+ * Gets a tarifpart's price per hour.
+ *
+ * @param   id The tarifpart's id.
+ * @return The price.
+ */
+guint
+CCL_tarifpart_hourprice_get(gint id)
+{
+  guint hprice = 0;
+
+  CCL_tarifpart_info_get(id, NULL, NULL, NULL, &hprice, NULL);
+
+  return hprice;
 }
 
 /**
@@ -602,19 +690,91 @@ CCL_tarifpart_hourprice_set(gint id, guint price)
 }
 
 /**
- * Gets a tarifpart's price per hour.
+ * Gets a tarifpart's fractioned after
  *
  * @param   id The tarifpart's id.
- * @return The price.
+ * @return number of minutes fractioned after
  */
 guint
-CCL_tarifpart_hourprice_get(gint id)
+CCL_tarifpart_fafter_get(gint id)
 {
-  guint hprice = 0;
+  guint fafter = 0;
+  gchar *cmd = NULL;
+  sqlite3_stmt *stmt = NULL;
 
-  CCL_tarifpart_info_get(id, NULL, NULL, NULL, &hprice);
 
-  return hprice;
+  cmd = sqlite3_mprintf("select fafter from tarifs\n"
+			"where id = %d;", id);
+  sqlite3_prepare(ccl->db, cmd, -1, &stmt, NULL);
+  sqlite3_free(cmd);
+
+  if (sqlite3_step(stmt) == SQLITE_ROW)
+    fafter = sqlite3_column_int(stmt, 0);
+
+  sqlite3_finalize(stmt);
+
+  return fafter;
+}
+
+/**
+ * Sets a tarifpart's fractioned after
+ *
+ * @param   id The tarifpart's id.
+ * @param   fractioned after minutes
+ */
+void
+CCL_tarifpart_fafter_set(gint id, guint fafter)
+{
+  gchar *cmd = NULL;
+
+  cmd = sqlite3_mprintf("update tarifs\n"
+			"set fafter = %u where id = %d;", fafter, id);
+  sqlite3_exec(ccl->db, cmd, NULL, NULL, NULL);
+  sqlite3_free(cmd);
+}
+
+/**
+ * Gets a tarifpart's increment
+ *
+ * @param   id The tarifpart's id.
+ * @return the price increment
+ */
+guint
+CCL_tarifpart_incprice_get(gint id)
+{
+  guint incprice = 0;
+  gchar *cmd = NULL;
+  sqlite3_stmt *stmt = NULL;
+
+
+  cmd = sqlite3_mprintf("select incprice from tarifs\n"
+			"where id = %d;", id);
+  sqlite3_prepare(ccl->db, cmd, -1, &stmt, NULL);
+  sqlite3_free(cmd);
+
+  if (sqlite3_step(stmt) == SQLITE_ROW)
+    incprice = (guint)sqlite3_column_double(stmt, 0);
+
+  sqlite3_finalize(stmt);
+
+  return incprice;
+}
+
+/**
+ * Sets a tarifpart's increment
+ *
+ * @param   id The tarifpart's id.
+ * @param   fractioned after minutes
+ */
+void
+CCL_tarifpart_incprice_set(gint id, guint incprice)
+{
+  gchar *cmd = NULL;
+
+  cmd = sqlite3_mprintf("update tarifs\n"
+			"set incprice = %u where id = %d;", incprice, id);
+  sqlite3_exec(ccl->db, cmd, NULL, NULL, NULL);
+  sqlite3_free(cmd);
 }
 
 /**

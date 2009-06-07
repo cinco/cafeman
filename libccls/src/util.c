@@ -30,7 +30,7 @@ _recvall(BIO * bio, void * buf, gint len)
 guchar *
 CCL_MD5(const guchar * d, gulong n, guchar * md)
 {
-  return MD5(d, n, md);
+  return (guchar *)MD5(d, n, md);
 }
 
 /**

@@ -56,7 +56,7 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-am_libccls_la_OBJECTS = ccl.lo client.lo data.lo member.lo tarif.lo \
+am_libccls_la_OBJECTS = ccl.lo client.lo data.lo member.lo tarif.lo employee.lo \
 	logging.lo util.lo
 libccls_la_OBJECTS = $(am_libccls_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
@@ -195,6 +195,7 @@ ccl.c \
 client.c \
 data.c \
 member.c \
+employee.c \
 tarif.c \
 logging.c \
 util.c \
@@ -280,6 +281,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logging.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/member.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/employee.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tarif.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/util.Plo@am__quote@
 

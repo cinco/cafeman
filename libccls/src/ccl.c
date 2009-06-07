@@ -4,11 +4,16 @@
 #include "ccls.h"
 #include "ccl_private.h"
 
+
+/*#define DEBUG 1*/
+/*#define DEBUG_A*/
 /* Static functions */
 static void _init_db(sqlite3 * db);
 static gint _loadMembersCB(gpointer ptr, gint argc,
 			   gchar ** argv, gchar ** colnames);
 static gint _loadClientsCB(gpointer ptr, gint argc,
+			   gchar ** argv, gchar ** colnames);
+static gint _loadEmployeesCB(gpointer ptr, gint argc,
 			   gchar ** argv, gchar ** colnames);
 static void _shutdown_client_connection(gint clientid);
 static void _FindClientByFdFunc(GQuark key_id, gpointer data,
@@ -43,10 +48,11 @@ CCL_init(const gchar * dbfile)
     return FALSE;
   _init_db(ccl->db);
   ccl->events.listenfd = INVALID_SOCKET;
-  ccl->perminafter = 60;
+  ccl->perminafter = 10;
   ccl->tarif = NULL;
   g_datalist_init(&(ccl->members));
   g_datalist_init(&(ccl->clients));
+  g_datalist_init(&(ccl->employees));
 
   SSL_library_init();
   SSL_load_error_strings();
@@ -57,7 +63,16 @@ CCL_init(const gchar * dbfile)
   sqlite3_exec(ccl->db,
 	       "select id, name from clients;",
 	       _loadClientsCB, NULL, NULL);
- 
+  /*  sqlite3_exec(ccl->db,
+	       "select id, empusr from employees;",*/
+  sqlite3_exec(ccl->db,
+  "select id, empusr, empname, emppass, phone, email, "
+  "emplevel, hiredate, superid from employees;",
+  _loadEmployeesCB, NULL, NULL);
+
+#ifdef DEBUG
+  printf("CCL_Init(): Initialized the CCL Library\n");
+#endif
   return TRUE;
 }
 
@@ -175,6 +190,15 @@ CCL_networking_init(gushort port, gint * error)
     ccl->events.maxfd = ccl->events.listenfd;
   
   FD_SET(ccl->events.listenfd, &(ccl->events.readfds));
+#ifdef DEBUG
+  {
+    char *bcp;
+    
+    bcp = BIO_get_accept_port(ccl->events.listenbio);
+    printf("** CCL_networking_init(): BIO_get_accept_port: %s **\n", bcp);
+    
+  }
+#endif
 
   return TRUE;
 }
@@ -261,7 +285,9 @@ CCL_product_delete(gint product)
 {
   gchar *cmd = NULL;
   
-  cmd = sqlite3_mprintf("update products set stock = %d\n"
+  /*cmd = sqlite3_mprintf("update products set stock = %d\n"
+    "where id = %d;", CCL_DELETEDPRODUCT, product);*/
+  cmd = sqlite3_mprintf("update products set flags = %d\n"
 			"where id = %d;", CCL_DELETEDPRODUCT, product);
   sqlite3_exec(ccl->db, cmd, NULL, NULL, NULL);
   sqlite3_free(cmd);
@@ -294,58 +320,6 @@ CCL_product_price_set(gint product, guint price)
 }
 
 /**
- * Sets the category of a product.
- *
- * @param   product The id of the product.
- * @param category The new category of the product.
- * @return False on failure, TRUE otherwise.
- */
-gboolean
-CCL_product_category_set(gint product, const gchar * category)
-{
-  gchar *cmd = NULL;
-
-  if (!CCL_product_exists(product))
-    return FALSE;
-  else
-    {
-      g_assert(NULL != category);
-      cmd = sqlite3_mprintf("update products set category = %Q\n"
-			    "where id = %d;", category, product);
-      sqlite3_exec(ccl->db, cmd, NULL, NULL, NULL);
-      sqlite3_free(cmd);
-
-      return TRUE;
-    }
-}
-
-/**
- * Sets the name of a product.
- *
- * @param   product The id of the product.
- * @param name The new name of the product.
- * @return False on failure, TRUE otherwise.
- */
-gboolean
-CCL_product_name_set(gint product, const gchar * name)
-{
-  gchar *cmd = NULL;
-
-  if (!CCL_product_exists(product))
-    return FALSE;
-  else
-    {
-      g_assert(NULL != name);
-      cmd = sqlite3_mprintf("update products set name = %Q\n"
-			    "where id = %d;", name, product);
-      sqlite3_exec(ccl->db, cmd, NULL, NULL, NULL);
-      sqlite3_free(cmd);
-
-      return TRUE;
-    }
-}
-
-/**
  * Gets the nth product on the list.
  *
  * @param   nth The index of the product to get (starting at 0).
@@ -362,7 +336,9 @@ CCL_product_get_nth(guint nth)
   gint i;
   gint id = -1;
 
-  cmd = sqlite3_mprintf("select id from products where stock != %d\n"
+  /*cmd = sqlite3_mprintf("select id from products where stock != %d\n"
+    "order by id asc;", CCL_DELETEDPRODUCT);*/
+  cmd = sqlite3_mprintf("select id from products where flags != %d\n"
 			"order by id asc;", CCL_DELETEDPRODUCT);
   sqlite3_prepare(ccl->db, cmd, -1, &stmt, NULL);
   sqlite3_free(cmd);
@@ -409,6 +385,39 @@ CCL_product_info_get(gint product, char **category, char **name, guint * price)
 	*name = g_strdup((gchar *) sqlite3_column_text(stmt, 1));
       if (price)
 	*price = (guint) (100 * sqlite3_column_double(stmt, 2));
+      retval = TRUE;
+    }
+  sqlite3_finalize(stmt);
+
+  return retval;
+}
+/**
+ * Gets product ID of a product given a name
+ * Checks whether the product exists in the Database.
+ *
+ * @param   Name of product
+ * @param[out] id of the product.
+ * @return FALSE on failure, TRUE otherwise.
+ *
+ * Any of category, name, and price, can be NULL if you don't care about them.
+ * You have to free name and category with CCL_free to avoid memory leaks.
+ */
+gboolean
+CCL_product_id_get(char *name, gint *pid)
+{
+  gboolean retval = FALSE;
+  gchar *cmd = NULL;
+  sqlite3_stmt *stmt = NULL;
+
+  cmd = sqlite3_mprintf("select id from products\n"
+			"where name = '%s';", name);
+  sqlite3_prepare(ccl->db, cmd, -1, &stmt, NULL);
+  sqlite3_free(cmd);
+
+  if (sqlite3_step(stmt) == SQLITE_ROW)
+    {
+      if (pid)
+	*pid = (gint) sqlite3_column_int(stmt, 0);
       retval = TRUE;
     }
   sqlite3_finalize(stmt);
@@ -514,7 +523,7 @@ CCL_product_exists(gint product)
  * workstation.
  */
 int
-CCL_product_sell(gint product, guint amount, guint totalprice, gint flags)
+CCL_product_sell(gint product, guint amount, guint totalprice, gint flags, gint empid)
 {
   gchar *cmd = NULL;
   gint id = -1;
@@ -522,16 +531,61 @@ CCL_product_sell(gint product, guint amount, guint totalprice, gint flags)
   if (CCL_product_exists(product))
     {
       cmd = sqlite3_mprintf("insert into productslog (session,client,member,"
-			    "product,amount,price,time,flags)\n"
-			    "values(%d, %d, %d, %d, %u, %u, %ld, %d);",
-			    0, 0, 0, product, amount, totalprice, time(NULL),
+			    "product,amount,price,time,empid,flags)\n"
+			    "values(%d, %d, %d, %d, %u, %u, %ld, %d, %d);",
+			    0, 0, 0, product, amount, totalprice, time(NULL), empid,
 			    flags);
       sqlite3_exec(ccl->db, cmd, NULL, NULL, NULL);
       sqlite3_free(cmd);
       id = sqlite3_last_insert_rowid(ccl->db);
       if (CCL_product_stock_get(product) != CCL_DELETEDPRODUCT)
-	CCL_product_stock_set(product,
-			      CCL_product_stock_get(product) - amount);
+	CCL_product_stock_set(product,CCL_product_stock_get(product) - amount);
+    }
+
+  return id;
+}
+
+/**
+ * Accept Account Payments.
+ *
+ * @param   product The id of the product.
+ * @param   price Amount of money paid
+ * @param   empid employee id
+ * @return The id of the log entry, or -1. 
+ *
+ */
+int
+CCL_pay_account(gint member, gdouble price, gint empid)
+{
+  gchar *cmd = NULL, *errstr = NULL;
+  gint id = -1, product;
+  gint flags = 0;
+
+  CCL_product_id_get("Account Payment", &product);
+  if (product)
+    {
+      int newcredit=0.;
+
+      newcredit = CCL_member_credit_get(member) + price;
+      if ((newcredit)>=0){
+	guint intcred = newcredit; 
+	/*update*/
+	CCL_member_credit_set(member, newcredit);
+	/*log*/
+	cmd = sqlite3_mprintf("insert into productslog (session,client,member,"
+			      "product,amount,price,time,empid,flags)\n"
+			      "values(%d, %d, %d, %d, %u, %u, %ld, %d, %d);",
+			      0, 0, member, product, 1, intcred, time(NULL), empid, flags);
+	sqlite3_exec(ccl->db, cmd, NULL, NULL, &errstr);
+	id = sqlite3_last_insert_rowid(ccl->db);
+#ifdef DEBUG
+	printf("CCL_pay_account(): cmd=%s, price=%d\n errstr=%s\n", cmd, newcredit,
+	       errstr);
+#endif
+	sqlite3_free(cmd);
+	sqlite3_free(errstr);
+      }
+
     }
 
   return id;
@@ -673,7 +727,6 @@ CCL_check_events(void)
 
   /* Now i am going to check for new connections */
   fd = ccl->events.listenfd;
-
   if (FD_ISSET(fd, &readfds))
     {
       SSL *ssl;
@@ -685,6 +738,25 @@ CCL_check_events(void)
       if (1 == BIO_do_accept(ccl->events.listenbio))
 	{
 	  newbio = BIO_pop(ccl->events.listenbio);
+
+#ifdef DEBUG
+	  {
+	    char *bcp = NULL;
+	    struct sockaddr sa;
+	    int fd = BIO_get_fd(newbio, NULL);
+	    socklen_t salen = sizeof(struct sockaddr);
+	    int i;
+	    
+	    getpeername(fd, &sa, &salen);
+	    bcp = BIO_get_accept_port(newbio);
+	    printf("** CCL_check_events(): BIO_get_accept_port: %s **\n", bcp);
+	    for (i=0; i<salen; i++)
+	      printf("%02X ", ((unsigned char *)&sa)[i]);
+	    printf("\n");
+	    if (!bcp) free(bcp);
+	    
+	  }
+#endif
 	  if (ccl->events.ssl_ctx)
 	    {
 	      ssl = SSL_new(ccl->events.ssl_ctx);
@@ -696,7 +768,7 @@ CCL_check_events(void)
 	  FD_SET(BIO_get_fd(newbio, NULL), &rfd);
 
 	  /* Only perform the handshake if this is a genuine connection, 
-	   * I dont want to block forever, it the connection is not valid */
+	   * I dont want to block forever, if the connection is not valid */
 	  if (!select(BIO_get_fd(newbio, NULL) + 1, &rfd, NULL, NULL, &delta))
 	    BIO_free(newbio);
 	  else if (!ccl->events.ssl_ctx || 1 == BIO_do_handshake(newbio))
@@ -706,48 +778,68 @@ CCL_check_events(void)
 	      CCL_client *client = NULL;
 	      gint id;
 
-	      BIO_read(newbio, &size, sizeof(size));
-	      size = ntohl(size);
-	      name = g_malloc0(size);
-	      BIO_read(newbio, name, size);
-	  
-	      id = CCL_client_new(name);
-	      g_free(name);
+	      if (BIO_read(newbio, &size, sizeof(size))>0){
+		size  = ntohl(size);
+		if (size > 256)  size = 256;  /* sanity check */
+		name = g_malloc0(size);
+		BIO_read(newbio, name, size);
+		
+		id = CCL_client_new(name);
+		g_free(name);
+		
+		client = g_datalist_id_get_data(&(ccl->clients), id);		
+		/* */
 
-	      client = g_datalist_id_get_data(&(ccl->clients), id);
-
-	      /* If a connection for this client already exists, lets
-	       * make sure, that our old connection still exists.
-	       * If not, then free it, and set it as disconnected */
-	      if (INVALID_SOCKET != client->sockfd)
 		{
-		  fd_set wfd;
+		  socklen_t salen = sizeof(struct sockaddr);
+		  struct sockaddr sa;
+		  int v1=0, v2=0, v3=0, v4=0;
+		  int fd = BIO_get_fd(newbio, NULL);
 
-		  FD_ZERO(&wfd);
-		  FD_SET(client->sockfd, &wfd);
+		  getpeername(fd, &sa, &salen);
+		  v1 = (int)(((unsigned char *)&sa)[4]);
+		  v2 = (int)(((unsigned char *)&sa)[5]);
+		  v3 = (int)(((unsigned char *)&sa)[6]);
+		  v4 = (int)(((unsigned char *)&sa)[7]);
+		  /*client->ipaddr = *(guint32 *)cp;*/
 		  
-		  if (!select(client->sockfd + 1,
-			      NULL, &wfd, NULL, &delta))
-		    {
-		      BIO_free(client->bio);
-		      client->sockfd = INVALID_SOCKET;
-		    }
+		  client->ipaddr = (v4<<24) | (v3<<16) | (v2<<8) | v1;
+#ifdef DEBUG_A
+		  printf("v1=%02X, v2=%02X, v3=%02X, v4=%02X, ipaddr=%08X\n", 
+			 v1, v2, v3, v4, client->ipaddr);
+#endif
 		}
-
-	      if (INVALID_SOCKET == client->sockfd)
-		{
-		  client->bio = newbio;
-		  client->sockfd = BIO_get_fd(newbio, NULL);
-		  FD_SET(client->sockfd, &(ccl->events.readfds));
-		  
-		  if (ccl->events.maxfd < client->sockfd)
-		    ccl->events.maxfd = client->sockfd;
-		  if (ccl->events.on_connect)
-		    ccl->events.on_connect(id,
-					   ccl->events.on_connect_data);
-		}
-	      else
-		BIO_free(newbio);
+		/* If a connection for this client already exists, lets
+		 * make sure, that our old connection still exists.
+		 * If not, then free it, and set it as disconnected */
+		if (INVALID_SOCKET != client->sockfd)
+		  {
+		    fd_set wfd;
+		    
+		    FD_ZERO(&wfd);
+		    FD_SET(client->sockfd, &wfd);
+		    
+		    if (!select(client->sockfd + 1, NULL, &wfd, NULL, &delta))
+		      {
+			  BIO_free(client->bio);
+			  client->sockfd = INVALID_SOCKET;
+		      }
+		  }
+		
+		if (INVALID_SOCKET == client->sockfd)
+		  {
+		    client->bio = newbio;
+		    client->sockfd = BIO_get_fd(newbio, NULL);
+		    FD_SET(client->sockfd, &(ccl->events.readfds));
+		    
+		    if (ccl->events.maxfd < client->sockfd)
+		      ccl->events.maxfd = client->sockfd;
+		    if (ccl->events.on_connect)
+			ccl->events.on_connect(id, ccl->events.on_connect_data);
+		  }
+		else
+		  BIO_free(newbio);
+	      }
 	    }
 	}
     }
@@ -770,6 +862,8 @@ _init_db(sqlite3 * db)
   gboolean SESSIONSLOG = FALSE;
   gboolean PRODUCTSLOG = FALSE;
   gboolean EXPENSESLOG = FALSE;
+  gboolean EMPLOYEES = FALSE;
+  int retval;
 
   sqlite3_prepare(db,
 		  "select name from"
@@ -780,7 +874,7 @@ _init_db(sqlite3 * db)
   while (sqlite3_step(stmt) == SQLITE_ROW)
     {
       if (!g_ascii_strcasecmp((gchar *) sqlite3_column_text(stmt, 0),
-			      "data"))
+				   "tbldata"))
 	DATA = TRUE;
       else if (!g_ascii_strcasecmp((gchar *) sqlite3_column_text(stmt, 0),
 				   "clients"))
@@ -806,18 +900,60 @@ _init_db(sqlite3 * db)
       else if (!g_ascii_strcasecmp((gchar *) sqlite3_column_text(stmt, 0),
 				   "expenseslog"))
 	EXPENSESLOG = TRUE;
+      else if (!g_ascii_strcasecmp((gchar *) sqlite3_column_text(stmt, 0),
+				   "employees"))
+	EMPLOYEES = TRUE;
     }
   
   sqlite3_finalize(stmt);
  
-  if (!DATA)
-    sqlite3_exec(db,
-		 "create table data (\n"
+  if (!DATA){
+    char *errmsg;
+
+    retval = sqlite3_exec(db,
+		 "create table tbldata (\n"
 		 "    cid integer default 0 not null,\n"
 		 "    id integer default 0 not null,\n"
 		 "    key varchar(256) not null,\n"
 		 "    value blob,\n"
-		 "    unique(cid, id, key));", NULL, NULL, NULL);
+		 "    unique(cid, id, key));", NULL, NULL, &errmsg);
+    /*		 "    unique(cid, id, key));", NULL, NULL, NULL); */
+#ifdef DEBUG
+    printf("**CCL_Init(): Create 'tbldata' table:  retval[%2d]\n", retval);
+    if (retval > 0){
+      printf("**CCL_Init(): ** Error [%s]\n", errmsg);
+      sqlite3_free(errmsg);
+    }
+#endif    
+  }
+  if (!EMPLOYEES){
+    gchar *cmd = NULL;
+    char *errmsg;
+
+    sqlite3_exec(db,
+		 "create table employees (\n"
+		 "    id integer primary key,\n"
+		 "    empusr varchar(20) not null unique,\n"
+		 "    empname varchar(50),\n"
+		 "    emppass varchar(20),\n"
+		 "    phone varchar(20),\n"
+		 "    email varchar(50),\n"
+		 "    emplevel integer,\n"
+		 "    hiredate integer,\n"
+		 "    superid integer,\n"
+		 "    flags integer default 0 not null);", NULL, NULL, NULL);
+    
+    cmd = sqlite3_mprintf("insert into employees (id, empusr, empname, emppass, \n"
+			  "emplevel) values (1, %Q, %Q, %Q, %ld);", 
+			  "admin", "Administrator", "admin", 0x7FFFFFFF);
+
+    retval = sqlite3_exec(db, cmd, NULL, NULL, &errmsg);
+    if (retval>0){
+      printf("CCL_Init(): cmd=%s\nerrmsg: %s\n", cmd, errmsg);
+      sqlite3_free(errmsg);
+    }
+    sqlite3_free(cmd);
+  }
   if (!CLIENTS)
     sqlite3_exec(db,
 		 "create table clients (\n"
@@ -838,6 +974,8 @@ _init_db(sqlite3 * db)
 		 "    tarif integer default 0 not null,\n"
 		 "    email varchar(128),\n"
 		 "    other varchar(128),\n"
+		 "    empid integer not null,\n"
+		 "    credit integer default 0,\n"
 		 "    flags integer default 0 not null);", NULL, NULL, NULL);
   if (!PRICES)
     sqlite3_exec(db,
@@ -857,7 +995,10 @@ _init_db(sqlite3 * db)
 		 "    price number not null,\n"
 		 "    stock integer,\n"
 		 "    flags integer default 0 not null);", NULL, NULL, NULL);
-  if (!TARIFS)
+
+  if (!TARIFS){
+    gchar *cmd = NULL;
+
     sqlite3_exec(db,
 		 "create table tarifs (\n"
 		 "    id integer primary key,\n"
@@ -865,12 +1006,26 @@ _init_db(sqlite3 * db)
 		 "    days integer not null,\n"
 		 "    stime time not null,\n"
 		 "    hourprice number not null,\n"
+		 "    incprice number not null,\n"
+		 "    fafter integer default 10 not null,\n"
+		 "    tname varchar(30), \n"
 		 "    flags integer default 0 not null);", NULL, NULL, NULL);
+    /*Default Tariff*/
+    cmd = sqlite3_mprintf("insert into tarifs (id, tarif, days, \n"
+			  "stime, hourprice, incprice, fafter, tname) \n"
+			  "values (1, 1, 127, 00:00, 6000, 100, 10, %Q);", 
+			  "Default");
+
+    sqlite3_exec(db, cmd, NULL, NULL, NULL);
+    sqlite3_free(cmd);
+  }
+
   if (!SESSIONSLOG)
     sqlite3_exec(db,
 		 "create table sessionslog (\n"
 		 "    id integer primary key,\n"
 		 "    client integer not null,\n"
+		 "    empid integer not null,\n"
 		 "    member integer not null,\n"
 		 "    stime integer not null,\n"
 		 "    etime integer not null,\n"
@@ -884,10 +1039,11 @@ _init_db(sqlite3 * db)
 		 "    id integer primary key,\n"
 		 "    session integer not null,\n"
 		 "    client integer not null,\n"
+		 "    empid integer not null,\n"
 		 "    member integer not null,\n"
 		 "    product integer not null,\n"
 		 "    amount integer not null,\n"
-		 "    price integer not null,\n"
+		 "    price number not null,\n"
 		 "    time integer not null,\n"
 		 "    flags integer default 0 not null);", NULL, NULL, NULL);
   if (!EXPENSESLOG)
@@ -897,6 +1053,7 @@ _init_db(sqlite3 * db)
 		 "    description varchar(127) not null,\n"
 		 "    time integer not null,\n"
 		 "    cash integer not null,\n"
+		 "    empid integer not null,\n"
 		 "    flags integer default 0 not null);", NULL, NULL, NULL);
 }
 
@@ -906,9 +1063,47 @@ _loadMembersCB(void *ptr, int argc, char **argv, char **colnames)
   gint id = atoi(argv[0]);
   CCL_member *member = g_new0(CCL_member, 1);
 
+#ifdef DEBUG
+  {
+    int i; 
+    printf("_LoadMembersCB(): argc=%d\n", argc);
+    for (i=0; i<argc; i++) 
+      printf("[%d = %s]", i, argv[i]);
+    printf("\n");
+  }
+#endif
   _CCL_member_init(member, argv[1]);
   g_datalist_id_set_data_full(&(ccl->members), id, member, _destroy_member);
   _CCL_member_restore(id);
+
+  return 0;
+}
+
+static gint
+_loadEmployeesCB(void *ptr, int argc, char **argv, char **colnames)
+{
+  gint id = atoi(argv[0]);
+  CCL_employee *employee = g_new0(CCL_employee, 1);
+  int superid, lvl;
+
+  lvl = (argv[6]==NULL? 0: atoi(argv[6]));
+  superid = (argv[8]==NULL? 0: atoi(argv[8]));
+
+
+#ifdef DEBUG
+  {
+    int i; 
+    printf("_LoadEmployeesCB(): argc=%d\n", argc);
+    for (i=0; i<argc; i++) 
+      printf("[%d = %s]", i, argv[i]);
+    printf("\n");
+  }
+#endif
+  /* _CCL_employee_init1(employee, argv[1]);*/
+  _CCL_employee_init(employee, argv[1], argv[2], argv[3], argv[4], argv[5],
+		      lvl, superid);
+  g_datalist_id_set_data_full(&(ccl->employees), id, employee, _destroy_employee);
+  _CCL_employee_restore(id);
 
   return 0;
 }
@@ -1045,3 +1240,5 @@ _greatest_product_id()
 
   return id;
 }
+
+

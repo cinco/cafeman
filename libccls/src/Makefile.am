@@ -9,6 +9,7 @@ ccl.c \
 client.c \
 data.c \
 member.c \
+employee.c \
 tarif.c \
 logging.c \
 util.c \

@@ -38,7 +38,9 @@ enum
   CCL_DATA_PRICE = -5,	      /** The data is assigned to a price */
   CCL_DATA_LOGSESSION = -6,   /** The data is assigned to a logged session */
   CCL_DATA_LOGPRODUCT = -7,   /** The data is assigned to a logged product */
-  CCL_DATA_LOGEXPENSE = -8    /** The data is assigned to a logged expense */
+  CCL_DATA_LOGEXPENSE = -8,   /** The data is assigned to a logged expense */
+  CCL_DATA_EMPLOYEE = -9,     /** The data is assigned to an employee */
+  CCL_DATA_USRLVL = -10       /** The data is assigned to a user level */
 };
 
 /* Rules for searching the sessions log */
@@ -65,6 +67,8 @@ enum
 #define CCL_SR_PRICE_RANGE (CCL_SR_PRICEMIN|CCL_SR_PRICEMAX) /** PRICEMIN+PRICEMAX */
 #define CCL_SR_FLAGS_ANY  (1UL<<17) /** Contains any of the specified flags */
 #define CCL_SR_FLAGSNOT_ANY (1UL<<18) /** Any of the specified flags is missing */
+#define CCL_SR_EMPLOYEE	  (1UL<<19) /** Search by employee */
+
 
 /********************* Error codes ************************/
 #define CCL_ERROR_NO_ERROR		0 /** No error ocurred */
@@ -109,6 +113,7 @@ struct _CCL_log_search_rules /** Log search rules struct */
   int session;
   int client;
   int member;
+  int employee;
   int product;
   time_t stime_min, stime_max;
   time_t etime_min, etime_max;
@@ -126,6 +131,7 @@ struct _CCL_log_session_entry  /** Logged clients session struct */
   int id;
   int client;
   int member;
+  int employee;
   time_t stime;
   time_t etime;
   int time;
@@ -140,6 +146,7 @@ struct _CCL_log_product_entry /** Logged sold product entry */
   int session;
   int client;
   int member;
+  int employee;
   int product;
   unsigned amount;
   unsigned price;
@@ -155,6 +162,7 @@ struct _CCL_log_expense_entry /** Logged expense entry */
   unsigned cash;
   int flags;
 };
+
 typedef struct _CCL_log_expense_entry CCL_log_expense_entry;
 
 /**********************************************************/
@@ -179,19 +187,21 @@ int	      CCL_product_new(const char * category, const char * name,
 			      unsigned price);
 void	      CCL_product_delete(int product);
 int	      CCL_product_price_set(int product, unsigned price);
-int	      CCL_product_category_set(int product, const char * category);
-int	      CCL_product_name_set(int product, const char * name);
 int	      CCL_product_get_nth(unsigned nth);
 int	      CCL_product_info_get(int product, char **category,
 				   char **name, unsigned * price);
+int	      CCL_product_id_get(char *name, int *id);
 void	      CCL_product_flags_set(int product, int flags);
 int	      CCL_product_flags_get(int product);
 void	      CCL_product_flags_toggle(int product, int flags, int on);
 int	      CCL_product_exists(int product);
 int	      CCL_product_sell(int product, unsigned amount,
-			       unsigned totalprice, int flags);
+			       unsigned totalprice, int flags, int empid);
 void	      CCL_product_stock_set(int product, int amount);
 int	      CCL_product_stock_get(int product);
+int           CCL_pay_account(int member, double price, int empid);
+
+
 void	      CCL_perminafter_set(int mins);
 int	      CCL_perminafter_get(void);
 /**********************************************************/
@@ -260,10 +270,11 @@ unsigned      CCL_client_owed_terminal(int client);
 unsigned      CCL_client_owed_products(int client);
 void	      CCL_client_member_set(int client, int member);
 int	      CCL_client_member_get(int client);
+long	      CCL_client_ip_get(int client);
 void	      CCL_client_send_cmd(int client, unsigned cmd,
 				  const void * data, unsigned datasize);
 /**********************************************************/
-int	      CCL_member_new(const char * name);
+  int	      CCL_member_new(const char * name, int emp);
 int	      CCL_member_get_nth(unsigned nth);
 int	      CCL_member_exists(int member);
 int	      CCL_member_find(const char * name);
@@ -280,12 +291,48 @@ void *	      CCL_member_data_get(int member);
 void	      CCL_member_flags_set(int member, int flags);
 int	      CCL_member_flags_get(int member);
 void	      CCL_member_flags_toggle(int member, int flags, int on);
+void	      CCL_member_credit_set(int member, int credit);
+int	      CCL_member_credit_get(int member);
+
+/**********************************************************/
+
+int           CCL_employee_new(char *usr, char *name, char *pwd, char *phone, 
+			       char *email, int lvl, int superid);
+int	      CCL_employee_get_nth(unsigned nth);
+int	      CCL_employee_exists(int employee);
+int	      CCL_employee_find(const char * name);
+int           CCL_employee_validate(const char * name, const char *pwd);
+const char *  CCL_employee_usrname_get(int employee);
+void	      CCL_employee_usrname_set(int employee, const char * name);
+int	      CCL_employee_hiredate_get(int employee);
+void	      CCL_employee_hiredate_set(int employee, int hiredate);
+const char *  CCL_employee_password_get(int employee);
+void	      CCL_employee_password_set(int employee, const char * pwd);
+const char *  CCL_employee_email_get(int employee);
+void	      CCL_employee_email_set(int employee, const char * email);
+const char *  CCL_employee_phone_get(int employee);
+void	      CCL_employee_phone_set(int employee, const char * phone);
+const char *  CCL_employee_name_get(int employee);
+void	      CCL_employee_name_set(int employee, const char * name);
+int           CCL_employee_usrlvl_get(int employee);
+void	      CCL_employee_usrlvl_set(int employee, int lvl);
+void *	      CCL_employee_data_set(int employee, void * data);
+void *	      CCL_employee_data_get(int employee);
+void	      CCL_employee_flags_set(int employee, int flags);
+int	      CCL_employee_flags_get(int employee);
+void	      CCL_employee_flags_toggle(int employee, int flags, int on);
+int           CCL_employee_info_get(int empid, char **empusr, char **empname, char **emppass, 
+				    char **phone, char **email, unsigned *emplevel, 
+				    unsigned *hiredate, unsigned *superid, unsigned *flags);
+void          CCL_employee_info_set(int id, char *emppass, char *empname, char *phone, 
+				    char *email, long emplevel);
+
 /**********************************************************/
 void	      CCL_log_expense(const char description[128], unsigned cash,
 			      int flags);
 int	      CCL_log_expenses_get(CCL_log_search_rules * sr,
 				   CCL_log_expense_entry ** ee);
-int	      CCL_log_session(int client, unsigned price, int flags);
+  int	      CCL_log_session(int client, unsigned price, int flags, int emp);
 int	      CCL_log_session_find(int client, time_t stime, time_t etime);
 void	      CCL_log_session_clear(int session);
 void	      CCL_log_session_set_flags(int session, int flags);
@@ -300,28 +347,31 @@ int	      CCL_log_products_get(CCL_log_search_rules * sr,
 				   CCL_log_product_entry ** pe);
 /**********************************************************/
 int	      CCL_tarif_new(unsigned hr, unsigned min, unsigned days,
-			    unsigned hourprice);
+			    unsigned hourprice, unsigned incprice, 
+			    unsigned fafter, char *name);
 void	      CCL_tarif_delete(int tarif);
 int	      CCL_tarif_get_nth(unsigned nth);
 void	      CCL_tarif_rebuild(void);
 void	      CCL_tarif_rebuild_all(void);
 int	      CCL_tarif_set(int tarif);
 int	      CCL_tarif_get(void);
+int           CCL_tarif_name_exists(char *name);
+char         *CCL_tarif_name_get(int tarif);
 int	      CCL_tarif_exists(int tarif);
 unsigned      CCL_tarif_calc(time_t start, time_t end, int permin);
 unsigned      CCL_tarif_calc_with_tarifpart(int id, unsigned mins,
 					    int permin);
 /**********************************************************/
 int	      CCL_tarifpart_new(unsigned hr, unsigned min, unsigned days,
-				unsigned hourprice);
+				unsigned hourprice, unsigned incprice);
 void	      CCL_tarifpart_delete(int id);
 int	      CCL_tarifpart_get_nth(unsigned nth);
 int	      CCL_tarifpart_exists(int id);
 int	      CCL_tarifpart_id_get(unsigned hr, unsigned min, unsigned days);
 int	      CCL_tarifpart_conflicts(unsigned hr, unsigned min,
 				      unsigned days, unsigned * conflicts); 
-int	      CCL_tarifpart_info_get(int id, unsigned * hr, unsigned * min,
-				     unsigned * days, unsigned * hourprice);
+int	      CCL_tarifpart_info_get(int id, unsigned *hr, unsigned *min, unsigned *days, 
+				     unsigned * hourprice, unsigned *incprice);
 int	      CCL_tarifpart_stime_set(int id, unsigned hr, unsigned min);
 void	      CCL_tarifpart_stime_get(int id, unsigned * hr, unsigned * min);
 int	      CCL_tarifpart_days_set(int id, unsigned days);
@@ -330,6 +380,10 @@ void	      CCL_tarifpart_hourprice_set(int id, unsigned price);
 unsigned      CCL_tarifpart_hourprice_get(int id);
 void	      CCL_tarifpart_flags_set(int client, int flags);
 int	      CCL_tarifpart_flags_get(int client);
+void	      CCL_tarifpart_fafter_set(int tarif, unsigned fafter);
+unsigned      CCL_tarifpart_fafter_get(int tarif);
+void	      CCL_tarifpart_incprice_set(int tarif, unsigned incprice);
+unsigned      CCL_tarifpart_incprice_get(int tarif);
 void	      CCL_tarifpart_flags_toggle(int client, int flags, int on);
 void	      CCL_tarifpart_price_add(int id, unsigned mins, unsigned price);
 void	      CCL_tarifpart_price_del(int id, unsigned mins);

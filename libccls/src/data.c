@@ -5,7 +5,7 @@
 #include "ccl_private.h"
 
 extern CCL *ccl;
-
+/*#define DEBUG 1*/
 /* Public interface */
 
 /**
@@ -20,14 +20,27 @@ void
 CCL_data_set_string(gint cid, gint id, const gchar * key, const gchar * value)
 {
   gchar *cmd = NULL;
+  int retval;
+  char *errmsg;
 
+#ifdef DEBUG
+  printf("CCL_data_set_string(): key (%s) <=> value (%s)\n", key, value);
+#endif
   g_return_if_fail(key);
   
-  cmd = sqlite3_mprintf("insert or replace into data\n"
+  cmd = sqlite3_mprintf("insert or replace into tbldata \n"
 			"(cid, id, key, value)\n"
 			"values(%d, %d, %Q, %Q);", cid, id, key, value);
 
-  sqlite3_exec(ccl->db, cmd, NULL, NULL, NULL);
+  /*retval = sqlite3_exec(ccl->db, cmd, NULL, NULL, NULL);*/
+  retval = sqlite3_exec(ccl->db, cmd, NULL, NULL, &errmsg);
+#ifdef DEBUG
+  printf("CCL_data_set_string(): retval[%d] cmd = %s \n", retval, cmd);
+  if (retval>0){
+    printf("CCL_data_set_string(): ** Error [%s]\n", errmsg);
+    sqlite3_free(errmsg);
+  }
+#endif
   sqlite3_free(cmd);
 }
 
@@ -51,7 +64,7 @@ CCL_data_get_string(gint cid, gint id, const char * key, const char * defval)
 
   g_return_val_if_fail(key, NULL);
 
-  cmd = sqlite3_mprintf("select value from data\n"
+  cmd = sqlite3_mprintf("select value from tbldata\n"
 			"where cid = %d and id = %d and key = %Q;",
 			cid, id, key);
   sqlite3_prepare(ccl->db, cmd, -1, &stmt, NULL);
@@ -83,7 +96,7 @@ CCL_data_set_int(gint cid, gint id, const gchar * key, gint value)
   
   g_return_if_fail(key);
 
-  cmd = sqlite3_mprintf("insert or replace into data\n"
+  cmd = sqlite3_mprintf("insert or replace into tbldata\n"
 			"(cid, id, key, value)\n"
 			"values(%d, %d, %Q, %d);", cid, id, key, value);
 
@@ -109,7 +122,7 @@ CCL_data_get_int(gint cid, gint id, const gchar * key, gint defval)
 
   g_return_val_if_fail(key, -1);
 
-  cmd = sqlite3_mprintf("select value from data\n"
+  cmd = sqlite3_mprintf("select value from tbldata\n"
 			"where cid = %d and id = %d and key = %Q;",
 			cid, id, key);
   sqlite3_prepare(ccl->db, cmd, -1, &stmt, NULL);
@@ -141,7 +154,7 @@ CCL_data_set_blob(gint cid, gint id, const gchar * key, void * value,
   
   g_return_if_fail(key);
 
-  cmd = sqlite3_mprintf("insert or replace into data\n"
+  cmd = sqlite3_mprintf("insert or replace into tbldata\n"
 			"(cid, id, key, value)\n"
 			"values(%d, %d, %Q, ?1);", cid, id, key);
 
@@ -173,7 +186,7 @@ CCL_data_get_blob(gint cid, gint id, const gchar * key, int * size)
   g_return_val_if_fail(key, NULL);
   g_return_val_if_fail(size, NULL);
 
-  cmd = sqlite3_mprintf("select value from data\n"
+  cmd = sqlite3_mprintf("select value from tbldata\n"
 			"where cid = %d and id = %d and key = %Q;",
 			cid, id, key);
   sqlite3_prepare(ccl->db, cmd, -1, &stmt, NULL);
@@ -208,7 +221,7 @@ CCL_data_key_exists(gint cid, gint id, const gchar * key)
 
   g_return_val_if_fail(key, FALSE);
 
-  cmd = sqlite3_mprintf("select value from data\n"
+  cmd = sqlite3_mprintf("select value from tbldata\n"
 			"where cid = %d and id = %d and key = %Q;",
 			cid, id, key);
   sqlite3_prepare(ccl->db, cmd, -1, &stmt, NULL);
@@ -233,13 +246,24 @@ void
 CCL_data_key_delete(gint cid, gint id, const gchar * key)
 {
   gchar *cmd = NULL;
+  gchar *errstr = NULL; 
+  int retval;
 
   g_return_if_fail(key);
 
-  cmd = sqlite3_mprintf("delete from data\n"
+  cmd = sqlite3_mprintf("delete from tbldata\n"
 			"where cid = %d and id = %d and key = %Q;",
 			cid, id, key);
-  sqlite3_exec(ccl->db, cmd, NULL, NULL, NULL);
+  retval = sqlite3_exec(ccl->db, cmd, NULL, NULL, &errstr);
+#ifdef DEBUG
+  printf("CCL_data_key_delete(): retval[%d] cmd: %s\n",  
+	 retval, cmd);
+  if (retval > 0){
+    printf("CCL_data_key_delete(): retval[%d] Error: %s\n", 
+	   retval, errstr);
+    sqlite3_free(errstr);
+  }
+#endif
   sqlite3_free(cmd);
 }
 
@@ -260,16 +284,38 @@ CCL_data_find_by_key_sval(gint cid, const gchar * key, const gchar * value)
 
   g_return_val_if_fail(key, -1);
 
-  cmd = sqlite3_mprintf("select id from data\n"
+  cmd = sqlite3_mprintf("select id from tbldata \n"
 			"where cid = %d and key = %Q and value = %Q;",
 			cid, key, value);
   sqlite3_prepare(ccl->db, cmd, -1, &stmt, NULL);
-  sqlite3_free(cmd);
-
   if (sqlite3_step(stmt) == SQLITE_ROW)
     id = sqlite3_column_int(stmt, 0);
-
   sqlite3_finalize(stmt);
+#ifdef DEBUG
+  /*  {
+    sqlite3_stmt *stmt1 = NULL;
+    gchar *cmd1 = NULL;
+    cid = -11;
+    cmd1 = sqlite3_mprintf("select id from tbldata\n"
+			   "where cid > %d;",
+			   cid);
+    sqlite3_prepare(ccl->db, cmd1, -1, &stmt1, NULL);
+    while (sqlite3_step(stmt1) == SQLITE_ROW){
+      char *txt;
+      
+      id = sqlite3_column_int(stmt1,0);
+      if (id>=0){
+	txt = sqlite3_column_text(stmt1,1);
+	txt = g_strdup((gchar *) sqlite3_column_text(stmt1, 0));
+      }
+      printf("**** CCL_find_by_key_sval(): id[%2d]\n", id);
+    }
+    sqlite3_finalize(stmt1);
+    sqlite3_free(cmd1);
+    }*/
+  printf("** CCL_find_by_key_sval(): retval[%d] cmd=%s\n", id, cmd);
+#endif
+  sqlite3_free(cmd);
 
   return id;
 }
@@ -291,7 +337,7 @@ CCL_data_find_by_key_ival(gint cid, const gchar * key, gint value)
 
   g_return_val_if_fail(key, -1);
 
-  cmd = sqlite3_mprintf("select id from data\n"
+  cmd = sqlite3_mprintf("select id from tbldata\n"
 			"where cid = %d and key = %Q and value = %d;",
 			cid, key, value);
   sqlite3_prepare(ccl->db, cmd, -1, &stmt, NULL);

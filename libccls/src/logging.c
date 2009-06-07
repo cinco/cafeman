@@ -3,7 +3,9 @@
 #include <string.h>
 #include "ccls.h"
 #include "ccl_private.h"
-
+/*
+#define DEBUG 1
+*/
 extern CCL *ccl;
 
 /* Static functions */
@@ -55,13 +57,13 @@ CCL_log_expenses_get(CCL_log_search_rules * sr, CCL_log_expense_entry ** ee)
     {
       guint rules = CCL_SR_ID|CCL_SR_TIMEMIN|CCL_SR_TIMEMAX|CCL_SR_PRICEMIN
 		    |CCL_SR_PRICEMAX|CCL_SR_FLAGS|CCL_SR_FLAGSNOT
-		    |CCL_SR_DAYTIME_RANGE|CCL_SR_DAYS;
+		    |CCL_SR_DAYTIME_RANGE|CCL_SR_DAYS|CCL_SR_EMPLOYEE;
       
       _construct_query_part(sr, rules, querypart,
 			    sizeof(querypart) / sizeof(gchar));
     }
 
-  cmd = sqlite3_mprintf("select description,time,cash,flags\n"
+  cmd = sqlite3_mprintf("select description,time,cash,empid,flags\n"
 			"from expenseslog where cash != -1\n"
 			"%s order by time asc;", querypart);
 
@@ -106,7 +108,7 @@ CCL_log_expenses_get(CCL_log_search_rules * sr, CCL_log_expense_entry ** ee)
  * @return The logged session id.
  */
 gint
-CCL_log_session(gint client, guint price, gint flags)
+CCL_log_session(gint client, guint price, gint flags, gint emp)
 {
   CCL_client *c = g_datalist_id_get_data(&(ccl->clients), client);
   gchar *cmd = NULL;
@@ -139,12 +141,15 @@ CCL_log_session(gint client, guint price, gint flags)
       intervals[i].etime = interval->etime;
     }
 
-  cmd = sqlite3_mprintf("insert into sessionslog (id, client, member,"
+  cmd = sqlite3_mprintf("insert into sessionslog (id, client, empid, member,"
 			"stime, etime, time, price, flags, intervals)\n"
-			"values(%d, %d, %d, %d, %d, %d, %u, %d, ?1);",
-			sessionid, client, c->member, stime, etime,
+			"values(%d, %d, %d, %d, %d, %d, %d, %u, %d, ?1);",
+			sessionid, client, emp, c->member, stime, etime,
 			CCL_client_time_used(client), price, flags);
   sqlite3_prepare(ccl->db, cmd, -1, &stmt, NULL);
+#ifdef DEBUG
+  printf("CCL_log_sessions(): cmd = %s\n", cmd);
+#endif
   sqlite3_free(cmd);
   sqlite3_bind_blob(stmt, 1, intervals, ibytes, g_free);
   sqlite3_step(stmt);
@@ -155,15 +160,18 @@ CCL_log_session(gint client, guint price, gint flags)
       guint price = 0;
       
       CCL_product_info_get(id, NULL, NULL, &price);
-      cmd = sqlite3_mprintf("insert into productslog (session, client,"
+      cmd = sqlite3_mprintf("insert into productslog (session, client, empid,"
 			    "member, product, amount, price, time, flags)\n"
-			    "values(%d, %d, %d, %d, %u, %u, %ld, %d);",
-			    sessionid, client, c->member, id, amount,
+			    "values(%d, %d, %d, %d, %d, %u, %u, %ld, %d);",
+			    sessionid, client, emp, c->member, id, amount,
 			    price * amount, etime, flags);
       sqlite3_exec(ccl->db, cmd, NULL, NULL, NULL);
       sqlite3_free(cmd);
     }
-  
+#ifdef DEBUG
+  printf("CCL_log_session(): Number of Products = %d\n", i);
+#endif
+
   return sessionid;
 }
 
@@ -300,17 +308,20 @@ CCL_log_sessions_get(CCL_log_search_rules * sr, CCL_log_session_entry ** se)
 		    |CCL_SR_STIMEMAX|CCL_SR_ETIMEMIN|CCL_SR_ETIMEMAX
 		    |CCL_SR_TIMEMIN|CCL_SR_TIMEMAX|CCL_SR_PRICEMIN
 		    |CCL_SR_PRICEMAX|CCL_SR_FLAGS|CCL_SR_FLAGSNOT
-		    |CCL_SR_DAYTIME_RANGE|CCL_SR_DAYS;
+		    |CCL_SR_DAYTIME_RANGE|CCL_SR_DAYS|CCL_SR_EMPLOYEE;
       
       _construct_query_part(sr, rules, querypart,
 			    sizeof(querypart) / sizeof(gchar));
     }
 
-  cmd = sqlite3_mprintf("select id, client, member,\n"
+  cmd = sqlite3_mprintf("select id, client, member, empid,\n"
 			"stime, etime, time, price, flags\n"
 			"from sessionslog where id != -1\n"
 			"%s order by stime asc;", querypart);
 
+#ifdef DEBUG
+  printf("CCL_log_sessions_get(): cmd = %s\n", cmd);
+#endif
   if (sqlite3_get_table(ccl->db, cmd, &argv, &nrow, &ncol, NULL) == SQLITE_OK
       && argv && nrow > 0 && ncol)
     {
@@ -332,11 +343,12 @@ CCL_log_sessions_get(CCL_log_search_rules * sr, CCL_log_session_entry ** se)
 	  sscanf(argv[os], "%d", &(entryarray[i].id));
 	  sscanf(argv[os+1], "%d", &(entryarray[i].client));
 	  sscanf(argv[os+2], "%d", &(entryarray[i].member));
-	  sscanf(argv[os+3], "%ld", &(entryarray[i].stime));
-	  sscanf(argv[os+4], "%ld", &(entryarray[i].etime));
-	  sscanf(argv[os+5], "%d", &(entryarray[i].time));
-	  sscanf(argv[os+6], "%u", &(entryarray[i].price));
-	  sscanf(argv[os+7], "%d", &(entryarray[i].flags));
+	  sscanf(argv[os+3], "%d", &(entryarray[i].employee));
+	  sscanf(argv[os+4], "%ld", &(entryarray[i].stime));
+	  sscanf(argv[os+5], "%ld", &(entryarray[i].etime));
+	  sscanf(argv[os+6], "%d", &(entryarray[i].time));
+	  sscanf(argv[os+7], "%u", &(entryarray[i].price));
+	  sscanf(argv[os+8], "%d", &(entryarray[i].flags));
 	}
     }
  
@@ -445,16 +457,19 @@ CCL_log_products_get(CCL_log_search_rules * sr, CCL_log_product_entry ** pe )
 		    |CCL_SR_TIMEMIN|CCL_SR_TIMEMAX
 		    |CCL_SR_PRICEMIN|CCL_SR_PRICEMAX
 		    |CCL_SR_FLAGS|CCL_SR_FLAGSNOT|CCL_SR_PRODUCT
-		    |CCL_SR_DAYTIME_RANGE|CCL_SR_DAYS;
+		    |CCL_SR_DAYTIME_RANGE|CCL_SR_DAYS|CCL_SR_EMPLOYEE;
       
       _construct_query_part(sr, rules, querypart,
 			    sizeof(querypart) / sizeof(gchar));
     }
 
-  cmd = sqlite3_mprintf("select id, session, client, member,\n"
+  cmd = sqlite3_mprintf("select id, session, client, member,empid,\n"
 			"product, amount, price, time, flags\n"
 			"from productslog where session != -1\n"
 			"%s order by time asc;", querypart);
+#ifdef DEBUG
+  printf("CCL_log_products_get(): cmd = %s\n", cmd);
+#endif
 
   if (sqlite3_get_table(ccl->db, cmd, &argv, &nrow, &ncol, NULL) == SQLITE_OK
       && argv && nrow > 0 && ncol)
@@ -478,11 +493,12 @@ CCL_log_products_get(CCL_log_search_rules * sr, CCL_log_product_entry ** pe )
 	  sscanf(argv[os+1], "%d", &(entryarray[i].session));
 	  sscanf(argv[os+2], "%d", &(entryarray[i].client));
 	  sscanf(argv[os+3], "%d", &(entryarray[i].member));
-	  sscanf(argv[os+4], "%d", &(entryarray[i].product));
-	  sscanf(argv[os+5], "%u", &(entryarray[i].amount));
-	  sscanf(argv[os+6], "%u", &(entryarray[i].price));
-	  sscanf(argv[os+7], "%ld", &(entryarray[i].time));
-	  sscanf(argv[os+8], "%d", &(entryarray[i].flags));
+	  sscanf(argv[os+4], "%d", &(entryarray[i].employee));
+	  sscanf(argv[os+5], "%d", &(entryarray[i].product));
+	  sscanf(argv[os+6], "%u", &(entryarray[i].amount));
+	  sscanf(argv[os+7], "%u", &(entryarray[i].price));
+	  sscanf(argv[os+8], "%ld", &(entryarray[i].time));
+	  sscanf(argv[os+9], "%d", &(entryarray[i].flags));
 	}
     }
 
@@ -534,6 +550,7 @@ _construct_query_part(const CCL_log_search_rules * sr, guint parts,
   _ADD_TEST(CCL_SR_SESSION, sr->session, "and session = %d");
   _ADD_TEST(CCL_SR_CLIENT, sr->client, "and client = %d");
   _ADD_TEST(CCL_SR_MEMBER, sr->member, "and member = %d");
+  _ADD_TEST(CCL_SR_EMPLOYEE, sr->employee, "and empid = %d");
   _ADD_TEST(CCL_SR_STIMEMIN, sr->stime_min, "and stime >= %ld");
   _ADD_TEST(CCL_SR_STIMEMAX, sr->stime_max, "and stime <= %ld");
   _ADD_TEST(CCL_SR_ETIMEMIN, sr->etime_min, "and etime >= %ld");

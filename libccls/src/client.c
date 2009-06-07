@@ -4,6 +4,10 @@
 #include "ccls.h"
 #include "ccl_private.h"
 
+/*
+#define DEBUG_LIBCCL 1
+#define DEBUG 1
+*/
 extern CCL *ccl;
 
 /* Static functions */
@@ -214,9 +218,11 @@ CCL_client_start(gint client)
 
   g_return_if_fail(c);
   if(!(c->status == CCL_INACTIVE || c->status == CCL_PAUSED)) return;
-  
-  interval = g_new0(CCL_interval, 1);
 
+#ifdef DEBUG_LIBCCL
+  (c->status == CCL_INACTIVE)? printf("was INACTIVE\n"): printf("was PAUSED\n");
+#endif
+  interval = g_new0(CCL_interval, 1);
   if (c->status == CCL_INACTIVE)
     CCL_client_reset(client);
 
@@ -529,7 +535,6 @@ CCL_client_product_get_nth(gint client, guint nth,
   g_return_val_if_fail(c, FALSE);
       
   link = c->products;
-
   for (i = 0; i < nth; i++)
     link = g_slist_next(link);
 
@@ -840,19 +845,24 @@ CCL_client_owed_terminal(gint client)
   g_return_val_if_fail(c, 0);
 
   ttime = CCL_client_time_used(client);
-  permin = (CCL_client_time_used(client) / 60 >= ccl->perminafter
-	    && ccl->perminafter != -1);
-
-  if (!ttime)
-    return 0;
+  if (!ttime)  return 0;
 
   /* Set the member tarif */
   if (CCL_member_exists(c->member) && 0 != CCL_member_tarif_get(c->member))
     {
       oldtarif = CCL_tarif_get();
       CCL_tarif_set(CCL_member_tarif_get(c->member));
+#ifdef DEBUG
+  printf("CCL_client_owed_terminal: Member: %d, Tariff: %d\n",
+	 c->member, CCL_member_tarif_get(c->member));
+#endif
     }
-  
+  permin = (CCL_client_time_used(client) / 60 >= ccl->perminafter
+	    && ccl->perminafter != -1);
+#ifdef DEBUG
+  printf("CCL_client_owed_terminal: perminafter: %d, permin: %d\n",
+	 ccl->perminafter, permin);
+#endif
   for (i = 0; i < c->intervals->len; i++)
     {
       interval = g_ptr_array_index(c->intervals, i);
@@ -865,15 +875,50 @@ CCL_client_owed_terminal(gint client)
       cash += (gint) (CCL_tarif_calc(stime, etime, permin) * frac);
     }
 
-  /* Restore previous tarif */
+  /* Restore previous tarif */ 
   if (1 <= oldtarif)
     CCL_tarif_set(oldtarif);
 
   /* Prettier numbers */
-  if (cash % 5 >= 3)
+  /*  if (cash % 5 >= 3)
     cash += 5 - cash % 5;
   else if (cash % 5 < 3)
     cash -= cash % 5;
+  */
+
+  /* 60 mins for KES 50 */
+  /*  {
+    int chargehr, mins, chargemins;
+
+    mins = cash/100;
+    chargehr = mins / 60;
+    chargemins = mins % 60;
+    chargemins = (chargemins > 50)? 50: chargemins; 
+    mins = chargehr * 50 + chargemins;
+    cash = mins * 100;
+    }*/
+  /* Prettier numbers
+
+  if (cash % 50 >= 30)
+    cash += 50 - cash % 50;
+  else if (cash % 50 < 30)
+    cash -= cash % 50;
+  */
+  /* Prettier numbers
+  if ((cash % 100) >= 50)
+    cash += 100 - cash % 100;
+  else if ((cash % 100) < 50)
+    cash -= cash % 100;
+  */
+  
+  if (cash % 500 >= 150){
+    cash /= 500;
+    cash += 1;
+    cash *= 500;
+  }
+  else{
+    cash -= cash % 500;
+  }
 
   return cash;
 }
@@ -943,6 +988,22 @@ CCL_client_member_get(gint client)
     return c->member;
   else
     return 0;
+}
+
+/**
+ * Retrieve client's ip address
+ *
+ * @param   ipstr The client connection's IP address.
+ * @return  the IP address in long format - IPV4
+ */
+long
+CCL_client_ip_get(int client)
+{
+  CCL_client *c = g_datalist_id_get_data(&(ccl->clients), client);
+  
+  g_return_val_if_fail(c, -1);
+  
+  return c->ipaddr;
 }
 
 /**
@@ -1064,6 +1125,7 @@ _CCL_client_init(CCL_client * client, const gchar * name)
   client->intervals = g_ptr_array_sized_new(5);
   client->products = NULL;
   client->status = 0;
+  client->ipaddr = 0L;
 }
 
 void
@@ -1087,6 +1149,8 @@ _shutdown_connection(CCL_client * client)
 			     &(ccl->events.maxfd));
 	}
       client->sockfd = INVALID_SOCKET;
+      /*Clear the address */
+      client->ipaddr = 0L;
     }
 }
 
