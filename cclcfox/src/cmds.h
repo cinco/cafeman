@@ -24,6 +24,14 @@
 #define CS_ENABLEPASSWORDEDIT 16UL/* Enable password edit */
 #define CS_ALLOWMEMBERLOGIN 17UL/* Enable member login */
 #define CS_ALLOWUSERLOGIN 18UL	/* Enable user login */
+#define CS_CHATSERVER     19UL  /* Chat from server*/
+#define CS_CALLASSIST     20UL  /* Respond to call assistant */
+#define CS_ENABLEASSIST   21UL  /* Respond to call assistant */
+#define CS_UPDATE         22UL  /* Start update */
+#define CS_UPDATEDATA     23UL  /* Send update data */
+#define CS_UPDATEEND      24UL  /* End update */ 
+#define CS_SETADMINPASS   25UL  /* Set client admin password */ 
+
 
 /* Commands sent by the client */
 #define CC_USEREXIT	  1UL	/* The user ended the session */
@@ -35,5 +43,12 @@
 #define CC_MEMBERLOGIN	  8UL	/* Login with member id */
 #define CC_SETMEMBERPASSWORD 9UL/* Change the password for this member */
 #define CC_MEMBERLOGINWITHNAME 10UL /* Login with member name */
+#define CC_USERPRINTED    11UL  /* Report user printing */
+#define CC_CHATCLIENT     12UL  /* Chat from client */
+#define CC_CALLASSIST     13UL  /* Call assistant */
+#define CC_UPDATE         14UL  /* Respond to CS_UPDATE */
+#define CC_UPDATEDATA     15UL  /* Respond to CS_UPDATEDATA */
+#define CC_UPDATEEND      16UL  /* Respond to CS_UPDATEEND */
+#define CC_MAXCMDNR       16UL  /* Maximum Command ID*/
 
 #endif /* ifndef CMDS_H */

@@ -42,8 +42,12 @@ protected:
   FXLabel	    *productslbl;
   FXButton	    *setpassbtn;
   FXButton	    *exitbtn;
+  FXButton          *helpbtn;
   FXbool	     pressed;
   FXbool	     hidden;
+  int                ack_assist;
+  int                enableassist;
+
 protected:
   ClientWin(){}
 public:
@@ -53,6 +57,10 @@ public:
   void create();
   int getDefaultWidth();
   int getDefaultHeight();
+  void enableHelpBtn();
+  void disableHelpBtn();
+  void enableAssist(bool);
+
 public:
   void setPasswordEnabled(int enabled = 1);
   void setOwed(const FXString &text);
@@ -61,11 +69,13 @@ public:
 public:
   long onSignal(FXObject*,FXSelector,void*);
   long onExitBtn(FXObject*,FXSelector,void*);
+  long onHelpBtn(FXObject*,FXSelector,void*);
   long onSetPassword(FXObject*,FXSelector,void*);
 public:
   enum {
-    ID_SIGNAL = FXShell::ID_LAST,ID_EXITBTN,ID_SETPASS,
+    ID_SIGNAL = FXShell::ID_LAST,ID_EXITBTN,ID_SETPASS,ID_HELPBTN,
     ID_LAST
   };
 };
+
 #endif

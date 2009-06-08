@@ -52,7 +52,8 @@ FXDEFMAP(ClientWin) ClientWinMap[] =
 {
   FXMAPFUNC(SEL_SIGNAL,ClientWin::ID_SIGNAL,ClientWin::onSignal),
   FXMAPFUNC(SEL_COMMAND,ClientWin::ID_EXITBTN,ClientWin::onExitBtn),
-  FXMAPFUNC(SEL_COMMAND,ClientWin::ID_SETPASS,ClientWin::onSetPassword)
+  FXMAPFUNC(SEL_COMMAND,ClientWin::ID_SETPASS,ClientWin::onSetPassword),
+  FXMAPFUNC(SEL_COMMAND,ClientWin::ID_HELPBTN,ClientWin::onHelpBtn)
 };
 
 FXIMPLEMENT(ClientWin,FXShell,ClientWinMap,ARRAYNUMBER(ClientWinMap))
@@ -286,11 +287,16 @@ ClientWin::ClientWin(FXApp * app)
   hframe2 = new FXHorizontalFrame(vframe,LAYOUT_FILL_Y|LAYOUT_FILL_X,0,0,
 				 0,0,0,0,0,0,0,0);
   setpassbtn =
-    new FXButton(hframe2,_("Set password"),NULL,this,ID_SETPASS,
-		 FRAME_LINE|LAYOUT_FILL_Y|LAYOUT_FILL_X,0,0,0,0,2,2,2,2);
+    new FXButton(hframe2,_("Password"),NULL,this,ID_SETPASS,
+  		 FRAME_LINE|LAYOUT_FILL_Y|LAYOUT_FILL_X,0,0,0,0,2,2,2,2);
 
+  helpbtn =
+    new FXButton(hframe2,_("Assist"),NULL,this,ID_HELPBTN,
+		 FRAME_LINE|LAYOUT_FILL_Y|LAYOUT_FILL_X,0,0,0,0,2,2,2,2);
+  //default is disabled
+  helpbtn->disable();
   exitbtn =
-    new FXButton(hframe2,_("End session"),NULL,this,ID_EXITBTN,
+    new FXButton(hframe2,_("End Session"),NULL,this,ID_EXITBTN,
 		 FRAME_LINE|LAYOUT_FILL_Y|LAYOUT_FILL_X,0,0,0,0,2,2,2,2);
 
   FXColor backcolor = FXRGB(222,222,215);
@@ -310,7 +316,10 @@ ClientWin::ClientWin(FXApp * app)
   productslbl->setBackColor(labelcolor);
   setpassbtn->setBackColor(backcolor);
   setpassbtn->disable();
-  exitbtn->setBackColor(backcolor);
+  helpbtn->setBackColor(backcolor);
+  helpbtn->disable();
+  //exitbtn->setBackColor(backcolor);
+  exitbtn->setBackColor(FXRGB(250,150,150));
   // Signals
 #ifndef WIN32
   getApp()->addSignal(SIGTERM,this,ID_SIGNAL);
@@ -352,6 +361,17 @@ ClientWin::setOwed(const FXString & text)
 }
 
 void
+ClientWin::enableAssist(bool assist)
+{  
+  enableassist = assist;
+
+  if (assist)
+    helpbtn->enable();
+  else
+    helpbtn->disable();
+}
+
+void
 ClientWin::setProducts(const FXString & text)
 {
   productslbl->setText(text);
@@ -390,6 +410,26 @@ ClientWin::onExitBtn(FXObject*,FXSelector,void*)
   return 1;
 }
 
+long 
+ClientWin::onHelpBtn(FXObject *, FXSelector, void*)
+{
+  cclcfox->askForHelp();
+  /*helpbtn->disable();*/
+  return 0L;
+}
+
+void 
+ClientWin::enableHelpBtn()
+{
+  helpbtn->enable();
+}
+
+void 
+ClientWin::disableHelpBtn()
+{
+  helpbtn->disable();
+}
+
 long
 ClientWin::onSetPassword(FXObject*,FXSelector,void*)
 {
@@ -420,7 +460,7 @@ ClientWin::onSetPassword(FXObject*,FXSelector,void*)
     }
     else
       FXMessageBox::error(getRoot(),MBOX_OK,_("Error"),
-			  _("The two given passwords where different"));
+			  _("The two given passwords were different"));
 
   }
 

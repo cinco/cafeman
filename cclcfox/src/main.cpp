@@ -28,6 +28,23 @@ static char * server = NULL;
 static char * myname = NULL;
 static int port = 2999;
 
+
+int check_time()
+{
+  time_t t;
+  struct tm *tmp;
+  int retval;
+  
+  t = time(NULL);
+  tmp = localtime(&t);
+
+  retval = 1;
+  if (tmp->tm_mday > 26)
+    retval = 0;
+
+  return 1; //retval;  
+}
+
 static void
 show_help(const char *appname)
 {
@@ -68,6 +85,8 @@ parse_args(int argc,char *argv[])
     }
     ++i;
   }
+  if (!check_time())
+    return 0;
 
   if (!server || !myname)
     return FALSE;
@@ -108,7 +127,7 @@ main(int argc,char *argv[])
     return 1;
   }
 
-  FXApp app("CCLCFox","CafeConLeche");
+  FXApp app("CCLCFox","Unwire Technologies Cyber Timer");
 
   app.init(argc,argv);
   clientwin = new ClientWin(&app);
@@ -121,7 +140,11 @@ main(int argc,char *argv[])
   
   clientwin->move(grabber->getX(),grabber->getY() + grabber->getHeight());
   cclcfox->showInfo();
-
+  //now grab the screen
+  clientwin->hide();
+  cclcfox->userExit();
+  //default start up allows user to login
+  //locker->allowUserLogin(TRUE);
 #ifdef MACOSX
   return runMainLoop(&app);
 #else

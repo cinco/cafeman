@@ -236,7 +236,8 @@ Locker::Locker(FXApp * app)
   } else // If not, lets show the CCL logo
     lockpix = new FXGIFImage(getApp(),lockscreen_gif,IMAGE_OPAQUE);
 
-  allowmemberlogin = allowuserlogin = FALSE;
+  allowmemberlogin = FALSE;
+  allowuserlogin = TRUE;
 }
 
 Locker::~Locker()
