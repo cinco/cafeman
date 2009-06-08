@@ -51,8 +51,9 @@ PROGRAMS = $(bin_PROGRAMS)
 am_cclfox_OBJECTS = CCLWin.$(OBJEXT) CCLIconItem.$(OBJEXT) \
 	ProductsFrame.$(OBJEXT) CashingFrame.$(OBJEXT) \
 	TarifFrame.$(OBJEXT) MembersFrame.$(OBJEXT) \
-	NotpaidFrame.$(OBJEXT) LogFrame.$(OBJEXT) verifiers.$(OBJEXT) \
-	icons.$(OBJEXT) main.$(OBJEXT)
+	NotpaidFrame.$(OBJEXT) LogFrame.$(OBJEXT) ReportFrame.$(OBJEXT) \
+	EmployeesFrame.$(OBJEXT) verifiers.$(OBJEXT) \
+	icons.$(OBJEXT) MSGWin.$(OBJEXT) main.$(OBJEXT)
 cclfox_OBJECTS = $(am_cclfox_OBJECTS)
 cclfox_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
@@ -227,12 +228,18 @@ TarifFrame.cpp \
 TarifFrame.h \
 MembersFrame.cpp \
 MembersFrame.h \
+EmployeesFrame.cpp \
+EmployeesFrame.h \
 NotpaidFrame.cpp \
 NotpaidFrame.h \
 LogFrame.cpp \
 LogFrame.h \
+ReportFrame.cpp \
+ReportFrame.h \
 verifiers.cpp \
 verifiers.h \
+MSGWin.cpp \
+MSGWin.h \
 icons.cpp \
 icons.h \
 cmds.h \
@@ -311,9 +318,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CashingFrame.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/LogFrame.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MembersFrame.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/EmployeesFrame.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/NotpaidFrame.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ProductsFrame.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/TarifFrame.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MSGWin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/icons.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/verifiers.Po@am__quote@

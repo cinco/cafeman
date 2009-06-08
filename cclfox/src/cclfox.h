@@ -11,10 +11,14 @@
 # define N_(String) (String)
 #endif
 
-#define USERSTOP	(1<<16)	// The session was stoped by the client?
-#define ALLOWUSERLOGIN	(1<<17)	// Allow the user to start the session?
-#define CLIENT_DELETED	(1<<18) // This client was deleted
+#define TIMER_VERSION    1.0
+#define USERSTOP	 (1<<16)	// The session was stoped by the client?
+#define ALLOWUSERLOGIN	 (1<<17)	// Allow the user to start the session?
+#define CLIENT_DELETED	 (1<<18) // This client was deleted
 #define ALLOWMEMBERLOGIN (1<<19)// Allow members to start the session?
+#define ENABLEASSIST     (1<<20)// Allow members to start the session?
+#define CLIENT_CONNECTED (1<<21) // client is connected
+
 
 #define NOTPAID		0
 #define PAID		(1<<0)

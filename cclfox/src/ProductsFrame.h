@@ -14,6 +14,10 @@ protected:
   FXButton	*addbycodebtn;
   FXButton	*newsalebtn;
   FXButton	*completesalebtn;
+  FXButton      *newbtn;
+  FXButton      *delbtn;
+  FXButton      *editbtn;
+  FXButton      *stockbtn;
 protected:
   bool		 onsale;
   struct sale_item {
@@ -33,6 +37,8 @@ public:
   void delProduct(int id);
   void updateClientProducts(int client);
   void updateSaleProducts();
+  void noPermInfo();
+  void setPerms(long perm);
 public:
   long onNewProduct(FXObject*,FXSelector,void*);
   long onDelProduct(FXObject*,FXSelector,void*);

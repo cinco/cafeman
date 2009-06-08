@@ -39,3 +39,16 @@ extern const unsigned char swap_gif[];
 /* created by reswrap from file time.gif */
 extern const unsigned char time_gif[];
 
+/* created by reswrap from file delbtn.gif */
+extern const unsigned char delbtn[];
+
+/* created by reswrap from file emplogbtn.gif */
+extern const unsigned char emplogbtn[];
+
+/* created by reswrap from file msgbtn.gif */
+extern const unsigned char msgbtn[];
+
+/* created by reswrap from file newbtn.gif */
+extern const unsigned char newbtn[];
+
+

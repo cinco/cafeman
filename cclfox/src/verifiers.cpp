@@ -1,6 +1,12 @@
 #include <fox-1.6/fx.h>
 #include <fox-1.6/FXRex.h>
 
+#include "EmployeesFrame.h"
+
+//#define DEBUG 1
+
+extern EmpInfo e_inf;
+
 int
 isDate(char *string)
 {
@@ -32,4 +38,13 @@ isPrice(char *string)
     return 0;
 
   return 1;
+}
+
+int
+isPermitted(unsigned long perm)
+{
+#ifdef DEBUG
+  printf("isPermitted(): lvl=%08X perm = %08X\n", e_inf.lvl, perm);
+#endif
+  return (e_inf.lvl & perm);
 }

@@ -45,7 +45,10 @@ public:
   int getSession();
   void setProductsSale(void* sale_products);
   void setSession(int session,FXbool forcashing = TRUE);
+  void noPermInfo();
+  void setPerms(long perm);
   void clear();
+
 private:
   FXString generateSessionTicket(double taxpercent,double &owed_products,
 				 double &owed_terminal);

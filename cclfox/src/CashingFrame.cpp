@@ -6,7 +6,9 @@ using namespace FX;
 #include "CashingFrame.h"
 #include "ProductsFrame.h"
 #include "NotpaidFrame.h"
+#include "verifiers.h"
 #include "CCLWin.h"
+#include "EmployeesFrame.h"
 
 static FXuint
 minusTax(FXuint price,double tax)
@@ -51,12 +53,12 @@ FXDEFMAP(CashingFrame) CashingFrameMap[] =
   FXMAPFUNC(SEL_COMMAND,CashingFrame::ID_CANCELSALE,CashingFrame::onCancelSale),
   FXMAPFUNC(SEL_COMMAND,CashingFrame::ID_EDITMEMBER,CashingFrame::onEditMember),
   FXMAPFUNC(SEL_COMMAND,CashingFrame::ID_EDITPRICE,CashingFrame::onEditPrice),
-  FXMAPFUNC(SEL_COMMAND,CashingFrame::ID_PRINTTICKETCHECK,
-	    CashingFrame::onPrintTicketCheck),
+  //FXMAPFUNC(SEL_COMMAND,CashingFrame::ID_PRINTTICKETCHECK,
+  //	    CashingFrame::onPrintTicketCheck),
   FXMAPFUNC(SEL_COMMAND,CashingFrame::ID_SENDCODE, CashingFrame::onSendCode),
   FXMAPFUNC(SEL_COMMAND,CashingFrame::ID_DISCOUNT,CashingFrame::onDiscount),
-  FXMAPFUNC(SEL_COMMAND,CashingFrame::ID_TICKETEDIT,
-	    CashingFrame::onTicketEdit),
+  //FXMAPFUNC(SEL_COMMAND,CashingFrame::ID_TICKETEDIT,
+  //	    CashingFrame::onTicketEdit),
   FXMAPFUNC(SEL_COMMAND,CashingFrame::ID_CALCCHANGE,CashingFrame::onCalcChange)
 };
 
@@ -66,6 +68,39 @@ FXIMPLEMENT(CashingFrame,FXVerticalFrame,CashingFrameMap,
 extern CCLWin *mainwin;
 extern ProductsFrame *productsframe;
 extern NotpaidFrame *notpaidframe;
+
+void
+CashingFrame::noPermInfo()
+{
+    FXMessageBox::error(this,MBOX_OK,_("Permission"),
+			_("Unable to access this feature.\n Contact the Administrator"));
+    return;
+}
+
+void 
+CashingFrame::setPerms(long perm)
+{
+  cancelsalebutton->enable();
+  if (!isPermitted(PERMCASHCANCEL)){
+    cancelsalebutton->disable();
+  }
+  okbutton->enable();
+  if (!isPermitted(PERMCASHRECEIVE)){
+    okbutton->disable();
+  }
+  discountsp->enable();
+  if (!isPermitted(PERMCASHDISCOUNT)){
+    discountsp->disable();
+  }
+  editprice->enable();
+  if (!isPermitted(PERMCASHEDIT)){
+    editprice->disable();
+  }
+  editmember->enable();
+  if (!isPermitted(PERMMBREDIT)){
+    editmember->disable();
+  }
+}
 
 CashingFrame::CashingFrame(FXComposite * parent)
 :FXVerticalFrame(parent,LAYOUT_FILL_X|LAYOUT_FILL_Y|FRAME_SUNKEN,
@@ -80,7 +115,7 @@ CashingFrame::CashingFrame(FXComposite * parent)
 
   FXHorizontalFrame *hframe2 =
     new FXHorizontalFrame(this,LAYOUT_FILL_X,0,0,0,0,4,4,0,0,5,0);
-  new FXLabel(hframe2,_("Workstation time:"));
+  new FXLabel(hframe2,_("Browse Time:"));
   timeprice = new FX7Segment(hframe2,"-.--",FRAME_SUNKEN);
   timeprice->setCellHeight(14);
   timeprice->setCellWidth(10);
@@ -107,7 +142,7 @@ CashingFrame::CashingFrame(FXComposite * parent)
   clprodlist->appendHeader(_("Name"),NULL,160);
   clprodlist->appendHeader(_("Amount"),NULL,60);
   clprodlist->appendHeader(_("Price"),NULL,60);
-  new FXLabel(this,_("Time intervals:"));
+  new FXLabel(this,_("Time Interval:"));
 
   FXVerticalFrame *intervalsframe =
     new FXVerticalFrame(this,FRAME_SUNKEN|LAYOUT_FILL_X|LAYOUT_FILL_Y,
@@ -116,11 +151,11 @@ CashingFrame::CashingFrame(FXComposite * parent)
 				    FOLDINGLIST_SINGLESELECT|LAYOUT_FILL_X|
 				    LAYOUT_FILL_Y);
   timeintervals->appendHeader(_("Start"),NULL,210);
-  timeintervals->appendHeader(_("Time"),NULL,60);
+  timeintervals->appendHeader(_("Duration"),NULL,60);
 
   FXHorizontalFrame *hframe4 =
     new FXHorizontalFrame(this,LAYOUT_FILL_X,0,0,0,0,4,4,0,0,5,0);
-  new FXLabel(hframe4,_("Total time:"));
+  new FXLabel(hframe4,_("Total Duration:"));
   totaltime = new FX7Segment(hframe4,"--:--",FRAME_SUNKEN);
   totaltime->setCellHeight(14);
   totaltime->setCellWidth(10);
@@ -129,7 +164,7 @@ CashingFrame::CashingFrame(FXComposite * parent)
 
   FXHorizontalFrame *hframe5 =
     new FXHorizontalFrame(this,LAYOUT_FILL_X,0,0,0,0,4,4,0,0,5,0);
-  new FXLabel(hframe5,_("Total price:"));
+  new FXLabel(hframe5,_("Total Amount:"));
   totalprice = new FX7Segment(hframe5,"-.--",FRAME_SUNKEN);
   totalprice->setCellHeight(14);
   totalprice->setCellWidth(10);
@@ -148,21 +183,21 @@ CashingFrame::CashingFrame(FXComposite * parent)
   cancelbutton = new FXButton(hframe6,_("Log as cancelled"),NULL,this,
 			      ID_CANCEL,FRAME_RAISED|FRAME_THICK);
   cancelsalebutton = new FXButton(hframe6,_("Cancel sale"),NULL,this,
-				  ID_CANCELSALE,FRAME_RAISED|FRAME_THICK);
+				  ID_CANCELSALE,FRAME_RAISED|FRAME_THICK|LAYOUT_RIGHT);
 
   FXHorizontalFrame *hframe7 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
-  printticketcb = new FXCheckButton(hframe7,_("Print ticket"),this,
-				    ID_PRINTTICKETCHECK);
-  sendcodebutton = new FXButton(hframe7,_("Open cash register"),NULL,this,
-				ID_SENDCODE);
+  //printticketcb = new FXCheckButton(hframe7,_("Print ticket"),this,
+  //  				    ID_PRINTTICKETCHECK);
+  //sendcodebutton = new FXButton(hframe7,_("Open cash register"),NULL,this,
+  //  				ID_SENDCODE);
   if (getApp()->reg().readIntEntry("CASHING","print",0))
     printticketcb->setCheck(TRUE);
 
   new FXHorizontalSeparator(this);
 
   FXHorizontalFrame *hframe8 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
-  editticket = new FXButton(hframe8,_("Edit ticket format"),NULL,this,
-			    ID_TICKETEDIT,FRAME_RAISED|FRAME_THICK);
+  //editticket = new FXButton(hframe8,_("Edit ticket format"),NULL,this,
+  //			    ID_TICKETEDIT,FRAME_RAISED|FRAME_THICK);
   calcchangebutton = new FXButton(hframe8,_("Calculate change"),NULL,this,
 				  ID_CALCCHANGE);
 
@@ -303,7 +338,7 @@ CashingFrame::setSession(int session,FXbool forcashing)
     time_t etime = intervals[i * 2 + 1];
     char ststr[64];
 
-    strftime(ststr,64,"%H:%M:%S -- %d/%m/%Y",localtime(&stime));
+    strftime(ststr,64,"%d/%m/%Y  %H:%M:%S",localtime(&stime));
     snprintf(buf,256,"%s\t%.2d:%.2d:%.2d",ststr,(etime - stime) / 3600,
 	     ((etime - stime) % 3600) / 60,((etime - stime) % 3600) % 60);
     timeintervals->prependItem(NULL,buf,NULL,NULL,NULL);
@@ -605,14 +640,19 @@ CashingFrame::printTicket()
 long
 CashingFrame::onCash(FXObject*,FXSelector,void*)
 {
+  if (!isPermitted(PERMCASHRECEIVE)){
+    noPermInfo();
+    return 0;
+  }
+
   if (-1 != csession) {
-    if (0 == csession) {
+    if (0 == csession) { //cashing non-client purchase
       for (int i = 0; 0 < products[i].id; i++) {
 	int id;
 	
 	id = CCL_product_sell(products[i].id,products[i].amount,
 			      applyDiscount(products[i].price,discount),
-			      (discount > 0.001) ? PAID|WITH_DISCOUNT : PAID);
+			      (discount > 0.001) ? PAID|WITH_DISCOUNT : PAID, e_inf.empID);
 	if (discount > 0.001)
 	  CCL_data_set_int(CCL_DATA_LOGPRODUCT,id,"discount",
 			   products[i].price - applyDiscount(products[i].price,
@@ -621,9 +661,10 @@ CashingFrame::onCash(FXObject*,FXSelector,void*)
 	productsframe->delProduct(products[i].id);
 	productsframe->addProduct(products[i].id);
       }
-    } else {
+    } else {  // cashing client purchases and terminal fees
       CCL_client_flags_toggle(cclient,USERSTOP,FALSE);
       mainwin->updateClientIcon(cclient);
+      mainwin->unBlockClient(cclient);
       CCL_log_session_set_price(csession,applyDiscount(cprice,discount));
       CCL_log_session_set_flags(csession,
 				(discount > 0.001) ? PAID|WITH_DISCOUNT
@@ -655,9 +696,8 @@ CashingFrame::onCash(FXObject*,FXSelector,void*)
       CCL_free(pe);
     }
 
-    if (printticketcb->getCheck()) printTicket();
-
-    onSendCode(NULL,0,NULL);
+    //if (printticketcb->getCheck()) printTicket();
+    //onSendCode(NULL,0,NULL);
   }
 
   clear();
@@ -668,9 +708,15 @@ CashingFrame::onCash(FXObject*,FXSelector,void*)
 long
 CashingFrame::onCancel(FXObject*,FXSelector,void*)
 {
+  if (!isPermitted(PERMCASHCANCEL)){
+    noPermInfo();
+    return 0;
+  }
+
   if (csession != -1) {
     CCL_client_flags_toggle(cclient,USERSTOP,FALSE);
     mainwin->updateClientIcon(cclient);
+    mainwin->unBlockClient(cclient);
     CCL_log_session_set_price(csession,cprice);
     CCL_log_session_set_flags(csession,CANCELED);
     notpaidframe->readNotPaid();
@@ -684,6 +730,11 @@ CashingFrame::onCancel(FXObject*,FXSelector,void*)
 long
 CashingFrame::onCancelSale(FXObject*,FXSelector,void*)
 {
+  if (!isPermitted(PERMCASHRECEIVE)){
+    noPermInfo();
+    return 0;
+  }
+
   clear();
 
   return 1;
@@ -692,11 +743,15 @@ CashingFrame::onCancelSale(FXObject*,FXSelector,void*)
 long
 CashingFrame::onEditMember(FXObject*,FXSelector,void*)
 {
+  if (!isPermitted(PERMCASHEDIT)){
+    noPermInfo();
+    return 0;
+  }
   if (csession != -1) {
     int newmember = cmember;
 
     if (FXInputDialog::getInteger(newmember,this,_("Change member"),
-				  _("Insert the member ID (0 for none):"),
+				  _("Enter the member ID (0 for none):"),
 				  NULL,0,999999)
 	&& (CCL_member_exists(newmember) || newmember == 0)) {
       char buf[256];
@@ -721,6 +776,7 @@ CashingFrame::onEditMember(FXObject*,FXSelector,void*)
       if (newmember != 0 && 0 != CCL_member_tarif_get(newmember)) {
 	oldtarif = CCL_tarif_get();
 	CCL_tarif_set(CCL_member_tarif_get(newmember));
+	perminafter = CCL_perminafter_get();
       }
      
       // Sum the time
@@ -763,11 +819,16 @@ CashingFrame::onEditMember(FXObject*,FXSelector,void*)
 long
 CashingFrame::onEditPrice(FXObject*,FXSelector,void*)
 {
+  if (!isPermitted(PERMCASHEDIT)){
+    noPermInfo();
+    return 0;
+  }
+
   if (csession != -1) {
     double newprice = cprice / 100.0;
 
     if (FXInputDialog::getReal(newprice,this,_("New price"),
-			       _("Insert the new price:"),NULL,0,999999)) {
+			       _("Enter the new price:"),NULL,0,999999)) {
       char buf[64];
       double newtotalprice = newprice + cpprice / 100.0;
 
@@ -812,6 +873,11 @@ CashingFrame::onDiscount(FXObject*,FXSelector,void *ptr)
 {
   char buf[64];
   double newtotalprice;
+
+  if (!isPermitted(PERMCASHDISCOUNT)){
+    noPermInfo();
+    return 0;
+  }
 
   discount = *(double*)ptr;
   newtotalprice = applyDiscount(cprice + cpprice,discount) / 100.0;

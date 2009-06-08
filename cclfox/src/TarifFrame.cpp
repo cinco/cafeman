@@ -7,6 +7,8 @@ using namespace FX;
 #include "TarifFrame.h"
 #include "verifiers.h"
 
+//#define DEBUG 1
+
 FXDEFMAP(TarifFrame) TarifFrameMap[] =
 {
   FXMAPFUNC(SEL_COMMAND,TarifFrame::ID_ADDPART,TarifFrame::onAddPart),
@@ -16,7 +18,7 @@ FXDEFMAP(TarifFrame) TarifFrameMap[] =
   FXMAPFUNC(SEL_COMMAND,TarifFrame::ID_DELPRICE,TarifFrame::onDelPrice),
   FXMAPFUNC(SEL_COMMAND,TarifFrame::ID_CHECKVALID,TarifFrame::checkValid),
   FXMAPFUNC(SEL_SELECTED,TarifFrame::ID_PARTLIST,TarifFrame::onPartSelect),
-  FXMAPFUNC(SEL_COMMAND,TarifFrame::ID_PERMIN,TarifFrame::onPerminSet),
+  //  FXMAPFUNC(SEL_COMMAND,TarifFrame::ID_PERMIN,TarifFrame::onPerminSet),
   FXMAPFUNC(SEL_VERIFY,TarifFrame::ID_CHECKVALID,TarifFrame::onVerify),
   FXMAPFUNC(SEL_COMMAND,TarifFrame::ID_SETTARIF,TarifFrame::onSetTarif),
   FXMAPFUNC(SEL_COMMAND,TarifFrame::ID_NEWTARIF,TarifFrame::onNewTarif),
@@ -31,22 +33,24 @@ TarifFrame::TarifFrame(FXComposite * parent)
 		0,0,0,0,0,0,0,0,0,0)
 {
   FXHorizontalFrame *hframe0 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
-  new FXLabel(hframe0,_("Fractioned after"));
+  new FXLabel(hframe0,_("Fraction After"));
   perminafter = new FXSpinner(hframe0,4,this,ID_PERMIN,
 			      FRAME_SUNKEN|FRAME_THICK);
   perminafter->setRange(0,60*24*7);
-  perminafter->setValue(CCL_data_get_int(CCL_DATA_NONE,0,
-					 "tarif/perminafter",60));
+  //perminafter->setValue(CCL_data_get_int(CCL_DATA_NONE,0,
+  //					 "tarif/perminafter",10));
 
   new FXHorizontalSeparator(this);
   new FXLabel(hframe0,_("minutes."));
   new FXHorizontalSeparator(this);
   FXHorizontalFrame *nameframe =
     new FXHorizontalFrame(this,LAYOUT_FILL_X);
-  new FXLabel(nameframe,_("Tarif's name:"));
+  new FXLabel(nameframe,_("Tariff Name:"));
   tnametf = new FXTextField(nameframe,15,this,ID_TARIFNAME,TEXTFIELD_NORMAL);
   // TODO: setname
 
+  settarif = new FXButton(nameframe,_("Set Tariff"),NULL,this,ID_SETTARIF,
+			  FRAME_RAISED|FRAME_THICK);
   FXVerticalFrame *tarifframe =
     new FXVerticalFrame(this,FRAME_SUNKEN|LAYOUT_FILL_X|LAYOUT_FILL_Y,
 			0,0,0,0,0,0,0,0);
@@ -57,8 +61,8 @@ TarifFrame::TarifFrame(FXComposite * parent)
   tariflist->appendHeader(_("Days"),NULL,200);
   FXHorizontalFrame *hframe1 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
 
-  settarif = new FXButton(hframe1,_("Set Tarif"),NULL,this,ID_SETTARIF,
-			  FRAME_RAISED|FRAME_THICK);
+  //settarif = new FXButton(hframe1,_("Set Tariff"),NULL,this,ID_SETTARIF,
+  //			  FRAME_RAISED|FRAME_THICK);
   addpart = new FXButton(hframe1,_("Add"),NULL,this,ID_ADDPART,
 			 FRAME_RAISED|FRAME_THICK);
   delpart = new FXButton(hframe1,_("Delete"),NULL,this,ID_DELPART,
@@ -68,21 +72,25 @@ TarifFrame::TarifFrame(FXComposite * parent)
   newtarif = new FXButton(hframe1,_("New"),NULL,this,
 			  ID_NEWTARIF,FRAME_RAISED|FRAME_THICK);
   new FXHorizontalSeparator(this);
-  new FXLabel(this,_("Edition:"),NULL,LAYOUT_CENTER_X);
+  new FXLabel(this,_("Tariff Elements"),NULL,LAYOUT_CENTER_X);
   new FXHorizontalSeparator(this);
   FXHorizontalFrame *hframe2 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
-  new FXLabel(hframe2,_("Price per hour:"));
+  new FXLabel(hframe2,_("Start Time:"));
 
-  hpricetf = new FXTextField(hframe2,10,this,ID_CHECKVALID,
-			     TEXTFIELD_REAL|TEXTFIELD_NORMAL);
-  FXHorizontalFrame *hframe3 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
-  new FXLabel(hframe3,_("Start time:"));
-
-  stimetf = new FXTextField(hframe3,5,this,ID_CHECKVALID,
+  stimetf = new FXTextField(hframe2,5,this,ID_CHECKVALID,
 			    TEXTFIELD_NORMAL|TEXTFIELD_LIMITED);
+  FXHorizontalFrame *hframe3 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
+  new FXLabel(hframe3,_("Hourly Rate:"));
+
+  hpricetf = new FXTextField(hframe3,8,this,ID_CHECKVALID,
+			     TEXTFIELD_REAL|TEXTFIELD_NORMAL);
+  /*  new FXLabel(hframe3,_("Increment: "));
+
+  ipricetf = new FXTextField(hframe3,8,this,ID_CHECKVALID,
+  TEXTFIELD_NORMAL|TEXTFIELD_LIMITED);*/
   FXHorizontalFrame *hframe4 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
   new FXLabel(hframe4,_("Days:"));
-
+  
   daybtn[0] = new FXToggleButton(hframe4,_("Sun"),_("Sun"),NULL,NULL,
 				 this,ID_CHECKVALID,TOGGLEBUTTON_NORMAL|
 				 TOGGLEBUTTON_KEEPSTATE);
@@ -116,10 +124,10 @@ TarifFrame::TarifFrame(FXComposite * parent)
   pricelist->appendHeader(_("Price"),NULL,120);
   FXHorizontalFrame *hframe5 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
 
-  addprice = new FXButton(hframe5,_("Add price"),NULL,this,ID_ADDPRICE,
+  addprice = new FXButton(hframe5,_("Add Price"),NULL,this,ID_ADDPRICE,
 			  FRAME_RAISED|FRAME_THICK);
-  delprice = new FXButton(hframe5,_("Delete price"),NULL,this,ID_DELPRICE,
-			  FRAME_RAISED|FRAME_THICK);
+  delprice = new FXButton(hframe5,_("Delete Price"),NULL,this,ID_DELPRICE,
+			  FRAME_RAISED|FRAME_THICK|LAYOUT_LEFT);
   editedpart = 0;
   clear();
 }
@@ -138,24 +146,24 @@ void
 TarifFrame::readTarif()
 {
   int id;
-  FXuint hr;
-  FXuint min;
-  FXuint days;
+  FXuint hr, min, days, fafter;
+  int firstid = -1;
+ 
   int tarif = CCL_tarif_get();
-  const char *name = CCL_data_get_string(CCL_DATA_TARIF,tarif,"name",NULL);
+  //const char *name = CCL_data_get_string(CCL_DATA_TARIF,tarif,"name",NULL);
+  char *name = CCL_tarif_name_get(tarif);
   const char *daynames[] = {
     N_("Sun"),N_("Mon"),N_("Tue"),N_("Wed"),N_("Thu"),N_("Fri"),N_("Sat")
   };
-
   tariflist->clearItems();
-  
   tnametf->setText(name);
-
+  //perminafter->setValue(fafter);
   for (FXuint i = 0; -1 != (id = CCL_tarifpart_get_nth(i)); i++) {
     char buf[128];
     FXString daysstr = "";
 
-    CCL_tarifpart_info_get(id,&hr,&min,&days,NULL);
+    if (i == 0) firstid = id;
+    CCL_tarifpart_info_get(id,&hr,&min,&days,NULL,NULL);
     for (int j = 0; j < 7; j++) {
       if (days & (1 << j)) {
 	daysstr += _(daynames[j]);
@@ -166,26 +174,35 @@ TarifFrame::readTarif()
     snprintf(buf,128,"%.2u:%.2u\t%s",hr,min,daysstr.text());
     tariflist->appendItem(NULL,buf,NULL,NULL,(void *)id);
   }
-
+  CCL_free(name);
+  if (firstid >= 0) {  //set perminafter 
+    perminafter->setValue(CCL_tarifpart_fafter_get(firstid));
+    CCL_perminafter_set(perminafter->getValue());
+    CCL_data_set_int(CCL_DATA_NONE,0,"tarif/perminafter",CCL_perminafter_get());
+  }
 }
 
 void
 TarifFrame::readTarifPart(int id)
 {
-  FXuint hr;
-  FXuint min;
-  FXuint days;
-  FXuint hprice;
+  FXuint hr, min, days, hprice, fafter, iprice;
 
-  if (!CCL_tarifpart_info_get(id,&hr,&min,&days,&hprice))
+  if (!CCL_tarifpart_info_get(id,&hr,&min,&days,&hprice,&iprice))
     return;
-
+  fafter = CCL_tarifpart_fafter_get(id);
+  
   char buf[128];
 
   snprintf(buf,128,"%.2u:%.2u",hr,min);
   stimetf->setText(buf);
   snprintf(buf,128,"%.2f",hprice / 100.0);
   hpricetf->setText(buf);
+  snprintf(buf,128,"%.2f",iprice);
+  //ipricetf->setText(buf);
+
+  //perminafter->setValue(fafter);
+  //CCL_perminafter_set(fafter);
+  //CCL_data_set_int(CCL_DATA_NONE,0,"tarif/perminafter",fafter);
 
   for (int i = 0; i < 7; i++) {
     if (days & (1 << i))
@@ -212,6 +229,7 @@ TarifFrame::clear()
     daybtn[i]->setState(FALSE);
   hpricetf->setText("0.00");
   stimetf->setText("00:00");
+  //ipricetf->setText("0.00");
 }
 
 long
@@ -225,8 +243,10 @@ TarifFrame::checkValid(FXObject*,FXSelector,void*)
     if (daybtn[i]->getState())
       dayset = TRUE;
 
-  if (price.match(hpricetf->getText()) && time.match(stimetf->getText())
-      && dayset) {
+  if (price.match(hpricetf->getText()) && 
+      /*price.match(ipricetf->getText()) && */
+      time.match(stimetf->getText()) && 
+      dayset) {
     addpart->enable();
     applychanges->enable();
   } else {
@@ -237,6 +257,51 @@ TarifFrame::checkValid(FXObject*,FXSelector,void*)
   return 1;
 }
 
+void
+TarifFrame::noPermInfo()
+{
+    FXMessageBox::error(this,MBOX_OK,_("Permission"),
+			_("Unable to access this feature.\n Contact the Administrator"));
+    return;
+}
+
+void 
+TarifFrame::setPerms(long perm)
+{
+  
+  if (!isPermitted(PERMTARIFEDIT)){
+    perminafter->disable();
+    tnametf->disable();
+    addpart->disable();
+    delpart->disable();
+    newtarif->disable();
+    hpricetf->disable();
+    stimetf->disable();
+    addprice->disable();
+    delprice->disable();
+    //ipricetf->disable();
+  }
+  else{
+    perminafter->enable();
+    tnametf->enable();
+    addpart->enable();
+    delpart->enable();
+    newtarif->enable();
+    hpricetf->enable();
+    stimetf->enable();
+    addprice->enable();
+    delprice->enable();    
+    //ipricetf->enable();
+  }
+
+  if (!isPermitted(PERMTARIFSELECT)){
+    settarif->disable();
+  }
+  else{
+    settarif->enable();
+  }
+}
+
 long
 TarifFrame::onAddPart(FXObject*,FXSelector,void*)
 {
@@ -245,21 +310,29 @@ TarifFrame::onAddPart(FXObject*,FXSelector,void*)
   FXuint days = 0;
   FXuint hprice = 0;
   double hprice_d = 0.0;
+  FXuint iprice = 0;
+  double iprice_d = 0.0;
 
+  if (!isPermitted(PERMTARIFEDIT)){
+    noPermInfo();
+    return 0;
+  }
   sscanf(stimetf->getText().text(),"%u:%u",&hr,&min);
   sscanf(hpricetf->getText().text(),"%lf",&hprice_d);
+  //sscanf(ipricetf->getText().text(),"%lf",&iprice_d);
   hprice = (FXuint) (hprice_d * 100);
+  iprice = (FXuint) (iprice_d * 100);
   for (int i = 0; i < 7; i++)
     if (daybtn[i]->getState())
       days |= (1 << i);
 
   if (!days) {
-    FXMessageBox::error(this,MBOX_OK,_("No days where selected"),
+    FXMessageBox::error(this,MBOX_OK,_("No days were selected"),
 			_("There isn't any selected day."));
     return 1;
   }
 
-  int id = CCL_tarifpart_new(hr,min,days,hprice);
+  int id = CCL_tarifpart_new(hr,min,days,hprice,iprice);
 
   if (-1 != id) {
     FXuint mins = 0;
@@ -284,7 +357,7 @@ TarifFrame::onAddPart(FXObject*,FXSelector,void*)
 	daybtn[i]->setState(FALSE);
 
     FXMessageBox::error(this,MBOX_OK,_("Conflict"),
-			_("There is a conflict with another part of the tarif.\nI have deselected the conflicting days."));
+			_("There is a conflict with another part of the tariff.\nConflicting day(s) have been deselected."));
   }
 
   return 1;
@@ -296,6 +369,10 @@ TarifFrame::onDelPart(FXObject*,FXSelector,void*)
   int id;
   FXFoldingItem *current = tariflist->getCurrentItem();
 
+  if (!isPermitted(PERMTARIFEDIT)){
+    noPermInfo();
+    return 0;
+  }
   if (current)
     id = (int) (tariflist->getItemData(current));
   else
@@ -315,18 +392,32 @@ TarifFrame::onApplyChanges(FXObject*,FXSelector,void*)
   FXuint min = 0;
   FXuint days = 0;
   FXuint hprice = 0;
+  FXuint iprice = 0;
+  FXuint fafter = 0;
   double hprice_d = 0.0;
+  double iprice_d = 0.0;
+
+  if (!isPermitted(PERMTARIFEDIT)){
+    noPermInfo();
+    return 0;
+  }
 
   sscanf(stimetf->getText().text(),"%u:%u",&hr,&min);
   sscanf(hpricetf->getText().text(),"%lf",&hprice_d);
+  //sscanf(ipricetf->getText().text(),"%lf",&iprice_d);
+  fafter = perminafter->getValue();
+#ifdef DEBUG
+  printf("Fractioned after [ %d ] mins\n", fafter);
+#endif
   hprice = (FXuint) (hprice_d * 100);
+  iprice = (FXuint) (iprice_d * 100);
   for (int i = 0; i < 7; i++)
     if (daybtn[i]->getState())
       days |= (1 << i);
 
   if (!days) {
-    FXMessageBox::error(this,MBOX_OK,_("No days where selected"),
-			_("There isn't any selected day."));
+    FXMessageBox::error(this,MBOX_OK,_("No day was selected"),
+			_("Please select a day."));
     return 1;
   }
   FXuint conflicts = 0;
@@ -338,9 +429,11 @@ TarifFrame::onApplyChanges(FXObject*,FXSelector,void*)
     double price_d = 0.0;
     FXFoldingItem *item = pricelist->getFirstItem();
 
+    CCL_tarifpart_fafter_set(editedpart, fafter);
     CCL_tarifpart_days_set(editedpart,days);
     CCL_tarifpart_stime_set(editedpart,hr,min);
     CCL_tarifpart_hourprice_set(editedpart,hprice);
+    CCL_tarifpart_incprice_set(editedpart,iprice);
     CCL_tarifpart_price_clear(editedpart);
 
     while (item) {
@@ -357,7 +450,7 @@ TarifFrame::onApplyChanges(FXObject*,FXSelector,void*)
 	daybtn[i]->setState(FALSE);
 
     FXMessageBox::error(this,MBOX_OK,_("Conflict"),
-			_("There is a conflict with another part of the tarif.\nI have deselected the conflicting days."));
+			_("There is a conflict with another part of the tariff.\nI have deselected the conflicting days."));
   }
 
   return 1;
@@ -408,6 +501,12 @@ TarifFrame::onDelPrice(FXObject*,FXSelector,void*)
 {
   FXFoldingItem *current = pricelist->getCurrentItem();
 
+  if (!isPermitted(PERMTARIFEDIT)){
+    noPermInfo();
+    return 0;
+  }
+
+
   if (current) {
     pricelist->removeItem(current);
   }
@@ -452,6 +551,10 @@ TarifFrame::onVerify(FXObject* sender,FXSelector,void* ptr)
 long
 TarifFrame::onSetTarif(FXObject*,FXSelector,void*)
 {
+  if (!isPermitted(PERMTARIFSELECT)){
+    noPermInfo();
+    return 0;
+  }
   int tarif = CCL_tarif_get();
   FXDialogBox dlg(this,_("Tarif"));
   FXVerticalFrame *vframe =
@@ -473,7 +576,8 @@ TarifFrame::onSetTarif(FXObject*,FXSelector,void*)
     const char *name = NULL;
     char buf[256];
 
-    name = CCL_data_get_string(CCL_DATA_TARIF,t,"name",NULL);
+    //name = CCL_data_get_string(CCL_DATA_TARIF,t,"name",NULL);
+    name = CCL_tarif_name_get(t);
     snprintf(buf,256,"%d\t%s",t,name);
     CCL_free(name);
     tlist->appendItem(NULL,buf,NULL,NULL,(void*)t);
@@ -490,6 +594,7 @@ TarifFrame::onSetTarif(FXObject*,FXSelector,void*)
  
       CCL_tarif_set(starif);
       CCL_data_set_int(CCL_DATA_NONE,0,"tarif/default",starif);
+      //CCL_data_set_string(CCL_DATA_TARIF,0,"name",starif);
       readTarif();
     }
   }
@@ -500,11 +605,27 @@ TarifFrame::onSetTarif(FXObject*,FXSelector,void*)
 long
 TarifFrame::onNewTarif(FXObject*,FXSelector,void*)
 {
-  int tarif = CCL_tarif_new(0,0,127,0);
+  int tarif;
+  FXString name;
 
-  CCL_tarif_rebuild_all();
-  CCL_tarif_set(tarif);
-  readTarif();
+  if (!isPermitted(PERMTARIFEDIT)){
+    noPermInfo();
+    return 0;
+  }
+
+  if (FXInputDialog::getString(name,this,_("Use New Tariff"),
+			   _("Tariff Name:")) && name.length()) {
+    //write place-holder into file
+    tarif = CCL_tarif_new(0,0,127,6000,1,10, (char *)name.text());
+    //update tariffs in memory
+    CCL_tarif_rebuild_all();
+    CCL_tarif_set(tarif);
+    readTarif();
+  }
+  else if (!name.length()) {
+      FXMessageBox::error(this,MBOX_OK,_("Error"),
+			  _("Tariff Name is invalid."));
+  }
 
   return 1;
 }
@@ -515,6 +636,9 @@ TarifFrame::onTarifName(FXObject*,FXSelector,void*)
   FXString newname = tnametf->getText();
   int tarif = CCL_tarif_get();
 
+#ifdef DEBUG
+  printf("onTarifName() [%d] Tariff Name: %s\n", tarif, (char *)newname.text()); 
+#endif
   if (0 < newname.length())
     CCL_data_set_string(CCL_DATA_TARIF,tarif,"name",newname.text());
   else

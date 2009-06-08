@@ -4,18 +4,23 @@
 using namespace FX;
 
 #include "cclfox.h"
+#include "verifiers.h"
+#include "EmployeesFrame.h"
 #include "MembersFrame.h"
+
+/*#define DEBUG 1*/
 
 FXDEFMAP(MembersFrame) MembersFrameMap[] =
 {
   FXMAPFUNC(SEL_COMMAND,MembersFrame::ID_ADDMEMBER,MembersFrame::onAddMember),
   FXMAPFUNC(SEL_COMMAND,MembersFrame::ID_DELMEMBER,MembersFrame::onDelMember),
   FXMAPFUNC(SEL_COMMAND,MembersFrame::ID_APPLY,MembersFrame::onApplyChanges),
-  FXMAPFUNC(SEL_SELECTED,MembersFrame::ID_MEMBERSLIST,
-	    MembersFrame::onMemberSelect),
   FXMAPFUNC(SEL_COMMAND,MembersFrame::ID_SETTARIF,MembersFrame::onSetTarif),
+  FXMAPFUNC(SEL_COMMAND,MembersFrame::ID_ADDCREDIT,MembersFrame::onAddCredit),
+  FXMAPFUNC(SEL_COMMAND,MembersFrame::ID_REFUNDCREDIT,MembersFrame::onSubCredit),
   FXMAPFUNC(SEL_COMMAND,MembersFrame::ID_RESETPASS,MembersFrame::onResetPass),
-  FXMAPFUNC(SEL_CHANGED,MembersFrame::ID_FILTER,MembersFrame::onFilter)
+  FXMAPFUNC(SEL_CHANGED,MembersFrame::ID_FILTER,MembersFrame::onFilter),
+  FXMAPFUNC(SEL_SELECTED,MembersFrame::ID_MEMBERSLIST,MembersFrame::onMemberSelect)
 };
 
 FXIMPLEMENT(MembersFrame,FXVerticalFrame,MembersFrameMap,
@@ -35,50 +40,90 @@ MembersFrame::MembersFrame(FXComposite * parent)
   memberslist =
     new FXFoldingList(membersframe,this,ID_MEMBERSLIST,
 		      FOLDINGLIST_SINGLESELECT|LAYOUT_FILL_X|LAYOUT_FILL_Y);
-  memberslist->appendHeader(_("ID"),NULL,30);
-  memberslist->appendHeader(_("Member name"),NULL,200);
-  FXHorizontalFrame *hframe0 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
-  filtertf = new FXTextField(hframe0,40,this,ID_FILTER,TEXTFIELD_NORMAL);
+  memberslist->appendHeader(_("User ID"),NULL,50);
+  memberslist->appendHeader(_("Full Name"),NULL,200);
+  //FXHorizontalFrame *hframe0 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
+  //filtertf = new FXTextField(hframe0,40,this,ID_FILTER,TEXTFIELD_NORMAL);
   FXHorizontalFrame *hframe1 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
   addmember = new FXButton(hframe1,_("New"),NULL,this,ID_ADDMEMBER,
 			   FRAME_RAISED|FRAME_THICK);
   delmember = new FXButton(hframe1,_("Delete"),NULL,this,ID_DELMEMBER,
 			   FRAME_RAISED|FRAME_THICK);
-  applychanges = new FXButton(hframe1,_("Apply changes"),NULL,this,
+  settarif = new FXButton(hframe1,_(" Set Tariff "),NULL,this,ID_SETTARIF,
+			  FRAME_RAISED|FRAME_THICK);
+  applychanges = new FXButton(hframe1,_("Save Changes"),NULL,this,
 			      ID_APPLY,FRAME_RAISED|FRAME_THICK);
   new FXHorizontalSeparator(this);
-  new FXLabel(this,_("Edition:"),NULL,LAYOUT_CENTER_X);
+  new FXLabel(this,_("Member Details"),NULL,LAYOUT_CENTER_X);
   new FXHorizontalSeparator(this);
+
   FXHorizontalFrame *hframe2 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
   new FXLabel(hframe2,_("Name:"));
-  nametf = new FXTextField(hframe2,30,NULL,0,TEXTFIELD_NORMAL);
+  nametf = new FXTextField(hframe2,15,NULL,0,TEXTFIELD_NORMAL);
+  
+  creditlbl = new FXLabel(hframe2, _("Credit: "));
   FXHorizontalFrame *hframe3 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
-  new FXLabel(hframe3,_("E-Mail:"));
-  emailtf = new FXTextField(hframe3,30,NULL,0,TEXTFIELD_NORMAL);
-  FXHorizontalFrame *hframe4 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
-  new FXLabel(hframe4,_("Phone number:"));
-  phonetf = new FXTextField(hframe4,9,NULL,0,TEXTFIELD_NORMAL);
+  new FXLabel(hframe3,_("Login ID:"));
+  logintf = new FXTextField(hframe3,7,NULL,0,TEXTFIELD_NORMAL);
+  new FXLabel(hframe3,_("Phone"));
+  phonetf = new FXTextField(hframe3,12,NULL,0,TEXTFIELD_NORMAL);
+  //FXHorizontalFrame *hframe5 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
   FXHorizontalFrame *hframe5 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
-  new FXLabel(hframe5,_("Login name:"));
-  logintf = new FXTextField(hframe5,15,NULL,0,TEXTFIELD_NORMAL);
+  new FXLabel(hframe5,_("Email:"));
+  emailtf = new FXTextField(hframe5,30,NULL,0,TEXTFIELD_NORMAL);
+
   FXHorizontalFrame *hframe6 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
-  settarif = new FXButton(hframe6,_("Set tarif"),NULL,this,ID_SETTARIF,
+  addcredit = new FXButton(hframe6,_(" Add Credit "),NULL,this,ID_ADDCREDIT,
 			  FRAME_RAISED|FRAME_THICK);
-  resetpass = new FXButton(hframe6,_("Reset password"),NULL,this,ID_RESETPASS,
-			   FRAME_RAISED|FRAME_THICK);
+  refundcredit = new FXButton(hframe6,_("Refund Credit"),NULL,this,ID_REFUNDCREDIT,
+			  FRAME_RAISED|FRAME_THICK);
+  resetpass = new FXButton(hframe6,_("Reset Password"),NULL,this,ID_RESETPASS,
+			   FRAME_RAISED|FRAME_THICK|LAYOUT_RIGHT);
   editedmember = 0;
   tarifset = 0;
   clear();
 }
 
+
 MembersFrame::~MembersFrame()
 {
+
 }
 
 void
 MembersFrame::create()
 {
   FXVerticalFrame::create();
+}
+
+void 
+MembersFrame::setPerms(long perm)
+{
+  if (!isPermitted(PERMMBREDIT)){
+    addmember->disable();
+    delmember->disable();
+    applychanges->disable();
+    settarif->disable();
+    resetpass->disable();
+    addcredit->disable();
+    refundcredit->disable();
+  }
+  else{
+    addmember->enable();
+    delmember->enable();
+    applychanges->enable();
+    settarif->enable();
+    resetpass->enable();
+    addcredit->enable();
+    refundcredit->enable();
+  }
+
+  if (!isPermitted(PERMMBRALLOC)){
+    
+  }
+  else{
+    
+  }
 }
 
 void
@@ -108,6 +153,8 @@ MembersFrame::readAllMembers(const char * filter)
 void
 MembersFrame::readMember(int id)
 {
+  char buf[64];
+
   if (!CCL_member_exists(id))
     return;
 
@@ -115,6 +162,8 @@ MembersFrame::readMember(int id)
   nametf->setText(CCL_member_name_get(id));
   emailtf->setText(CCL_member_email_get(id));
   phonetf->setText(CCL_member_other_get(id));
+  snprintf(buf,64,"Credit: %.2f", (double)(CCL_member_credit_get(id)/100));
+  creditlbl->setText(buf);
 
   char *login_name = CCL_data_get_string(CCL_DATA_MEMBER,id,"login_name",NULL);
   logintf->setText(login_name);
@@ -129,6 +178,7 @@ MembersFrame::clear()
   nametf->setText("");
   emailtf->setText("");
   phonetf->setText("");
+  creditlbl->setText("");
 }
 
 long
@@ -138,7 +188,7 @@ MembersFrame::onAddMember(FXObject*,FXSelector,void*)
   
   if (FXInputDialog::getString(name,this,_("Add new member"),
 			   _("Type the name:")) && name.length()) {
-    int id = CCL_member_new(name.text());
+    int id = CCL_member_new(name.text(), e_inf.empID);
 
     if (-1 != id) {
       CCL_member_flags_toggle(id,MEMBER_DELETED,FALSE);
@@ -156,17 +206,18 @@ long
 MembersFrame::onDelMember(FXObject*,FXSelector,void*)
 {
   int id;
-  FXFoldingItem *current = memberslist->getCurrentItem();
 
+  FXFoldingItem *current = memberslist->getCurrentItem();
   if (current)
     id = (int) (memberslist->getItemData(current));
   else
     return 1;
-
-  clear();
-  CCL_member_flags_toggle(id,MEMBER_DELETED,TRUE);
-  memberslist->removeItem(current);
-
+  if (FXMessageBox::question(this,MBOX_YES_NO,_("Confirm"),
+			     _("Do you really want to delete this member?")) == MBOX_CLICKED_YES) {
+      clear();
+      CCL_member_flags_toggle(id,MEMBER_DELETED,TRUE);
+      memberslist->removeItem(current);
+  }
   return 1;
 }
 
@@ -195,6 +246,9 @@ MembersFrame::onApplyChanges(FXObject*,FXSelector,void*)
     mitem->setText(FXStringVal(editedmember) + "\t" + CCL_member_name_get(editedmember));
     memberslist->updateItem(mitem);
   }
+#ifdef DEBUG
+  printf("onApplyChanges(): Apply Changes Button was pressed\n");
+#endif
   
   return 1;
 }
@@ -217,7 +271,7 @@ long
 MembersFrame::onSetTarif(FXObject*,FXSelector,void*)
 {
   int tarif = tarifset;
-  FXDialogBox dlg(this,_("Tarif"));
+  FXDialogBox dlg(this,_("Tariff"));
   FXVerticalFrame *vframe =
     new FXVerticalFrame(&dlg,LAYOUT_FILL_X|LAYOUT_FILL_Y);
   FXVerticalFrame *tlistframe =
@@ -226,20 +280,21 @@ MembersFrame::onSetTarif(FXObject*,FXSelector,void*)
   FXFoldingList *tlist =
     new FXFoldingList(tlistframe,NULL,0,
 		      LAYOUT_FILL_X|LAYOUT_FILL_Y|FOLDINGLIST_SINGLESELECT);
-  new FXButton(vframe,_("Accept"),NULL,&dlg,FXDialogBox::ID_ACCEPT,
+  new FXButton(vframe,_("Select Tariff"),NULL,&dlg,FXDialogBox::ID_ACCEPT,
 	       FRAME_RAISED|FRAME_THICK);
 
   tlist->appendHeader(_("ID"),NULL,40);
   tlist->appendHeader(_("Name"),NULL,180);
   dlg.resize(250,200);
 
-  tlist->appendItem(NULL,_("0\tNo special tarif"),NULL,NULL,(void*)0);
+  tlist->appendItem(NULL,_("0\tNo special tariff"),NULL,NULL,(void*)0);
   
   for (int i = 0, t; -1 != (t = CCL_tarif_get_nth(i)); i++) {
     const char *name = NULL;
     char buf[256];
 
-    name = CCL_data_get_string(CCL_DATA_TARIF,t,"name",NULL);
+    //name = CCL_data_get_string(CCL_DATA_TARIF,t,"name",NULL);
+    name = CCL_tarif_name_get(t);
     snprintf(buf,256,"%d\t%s",t,name);
     CCL_free(name);
     tlist->appendItem(NULL,buf,NULL,NULL,(void*)t);
@@ -259,6 +314,61 @@ MembersFrame::onSetTarif(FXObject*,FXSelector,void*)
 }
 
 long
+MembersFrame::onAddCredit(FXObject*,FXSelector,void*)
+{
+  FXdouble  amount = 0.0;
+  int       id=0, retval;
+  char      buf[64];
+
+  FXFoldingItem *current = memberslist->getCurrentItem();
+  if (current)
+      id = (int) (memberslist->getItemData(current));
+  else
+      return 1;
+  if (FXInputDialog::getReal(amount,this,_("Add Member Credit"),
+			     _("Amount: ")) && amount >= 0) {
+    retval = CCL_pay_account(id, (int)(amount*100), e_inf.empID);
+    snprintf(buf,64,"Credit: %.2f",(double)(CCL_member_credit_get(id) / 100));
+    creditlbl->setText(buf);
+  }
+#ifdef DEBUG
+  printf("onAddCredit(): [ID=%d, emp=%d] %s\n", id, e_inf.empID, buf);
+#endif
+  return 1;
+}
+
+long
+MembersFrame::onSubCredit(FXObject*,FXSelector,void*)
+{
+  FXdouble  amount = 0.0;
+  int       id, retval;
+  char      buf[64];
+
+  FXFoldingItem *current = memberslist->getCurrentItem();
+  if (current)
+      id = (int) (memberslist->getItemData(current));
+  else
+      return 1;
+
+  if (current){
+    if (FXInputDialog::getReal(amount,this,_("Refund Member Credit"),
+			       _("Amount: ")) && amount >= 0) {
+      retval = CCL_pay_account(id, (int)(-amount*100), e_inf.empID);
+      if (retval < 0)
+	FXMessageBox::error(this, MBOX_OK, _("Error"), 
+			    _("Could not subtract the amount"));
+    }
+    snprintf(buf,64,"Credit: %.2f", (double)(CCL_member_credit_get(id)/100));
+    creditlbl->setText(buf);
+  }
+#ifdef DEBUG
+  printf("onSubCredit(): [current=%d] %s\n", id, buf);
+#endif
+
+  return 1;
+}
+
+long
 MembersFrame::onResetPass(FXObject*,FXSelector,void*)
 {
   FXuchar digest[CCL_MD5_DIGEST_LENGTH];
@@ -268,6 +378,10 @@ MembersFrame::onResetPass(FXObject*,FXSelector,void*)
   CCL_MD5((FXuchar*)password,strlen(password),digest);
   CCL_data_set_blob(CCL_DATA_MEMBER,editedmember,"password",digest,
 		    CCL_MD5_DIGEST_LENGTH);
+
+#ifdef DEBUG
+  printf("onResetPass(): [current=%d] %s\n", editedmember, password);
+#endif
 
   return 1;
 }

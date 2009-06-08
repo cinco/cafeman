@@ -10,12 +10,15 @@ protected:
   FXButton	 *resetpass;
   FXButton	 *addmember;
   FXButton	 *delmember;
+  FXButton	 *addcredit;
+  FXButton	 *refundcredit;
   FXButton	 *applychanges;
   FXFoldingList  *memberslist;
   FXTextField	 *nametf;
   FXTextField	 *emailtf;
   FXTextField	 *phonetf;
   FXTextField	 *logintf;
+  FXLabel        *creditlbl;
 private:
   int		  editedmember;
   int		  tarifset;
@@ -29,6 +32,7 @@ public:
   void readAllMembers(const char * filter = NULL);
   void readMember(int id);
   void clear();
+  void setPerms(long perm);
 public:
   long onAddMember(FXObject*,FXSelector,void*);
   long onDelMember(FXObject*,FXSelector,void*);
@@ -37,10 +41,13 @@ public:
   long onSetTarif(FXObject*,FXSelector,void*);
   long onFilter(FXObject*,FXSelector,void* ptr);
   long onResetPass(FXObject*,FXSelector,void*);
+  long onAddCredit(FXObject*,FXSelector,void*);
+  long onSubCredit(FXObject*,FXSelector,void*);
 public:
   enum {
-    ID_ADDMEMBER = FXVerticalFrame::ID_LAST,ID_DELMEMBER,ID_APPLY,
-    ID_CHECKVALID,ID_MEMBERSLIST,ID_SETTARIF,ID_FILTER,ID_RESETPASS,
+    ID_ADDMEMBER = FXVerticalFrame::ID_LAST, ID_DELMEMBER, ID_APPLY,
+    ID_CHECKVALID, ID_MEMBERSLIST, ID_SETTARIF, ID_FILTER,
+    ID_ADDCREDIT, ID_REFUNDCREDIT, ID_RESETPASS,
     ID_LAST
   };
 };

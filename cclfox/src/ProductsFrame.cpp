@@ -6,10 +6,48 @@ using namespace std;
 #include "cclfox.h"
 #include "ProductsFrame.h"
 #include "CashingFrame.h"
+#include "verifiers.h"
 #include "CCLWin.h"
 
 static void printTicket(const char *description, unsigned int amount);
 static void openCashRegister();
+
+
+void
+ProductsFrame::noPermInfo()
+{
+    FXMessageBox::error(this,MBOX_OK,_("Permission"),
+			_("Unable to access this feature.\n Contact the Administrator"));
+    return;
+}
+
+void 
+ProductsFrame::setPerms(long perm)
+{
+  if (!isPermitted(PERMPRODEDIT)){
+    newbtn->disable();
+    editbtn->disable();
+  }
+  else{
+    newbtn->enable();
+    editbtn->enable();
+  }
+  if (!isPermitted(PERMPRODSELL)){
+    newsalebtn->disable();
+    stockbtn->disable();
+  }
+  else{
+    newsalebtn->enable();
+    stockbtn->enable();
+  }
+
+  if (!isPermitted(PERMPRODSTOCK)){
+    stockbtn->disable();
+  }
+  else{
+    stockbtn->enable();
+  }
+}
 
 FXDEFMAP(ProductsFrame) ProductsFrameMap[] =
 {
@@ -27,9 +65,9 @@ FXDEFMAP(ProductsFrame) ProductsFrameMap[] =
 	    ProductsFrame::onAddProduct),
   FXMAPFUNC(SEL_DOUBLECLICKED,ProductsFrame::ID_CLPRODLIST,
 	    ProductsFrame::onSubProduct),
-  FXMAPFUNC(SEL_CHANGED,ProductsFrame::ID_CODE,ProductsFrame::onCodeChange),
+  /*  FXMAPFUNC(SEL_CHANGED,ProductsFrame::ID_CODE,ProductsFrame::onCodeChange),
   FXMAPFUNC(SEL_COMMAND,ProductsFrame::ID_ADDBYCODE,
-	    ProductsFrame::onAddByCode),
+  ProductsFrame::onAddByCode),*/
   FXMAPFUNC(SEL_COMMAND,ProductsFrame::ID_COMPLETESALE,
 	    ProductsFrame::onCompleteSale)
 };
@@ -54,19 +92,19 @@ ProductsFrame::ProductsFrame(FXComposite * parent)
 {
   ptoolbar = new FXToolBar(this,FRAME_RAISED|LAYOUT_TOP|LAYOUT_FILL_X);
 
-  new FXButton(ptoolbar,_("New"),NULL,this,ID_NEWPRODUCT,
+  newbtn = new FXButton(ptoolbar,_("New"),NULL,this,ID_NEWPRODUCT,
 	       BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT);
-  new FXButton(ptoolbar,_("Delete"),NULL,this,ID_DELPRODUCT,
+  delbtn = new FXButton(ptoolbar,_("Delete"),NULL,this,ID_DELPRODUCT,
 	       BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT);
-  new FXButton(ptoolbar,_("Edit"),NULL,this,ID_EDITPRODUCT,
+  editbtn = new FXButton(ptoolbar,_("Edit"),NULL,this,ID_EDITPRODUCT,
 	       BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT);
-  new FXButton(ptoolbar,_("Stock"),NULL,this,ID_SETSTOCK,
+  stockbtn = new FXButton(ptoolbar,_("Stock"),NULL,this,ID_SETSTOCK,
 	       BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT);
   newsalebtn =
-    new FXButton(ptoolbar,_("New sale"),NULL,this,ID_NEWSALE,
+    new FXButton(ptoolbar,_("Sell"),NULL,this,ID_NEWSALE,
 		 BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT);
   completesalebtn =
-    new FXButton(ptoolbar,_("Complete sale"),NULL,this,ID_COMPLETESALE,
+    new FXButton(ptoolbar,_("Complete Sale"),NULL,this,ID_COMPLETESALE,
 		 BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT);
   completesalebtn->disable();
 
@@ -98,9 +136,9 @@ ProductsFrame::ProductsFrame(FXComposite * parent)
 		      LAYOUT_FILL_X|LAYOUT_FILL_Y);
 
   clprodlist->appendHeader(_("Name"),NULL,210);
-  clprodlist->appendHeader(_("Amount"),NULL,60);
+  clprodlist->appendHeader(_("Quantity"),NULL,60);
   prodlist->setSortFunc(pitemSortFunc);
-
+  /*
   FXHorizontalFrame *codeframe =
     new FXHorizontalFrame(listframe,FRAME_SUNKEN|LAYOUT_FILL_X,
 			  0,0,0,0,0,0,0,0);
@@ -112,7 +150,7 @@ ProductsFrame::ProductsFrame(FXComposite * parent)
   addbycodebtn->disable();
 
   phsplitter->setSplit(1,200);
-
+  */
   products[0].id = 0;
   onsale = FALSE;
 }
@@ -205,11 +243,10 @@ ProductsFrame::updateClientProducts(int client)
     int id;
     FXuint amount;
 
-    for (int i = 0;
-	 CCL_client_product_get_nth(client,i,&id,&amount); i++) {
+    for (int i = 0; CCL_client_product_get_nth(client,i,&id,&amount); i++) {
       if (CCL_product_info_get(id,&category,&name,NULL)) {
 	char buf[256];
-
+	
 	snprintf(buf,256,"%s::%s\t%u",category,name,amount);
 	clprodlist->prependItem(NULL,buf,NULL,NULL,(void *)id);
 	CCL_free(category);
@@ -263,7 +300,7 @@ ProductsFrame::onNewProduct(FXObject*,FXSelector,void*)
   FXDataTarget nametgt(name);
   FXDataTarget categorytgt(category);
   FXDataTarget pricetgt(price);
-  FXDataTarget codetgt(code);
+  /*  FXDataTarget codetgt(code);*/
 
   FXDialogBox dlg(this,_("New Product"));
   FXVerticalFrame *vframe =
@@ -282,10 +319,10 @@ ProductsFrame::onNewProduct(FXObject*,FXSelector,void*)
 					    FXDataTarget::ID_VALUE,
 					    FRAME_SUNKEN|FRAME_THICK);
   pprice->setRange(0,9999999.0);
-  new FXLabel(vframe,_("Code:"));
+  /*  new FXLabel(vframe,_("Code:"));
   FXTextField *pcode = new FXTextField(vframe,16,&codetgt,
 				       FXDataTarget::ID_VALUE,
-				       FRAME_SUNKEN|FRAME_THICK);
+				       FRAME_SUNKEN|FRAME_THICK);*/
   new FXHorizontalSeparator(vframe);
   FXHorizontalFrame *hframe = new FXHorizontalFrame(vframe,LAYOUT_FILL_X);
   new FXButton(hframe,_("Accept"),NULL,&dlg,FXDialogBox::ID_ACCEPT,
@@ -295,11 +332,11 @@ ProductsFrame::onNewProduct(FXObject*,FXSelector,void*)
 
   if (dlg.execute() && category.length() && name.length() && price >= 0.0) {
     int id = CCL_product_new(category.text(),name.text(),(int)(price * 100));
-    if (0 < code.length()) {
+    /*    if (0 < code.length()) {
       // FIXME: check if code already exists
       CCL_data_set_string(CCL_DATA_PRODUCT,id,"code",code.text());
     }
-
+    */
     addProduct(id);
   }
 
@@ -324,7 +361,7 @@ ProductsFrame::onEditProduct(FXObject*,FXSelector,void*)
     price = pri/100.0;
 
     FXDataTarget pricetgt(price);
-    FXDataTarget codetgt(code);
+    /*    FXDataTarget codetgt(code);*/
 
     FXDialogBox dlg(this,_("Edit Product"));
     FXVerticalFrame *vframe =
@@ -334,10 +371,10 @@ ProductsFrame::onEditProduct(FXObject*,FXSelector,void*)
 					      FXDataTarget::ID_VALUE,
 					      FRAME_SUNKEN|FRAME_THICK);
     pprice->setRange(0,9999999.0);
-    new FXLabel(vframe,_("Code:"));
+    /*    new FXLabel(vframe,_("Code:"));
     FXTextField *pcode = new FXTextField(vframe,16,&codetgt,
 					 FXDataTarget::ID_VALUE,
-					 FRAME_SUNKEN|FRAME_THICK);
+					 FRAME_SUNKEN|FRAME_THICK);*/
     new FXHorizontalSeparator(vframe);
     FXHorizontalFrame *hframe = new FXHorizontalFrame(vframe,LAYOUT_FILL_X);
     new FXButton(hframe,_("Accept"),NULL,&dlg,FXDialogBox::ID_ACCEPT,
@@ -347,11 +384,10 @@ ProductsFrame::onEditProduct(FXObject*,FXSelector,void*)
 
     if (dlg.execute() && price >= 0.0) {
       CCL_product_price_set(pid,(FXuint) (price * 100));
-      if (0 < code.length()) {
+      /*if (0 < code.length()) {
 	// FIXME: check if code already exists
 	CCL_data_set_string(CCL_DATA_PRODUCT,pid,"code",code.text());
-      }
-
+	}*/
       delProduct(pid);
       addProduct(pid);
     }
@@ -383,12 +419,11 @@ ProductsFrame::onSetStock(FXObject*,FXSelector,void*)
     int oldamount = CCL_product_stock_get(pid);
     int amount = 0;
 
-    if (FXInputDialog::getInteger(amount,this,_("Adjust stock"),
-				  _("Insert the amount to add:"))) {
+    if (FXInputDialog::getInteger(amount,this,_("Adjust Stock"),
+				  _("Quantity to add:"))) {
       double cash = 0.0;
-
-      if (FXInputDialog::getReal(cash,this,_("Log expense"),
-				 _("Insert the price (0 to not log):"),
+      if (FXInputDialog::getReal(cash,this,_("Log Expense"),
+				 _("Enter the price (0 to not log):"),
 				 NULL,0.0,999999.0)) {
 	char description[128];
 	char *pname = NULL;
@@ -410,7 +445,6 @@ ProductsFrame::onSetStock(FXObject*,FXSelector,void*)
 	CCL_free(pname);
 	CCL_free(pcategory);
       }
-
     }
   }
 
@@ -424,7 +458,6 @@ ProductsFrame::onDelProduct(FXObject*,FXSelector,void*)
 
   if (current) {
     FXFoldingItem *parent = current->getParent();
-
     if (parent) {
       int id = (int) current->getData();
 
@@ -432,7 +465,6 @@ ProductsFrame::onDelProduct(FXObject*,FXSelector,void*)
       CCL_product_delete(id);
     }
   }
-
   return 1;
 }
 
@@ -446,20 +478,19 @@ ProductsFrame::onAddProduct(FXObject*,FXSelector,void* ptr)
 
   if (!prnt || -1 == client)
     return 0;
-
-  if (FXInputDialog::getInteger(amount,this,_("Add products"),
-				_("Insert the amount:")) && amount >= 1) {
+  if (!isPermitted(PERMPRODSELL))
+    return 0;
+  if (FXInputDialog::getInteger(amount,this,_("Sell Products"),
+				_("Quantity Sold:")) && amount >= 1) {
     int pid = (int) child->getData();
     unsigned int pprice;
 
     CCL_product_info_get(pid,NULL,NULL,&pprice);
-
     if (onsale) {
       int i;
       
       for (i = 0; 0 < products[i].id && products[i].id != pid; i++)
 	;
-      
       products[i].id = pid;
       products[i].amount += amount;
       products[i].price = pprice * products[i].amount;
@@ -484,17 +515,16 @@ ProductsFrame::onSubProduct(FXObject*,FXSelector,void* ptr)
 
   if (-1 == client)
     return 0;
-
-  if (FXInputDialog::getInteger(amount,this,_("Subtract products"),
-				_("Insert the amount:")) && amount >= 1) {
+  if (!isPermitted(PERMPRODSELL))
+    return 0;
+  if (FXInputDialog::getInteger(amount,this,_("Return Products"),
+				_("Quantity Returned:")) && amount >= 1) {
     int pid = (int) item->getData();
-
     if (onsale) {
       int i;
       
       for (i = 0; 0 < products[i].id && products[i].id != pid; i++)
 	;
-
       if (products[i].id == pid)
 	products[i].amount = (amount >= products[i].amount)
 			      ? 0 : products[i].amount - amount;
@@ -507,7 +537,6 @@ ProductsFrame::onSubProduct(FXObject*,FXSelector,void* ptr)
       addProduct(pid);
     }
   }
-
   return 1;
 }
 
@@ -520,7 +549,6 @@ ProductsFrame::onCodeChange(FXObject*,FXSelector,void* ptr)
     addbycodebtn->enable();
   else
     addbycodebtn->disable();
-
   return 1;
 }
 
@@ -534,32 +562,27 @@ ProductsFrame::onAddByCode(FXObject*,FXSelector,void* ptr)
 
   if (-1 == client)
     return 0;
-
   if (onsale) {
     int i;
     unsigned int pprice;
 
     CCL_product_info_get(pid,NULL,NULL,&pprice);
-
     for (i = 0; 0 < products[i].id && products[i].id != pid; i++)
       ;
-    
     products[i].id = pid;
     products[i].amount += amount;
     products[i].price = pprice * products[i].amount;
-    updateSaleProducts();
-  } else {
+
+  } 
+  else {
     CCL_client_product_add(client,pid,amount);
-  
     pcodetf->setText("");
     pamountsp->setValue(1);
     addbycodebtn->disable();
-  
     updateClientProducts(client);
     delProduct(pid);
     addProduct(pid);
   }
-
   return 1;
 }
 
@@ -572,7 +595,9 @@ ProductsFrame::onCompleteSale(FXObject*,FXSelector,void* ptr)
   newsalebtn->enable();
   cashingframe->setProductsSale(products);
   mainwin->showCashing();
-
+#ifdef DEBUG
+  printf("onCompleteSale(): Sale Completed.\n"); 
+#endif
   return 1;
 }
 

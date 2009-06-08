@@ -14,6 +14,7 @@ public:
   void create();
 public:
   void readNotPaid();
+  bool isUnpaid(int client, int session);
 public:
   long onSelected(FXObject*,FXSelector,void* ptr);
 public:

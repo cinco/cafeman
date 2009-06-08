@@ -14,6 +14,7 @@ protected:
   FXTextField	 *tnametf;
   FXTextField	 *hpricetf;
   FXTextField	 *stimetf;
+  FXTextField	 *ipricetf;
   FXToggleButton *daybtn[7];
   FXButton	 *addprice;
   FXButton	 *delprice;
@@ -31,6 +32,8 @@ public:
   void readTarif();
   void readTarifPart(int id);
   void clear();
+  void noPermInfo();
+  void setPerms(long perm);
 public:
   long checkValid(FXObject*,FXSelector,void*);
   long onAddPart(FXObject*,FXSelector,void*);

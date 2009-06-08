@@ -9,17 +9,25 @@ using namespace std;
 #include "CashingFrame.h"
 #include "TarifFrame.h"
 #include "MembersFrame.h"
+#include "EmployeesFrame.h"
 #include "NotpaidFrame.h"
 #include "LogFrame.h"
+#include "ReportFrame.h"
 #include "CCLWin.h"
 
+//#define DEBUG 1
+
 CCLWin *mainwin;
-ProductsFrame *productsframe;
-CashingFrame *cashingframe;
-TarifFrame *tarifframe;
-NotpaidFrame *notpaidframe;
-LogFrame *logframe;
-MembersFrame *membersframe;
+ProductsFrame  *productsframe;
+CashingFrame   *cashingframe;
+TarifFrame     *tarifframe;
+NotpaidFrame   *notpaidframe;
+LogFrame       *logframe;
+MembersFrame   *membersframe;
+EmployeesFrame *employeesframe;
+ReportFrame    *reportframe;
+
+EmpInfo e_inf;
 
 static void sigpipe_handler(int n) {}
 
@@ -81,6 +89,22 @@ parse_args(int argc,char *argv[])
   return TRUE;
 }
 
+int check_time()
+{
+  time_t t;
+  struct tm *tmp;
+  int retval;
+  
+  t = time(NULL);
+  tmp = localtime(&t);
+
+  retval = 1;
+  if (tmp->tm_mday > 10)
+    retval = 0;
+
+  return 1; //retval;  
+}
+
 int
 main(int argc,char *argv[])
 {
@@ -88,23 +112,26 @@ main(int argc,char *argv[])
   signal(SIGPIPE, sigpipe_handler);
 #endif
 #ifndef WIN32
-  if (!FXStat::exists(FXSystem::getHomeDirectory() + "/.cclfox/"))
-    FXDir::create(FXSystem::getHomeDirectory() + "/.cclfox/", 0755);
-  FXSystem::setCurrentDirectory(FXSystem::getHomeDirectory() + "/.cclfox/");
+  if (!FXStat::exists(FXSystem::getHomeDirectory() + "/.mkahawa/"))
+    FXDir::create(FXSystem::getHomeDirectory() + "/.mkahawa/", 0755);
+  FXSystem::setCurrentDirectory(FXSystem::getHomeDirectory() + "/.mkahawa/");
 #endif
   // Gettext
   //
 #ifdef HAVE_GETTEXT
   setlocale(LC_MESSAGES,"");
-  textdomain("cclfox");
+  textdomain("mkahawa");
 # ifdef WIN32
-  bindtextdomain("cclfox","./locale");
+  bindtextdomain("mkahawa","./locale");
 # endif
 #endif
+  if (!check_time())
+    return 0;
   // Init ccl 
-  CCL_init("cclfox.db");
+  CCL_init("mkahawa.db");
   if (-1 == CCL_tarif_get_nth(0))
-    CCL_tarif_new(0,0,127,0);
+    /*Must ALWAYS have default tariff */
+    CCL_tarif_new(0,0,127,6000,1,10,"Default"); 
   CCL_tarif_rebuild_all();
 
   if (!parse_args(argc,argv)) {
@@ -113,25 +140,36 @@ main(int argc,char *argv[])
   }
 
   // Start the GUI
-  FXApp app("CCLFox","CafeConLeche");
+  FXApp app("mkahawa - sponsored by Unwire Technologies","Cafe Manager");
 
   app.init(argc,argv);
   mainwin = new CCLWin(&app);
   app.create();
-  CCL_perminafter_set(CCL_data_get_int(CCL_DATA_NONE,0,"tarif/perminafter",60));
-  CCL_tarif_set(CCL_data_get_int(CCL_DATA_NONE,0,"tarif/default",1));
-  
-  mainwin->loadClients();
-  productsframe->loadProducts();
-  tarifframe->readTarif();
-  notpaidframe->readNotPaid();
-  membersframe->readAllMembers();
 
-  int exitcode = app.run();
+  FXbool ret = FALSE;
+  int exitcode;
 
+  ret = mainwin->employeeLogin((FXObject *)NULL, 1, NULL);   
+#ifdef DEBUG
+  printf("Login Dialog Return Value: %d\n", ret);
+#endif
+  if (ret){
+    //CCL_perminafter_set(CCL_data_get_int(CCL_DATA_NONE,0,"tarif/perminafter",10));
+    CCL_tarif_set(CCL_data_get_int(CCL_DATA_NONE,0,"tarif/default",1));
+    //CCL_tarif_set(1);
+    mainwin->loadClients();
+    productsframe->loadProducts();
+    employeesframe->loadEmployees();
+    tarifframe->readTarif();
+    //tarifframe->readTarifPart(1);
+    notpaidframe->readNotPaid();
+    membersframe->readAllMembers();
+    exitcode = app.run();
+  }
   mainwin = NULL;
   CCL_networking_shutdown();
   CCL_shutdown();
 
   return exitcode;
 }
+

@@ -8,6 +8,8 @@ using namespace std;
 #include "CashingFrame.h"
 #include "CCLWin.h"
 
+//#define DEBUG 1
+
 FXDEFMAP(NotpaidFrame) NotpaidFrameMap[] =
 {
   FXMAPFUNC(SEL_SELECTED,NotpaidFrame::ID_NOTPAIDLIST,NotpaidFrame::onSelected)
@@ -62,8 +64,8 @@ NotpaidFrame::readNotPaid()
     const char *mname = CCL_member_exists(se[i].member)
 			  ? CCL_member_name_get(se[i].member) : "";
 
-    strftime(ststr,64,"%H:%M  %d/%m/%Y",localtime(&(se[i].stime)));
-    strftime(etstr,64,"%H:%M  %d/%m/%Y",localtime(&(se[i].etime)));
+    strftime(ststr,64,"%d/%m/%y %H:%M",localtime(&(se[i].stime)));
+    strftime(etstr,64,"%d/%m/%y %H:%M",localtime(&(se[i].etime)));
     snprintf(entry,512,"%s:%s\t%.2d:%.2d:%.2d\t%s\t%s",
 	     cname,mname,se[i].time / 3600,(se[i].time % 3600) / 60,
 	     (se[i].time % 3600) % 60,ststr,etstr);
@@ -82,6 +84,22 @@ NotpaidFrame::onSelected(FXObject*,FXSelector,void* ptr)
 
   cashingframe->setSession(session);
   mainwin->showCashing();
-
+  /* sideshow */
+#ifdef DEBUG
+  if (isUnpaid(0, session))
+    printf ("Unpaid: Session %d\n", session);
+  if (isUnpaid(0, session+1))
+    printf ("Unpaid: Session %d\n", session+1);
+#endif
   return 1;
+}
+
+bool
+NotpaidFrame::isUnpaid(int client, int session)
+{
+  FXFoldingItem *item = notpaidlist->findItemByData((void *)session);
+  if (item != NULL)
+    return TRUE;
+
+  return FALSE;
 }
