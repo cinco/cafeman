@@ -880,11 +880,10 @@ CCL_client_owed_terminal(gint client)
     CCL_tarif_set(oldtarif);
 
   /* Prettier numbers */
-  /*  if (cash % 5 >= 3)
+  if (cash % 5 >= 3)
     cash += 5 - cash % 5;
   else if (cash % 5 < 3)
     cash -= cash % 5;
-  */
 
   /* 60 mins for KES 50 */
   /*  {
@@ -909,7 +908,7 @@ CCL_client_owed_terminal(gint client)
     cash += 100 - cash % 100;
   else if ((cash % 100) < 50)
     cash -= cash % 100;
-  */
+
   
   if (cash % 500 >= 150){
     cash /= 500;
@@ -918,8 +917,7 @@ CCL_client_owed_terminal(gint client)
   }
   else{
     cash -= cash % 500;
-  }
-
+  */ 
   return cash;
 }
 
