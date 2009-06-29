@@ -36,7 +36,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-bin_PROGRAMS = cclpfox$(EXEEXT)
+bin_PROGRAMS = mkahawa-printer$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -48,10 +48,10 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_cclpfox_OBJECTS = cclpfox.$(OBJEXT) gui.$(OBJEXT) locker.$(OBJEXT) \
+am_mkahawa-printer_OBJECTS = mkahawa-printer.$(OBJEXT) gui.$(OBJEXT) locker.$(OBJEXT) \
 	lockpix.$(OBJEXT) main.$(OBJEXT)
-cclpfox_OBJECTS = $(am_cclpfox_OBJECTS)
-cclpfox_LDADD = $(LDADD)
+mkahawa-printer_OBJECTS = $(am_mkahawa-printer_OBJECTS)
+mkahawa-printer_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -64,8 +64,8 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(cclpfox_SOURCES)
-DIST_SOURCES = $(cclpfox_SOURCES)
+SOURCES = $(mkahawa-printer_SOURCES)
+DIST_SOURCES = $(mkahawa-printer_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -80,9 +80,9 @@ AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
-CCLPFOX_MAJOR_VERSION = @CCLPFOX_MAJOR_VERSION@
-CCLPFOX_MINOR_VERSION = @CCLPFOX_MINOR_VERSION@
-CCLPFOX_PATCH_LEVEL = @CCLPFOX_PATCH_LEVEL@
+MKAHAWA-PRINTER_MAJOR_VERSION = @MKAHAWA-PRINTER_MAJOR_VERSION@
+MKAHAWA-PRINTER_MINOR_VERSION = @MKAHAWA-PRINTER_MINOR_VERSION@
+MKAHAWA-PRINTER_PATCH_LEVEL = @MKAHAWA-PRINTER_PATCH_LEVEL@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
@@ -213,9 +213,9 @@ sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
-cclpfox_SOURCES = \
-cclpfox.cpp \
-cclpfox.h \
+mkahawa-printer_SOURCES = \
+mkahawa-printer.cpp \
+mkahawa-printer.h \
 gui.cpp \
 gui.h \
 locker.cpp \
@@ -282,9 +282,9 @@ uninstall-binPROGRAMS:
 
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
-cclpfox$(EXEEXT): $(cclpfox_OBJECTS) $(cclpfox_DEPENDENCIES) 
-	@rm -f cclpfox$(EXEEXT)
-	$(CXXLINK) $(cclpfox_LDFLAGS) $(cclpfox_OBJECTS) $(cclpfox_LDADD) $(LIBS)
+mkahawa-printer$(EXEEXT): $(mkahawa-printer_OBJECTS) $(mkahawa-printer_DEPENDENCIES) 
+	@rm -f mkahawa-printer$(EXEEXT)
+	$(CXXLINK) $(mkahawa-printer_LDFLAGS) $(mkahawa-printer_OBJECTS) $(mkahawa-printer_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -292,7 +292,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cclpfox.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mkahawa-printer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gui.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/locker.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lockpix.Po@am__quote@

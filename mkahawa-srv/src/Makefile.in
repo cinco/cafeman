@@ -36,7 +36,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-bin_PROGRAMS = cclcfox$(EXEEXT)
+bin_PROGRAMS = mkahawa$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -48,10 +48,14 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_cclcfox_OBJECTS = cclcfox.$(OBJEXT) gui.$(OBJEXT) locker.$(OBJEXT) \
-	lockpix.$(OBJEXT) main.$(OBJEXT)
-cclcfox_OBJECTS = $(am_cclcfox_OBJECTS)
-cclcfox_LDADD = $(LDADD)
+am_mkahawa_OBJECTS = CCLWin.$(OBJEXT) CCLIconItem.$(OBJEXT) \
+	ProductsFrame.$(OBJEXT) CashingFrame.$(OBJEXT) \
+	TarifFrame.$(OBJEXT) MembersFrame.$(OBJEXT) \
+	NotpaidFrame.$(OBJEXT) LogFrame.$(OBJEXT) ReportFrame.$(OBJEXT) \
+	EmployeesFrame.$(OBJEXT) verifiers.$(OBJEXT) \
+	icons.$(OBJEXT) MSGWin.$(OBJEXT) main.$(OBJEXT)
+mkahawa_OBJECTS = $(am_mkahawa_OBJECTS)
+mkahawa_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -64,8 +68,8 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(cclcfox_SOURCES)
-DIST_SOURCES = $(cclcfox_SOURCES)
+SOURCES = $(mkahawa_SOURCES)
+DIST_SOURCES = $(mkahawa_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -80,9 +84,9 @@ AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
-CCLCFOX_MAJOR_VERSION = @CCLCFOX_MAJOR_VERSION@
-CCLCFOX_MINOR_VERSION = @CCLCFOX_MINOR_VERSION@
-CCLCFOX_PATCH_LEVEL = @CCLCFOX_PATCH_LEVEL@
+MKAHAWA_MAJOR_VERSION = @MKAHAWA_MAJOR_VERSION@
+MKAHAWA_MINOR_VERSION = @MKAHAWA_MINOR_VERSION@
+MKAHAWA_PATCH_LEVEL = @MKAHAWA_PATCH_LEVEL@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
@@ -140,7 +144,6 @@ LIBS = @LIBS@
 LTLIBICONV = @LTLIBICONV@
 LTLIBINTL = @LTLIBINTL@
 LTLIBOBJS = @LTLIBOBJS@
-MACOSX_LIBS = @MACOSX_LIBS@
 MAKEINFO = @MAKEINFO@
 MKINSTALLDIRS = @MKINSTALLDIRS@
 MSGFMT = @MSGFMT@
@@ -164,7 +167,6 @@ XMKMF = @XMKMF@
 X_BASE_LIBS = @X_BASE_LIBS@
 X_CFLAGS = @X_CFLAGS@
 X_EXTRA_LIBS = @X_EXTRA_LIBS@
-X_INCLUDES = @X_INCLUDES@
 X_LIBS = @X_LIBS@
 X_PRE_LIBS = @X_PRE_LIBS@
 ac_ct_CC = @ac_ct_CC@
@@ -213,19 +215,38 @@ sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
-cclcfox_SOURCES = \
-cclcfox.cpp \
-cclcfox.h \
-gui.cpp \
-gui.h \
-locker.cpp \
-locker.h \
-lockpix.cpp \
-lockpix.h \
+mkahawa_SOURCES = \
+CCLWin.cpp \
+CCLWin.h \
+CCLIconItem.cpp \
+CCLIconItem.h \
+ProductsFrame.cpp \
+ProductsFrame.h \
+CashingFrame.cpp \
+CashingFrame.h \
+TarifFrame.cpp \
+TarifFrame.h \
+MembersFrame.cpp \
+MembersFrame.h \
+EmployeesFrame.cpp \
+EmployeesFrame.h \
+NotpaidFrame.cpp \
+NotpaidFrame.h \
+LogFrame.cpp \
+LogFrame.h \
+ReportFrame.cpp \
+ReportFrame.h \
+verifiers.cpp \
+verifiers.h \
+MSGWin.cpp \
+MSGWin.h \
+icons.cpp \
+icons.h \
 cmds.h \
+cclfox.h \
 main.cpp
 
-INCLUDES = -I/usr/local/include/ $(X_INCLUDES)
+INCLUDES = -I/usr/local/include
 all: all-am
 
 .SUFFIXES:
@@ -282,9 +303,9 @@ uninstall-binPROGRAMS:
 
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
-cclcfox$(EXEEXT): $(cclcfox_OBJECTS) $(cclcfox_DEPENDENCIES) 
-	@rm -f cclcfox$(EXEEXT)
-	$(CXXLINK) $(cclcfox_LDFLAGS) $(cclcfox_OBJECTS) $(cclcfox_LDADD) $(LIBS)
+mkahawa$(EXEEXT): $(mkahawa_OBJECTS) $(mkahawa_DEPENDENCIES) 
+	@rm -f mkahawa$(EXEEXT)
+	$(CXXLINK) $(mkahawa_LDFLAGS) $(mkahawa_OBJECTS) $(mkahawa_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -292,11 +313,19 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cclcfox.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gui.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/locker.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lockpix.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CCLIconItem.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CCLWin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CashingFrame.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/LogFrame.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MembersFrame.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/EmployeesFrame.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/NotpaidFrame.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ProductsFrame.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/TarifFrame.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/MSGWin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/icons.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/verifiers.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \

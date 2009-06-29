@@ -1,6 +1,6 @@
-bin_PROGRAMS=cclcfox
+bin_PROGRAMS=mkahawa-client
 
-cclcfox_SOURCES= \
+mkahawa_client_SOURCES= \
 cclcfox.cpp \
 cclcfox.h \
 gui.cpp \

@@ -1,6 +1,6 @@
-bin_PROGRAMS=cclfox
+bin_PROGRAMS=mkahawa
 
-cclfox_SOURCES= \
+mkahawa_SOURCES= \
 CCLWin.cpp \
 CCLWin.h \
 CCLIconItem.cpp \

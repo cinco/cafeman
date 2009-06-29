@@ -45,7 +45,7 @@ int print_job[256];
 int job_pages[256];
 int warn_lvl[256];
 FXuint prev_price[256];
-char *cybername = "Cafe Con Leche - Reloaded, By Unwire Technologies";
+char *cybername = "mkahawa, By Unwire Technologies";
 
 FXDEFMAP(CCLWin) CCLWinMap[] =
 {
@@ -1477,8 +1477,7 @@ long
 CCLWin::updateClient(int client)
 {
   int retval, fd;
-  char fname[64], *cp;
-  char const *msgstr;
+  char fname[64], *msgstr, *cp;
   int status = CCL_client_status_get(client);
   char hdrstr[100], sgnstr[32], filecntstr[32];
 

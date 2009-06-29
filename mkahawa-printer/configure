@@ -656,9 +656,9 @@ am__leading_dot
 AMTAR
 am__tar
 am__untar
-CCLCFOX_MAJOR_VERSION
-CCLCFOX_MINOR_VERSION
-CCLCFOX_PATCH_LEVEL
+MKAHAWA_PRN_MAJOR_VERSION
+MKAHAWA_PRN_MINOR_VERSION
+MKAHAWA_PRN_PATCH_LEVEL
 CC
 CFLAGS
 LDFLAGS
@@ -1790,11 +1790,11 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
-CCLCFOX_MAJOR_VERSION=0
-CCLCFOX_MINOR_VERSION=7
-CCLCFOX_PATCH_LEVEL=1
+MKAHAWA_PRN_MAJOR_VERSION=0
+MKAHAWA_PRN_MINOR_VERSION=7
+MKAHAWA_PRN_PATCH_LEVEL=2
 
-VERSION=$CCLCFOX_MAJOR_VERSION.$CCLCFOX_MINOR_VERSION.$CCLCFOX_PATCH_LEVEL
+VERSION=$MKAHAWA_PRN_MAJOR_VERSION.$MKAHAWA_PRN_MINOR_VERSION.$MKAHAWA_PRN_PATCH_LEVEL
 
 am__api_version="1.9"
 ac_aux_dir=
@@ -2262,16 +2262,16 @@ am__tar='${AMTAR} chof - "$$tardir"'; am__untar='${AMTAR} xf -'
 
 { echo "$as_me:$LINENO: checking major version" >&5
 echo $ECHO_N "checking major version... $ECHO_C" >&6; }
-{ echo "$as_me:$LINENO: result: $CCLCFOX_MAJOR_VERSION" >&5
-echo "${ECHO_T}$CCLCFOX_MAJOR_VERSION" >&6; }
+{ echo "$as_me:$LINENO: result: $MKAHAWA_PRN_MAJOR_VERSION" >&5
+echo "${ECHO_T}$MKAHAWA_PRN_MAJOR_VERSION" >&6; }
 { echo "$as_me:$LINENO: checking minor version" >&5
 echo $ECHO_N "checking minor version... $ECHO_C" >&6; }
-{ echo "$as_me:$LINENO: result: $CCLCFOX_MINOR_VERSION" >&5
-echo "${ECHO_T}$CCLCFOX_MINOR_VERSION" >&6; }
+{ echo "$as_me:$LINENO: result: $MKAHAWA_PRN_MINOR_VERSION" >&5
+echo "${ECHO_T}$MKAHAWA_PRN_MINOR_VERSION" >&6; }
 { echo "$as_me:$LINENO: checking patchlevel" >&5
 echo $ECHO_N "checking patchlevel... $ECHO_C" >&6; }
-{ echo "$as_me:$LINENO: result: $CCLCFOX_PATCH_LEVEL" >&5
-echo "${ECHO_T}$CCLCFOX_PATCH_LEVEL" >&6; }
+{ echo "$as_me:$LINENO: result: $MKAHAWA_PRN_PATCH_LEVEL" >&5
+echo "${ECHO_T}$MKAHAWA_PRN_PATCH_LEVEL" >&6; }
 
 
 
@@ -10223,9 +10223,9 @@ am__leading_dot!$am__leading_dot$ac_delim
 AMTAR!$AMTAR$ac_delim
 am__tar!$am__tar$ac_delim
 am__untar!$am__untar$ac_delim
-CCLCFOX_MAJOR_VERSION!$CCLCFOX_MAJOR_VERSION$ac_delim
-CCLCFOX_MINOR_VERSION!$CCLCFOX_MINOR_VERSION$ac_delim
-CCLCFOX_PATCH_LEVEL!$CCLCFOX_PATCH_LEVEL$ac_delim
+MKAHAWA_PRN_MAJOR_VERSION!$MKAHAWA_PRN_MAJOR_VERSION$ac_delim
+MKAHAWA_PRN_MINOR_VERSION!$MKAHAWA_PRN_MINOR_VERSION$ac_delim
+MKAHAWA_PRN_PATCH_LEVEL!$MKAHAWA_PRN_PATCH_LEVEL$ac_delim
 CC!$CC$ac_delim
 CFLAGS!$CFLAGS$ac_delim
 LDFLAGS!$LDFLAGS$ac_delim

@@ -1,7 +1,7 @@
-bin_PROGRAMS=cclpfox
+bin_PROGRAMS=mkahawa-printer
 
 cclcfox_SOURCES= \
-cclpfox.cpp \
+mkahawa-printer.cpp \
 cclpfox.h \
 gui.cpp \
 gui.h \

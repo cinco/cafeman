@@ -28,7 +28,7 @@ echo -n "generate self-signed CA ... "
 echo "done"
 
 echo -n "generate certificate and sign request ... "
-  echo -e  ".\n.\n.\n.\n.\nccl\n.\n\n\n" | \
+  echo -e  ".\n.\n.\n.\n.\nmkahawa\n.\n\n\n" | \
     openssl req  -new -nodes \
 		 -keyout key.pem -out newreq.pem \
 		 -days 3650 2>/dev/null 1>&2
@@ -47,5 +47,5 @@ cp CAcert.pem ../CA.pem
 cat key.pem cert.pem > ../cert.pem
 cd $PWD
 rm -rf $TMPDIR
-echo -e "\n\nCopy cert.pem and CA.pem to ~/.cclfox on the server and to ~/.cclcfox on the clients\n"
+echo -e "\n\nCopy cert.pem and CA.pem to ~/.mkahawa on the server and to ~/.mkahawa on the clients\n"
 ====== CUT HERE ======
