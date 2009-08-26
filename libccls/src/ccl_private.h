@@ -60,6 +60,7 @@ struct _CCL
   gint			perminafter;
   gint                  incprice;
   Events_list		events;
+  gint                  tid;
 };
 typedef struct _CCL CCL;
 
@@ -125,6 +126,7 @@ struct _CCL_client
   gpointer   data;
   guint32    ipaddr;
   BIO	    *bio;
+  gint       tid;
 };
 
 typedef struct _CCL_client CCL_client;

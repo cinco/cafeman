@@ -1,12 +1,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <pthread.h>
 #include "ccls.h"
 #include "ccl_private.h"
 
 
 /*#define DEBUG 1*/
 /*#define DEBUG_A*/
+#define DEBUG_T
 /* Static functions */
 static void _init_db(sqlite3 * db);
 static gint _loadMembersCB(gpointer ptr, gint argc,
@@ -24,6 +26,11 @@ static SSL_CTX * _initialize_ssl_ctx(const gchar * cafile,
 				     const gchar * keyfile,
 				     const gchar * password, gint * err);
 static gint _greatest_product_id();
+
+
+int do_ccl_server(void *arg);
+int do_cnxn_proc(void *arg);
+
 
 CCL *ccl = NULL;
 
@@ -175,6 +182,7 @@ gboolean
 CCL_networking_init(gushort port, gint * error)
 {
   gchar portstr[256];
+  pthread_t th;
 
   if (ccl->events.listenbio) /* Already initialized */
     return TRUE;
@@ -193,13 +201,16 @@ CCL_networking_init(gushort port, gint * error)
 #ifdef DEBUG
   {
     char *bcp;
+    pthread_t th;
     
     bcp = BIO_get_accept_port(ccl->events.listenbio);
     printf("** CCL_networking_init(): BIO_get_accept_port: %s **\n", bcp);
     
   }
 #endif
-
+  /* now start listening */
+  ccl->tid = pthread_create(&th, NULL, do_ccl_server, portstr);
+  
   return TRUE;
 }
 
@@ -633,6 +644,197 @@ CCL_product_stock_get(gint product)
   return amount;
 }
 
+int do_cnxn_proc(void *arg)
+{
+  gint client = (int) arg;
+  
+  CCL_client *c = g_datalist_id_get_data(&(ccl->clients), client);
+  gboolean connection_closed = FALSE;
+  guint cmd = 0;
+  guint size = 0;
+  void *data = NULL;
+  gint bytes = 0;
+  BIO *bio = c->bio;
+  
+
+#ifdef DEBUG_T
+  printf ("Starting Thread: Client = %d\n", client);
+#endif
+  for (;;){
+    /*read command from client*/
+    bytes = _recvall(bio, &cmd, sizeof(cmd));
+#ifdef DEBUG_T
+    printf ("Client = %d: Read Command: %04X\n", client, cmd);
+#endif
+    if (0 >= bytes || bytes != sizeof(cmd))
+      {
+	connection_closed = TRUE;
+      }
+    
+    if (!connection_closed)
+      {
+	/*read command's data size from client*/
+	bytes = _recvall(bio, &size, sizeof(size));
+	if (0 >= bytes || bytes != sizeof(size))
+	  connection_closed = TRUE;
+#ifdef DEBUG_T
+	printf ("Client = %d: Command [%04X] Size: %d\n", client, cmd, size);
+#endif
+      }
+    cmd = CCL_ntohl(cmd);
+    size = CCL_ntohl(size);
+    
+    if (!connection_closed && 0 < cmd && 0 < size)
+      {
+	/*read command's data from client*/
+	data = g_malloc0(size);
+	bytes = _recvall(bio, data, size);
+	if (0 >= bytes || bytes != size)
+	  connection_closed = TRUE;
+#ifdef DEBUG_T
+	printf ("Client = %d: Command [%04X] Read Size: %d\n", client, cmd, bytes);
+#endif
+      }
+    if (ccl->events.on_event)
+      ccl->events.on_event(client, cmd, data, size,
+			   ccl->events.on_event_data);
+    if (data)
+      g_free(data);
+    /* If the connection broke, or was closed */
+    if (connection_closed)
+      {
+	_shutdown_client_connection(client);
+	if (ccl->events.on_disconnect)
+	  ccl->events.on_disconnect(client,
+				    ccl->events.on_disconnect_data);
+	/*Break from the loop - and end thread*/
+	break;  
+      }
+  }
+#ifdef DEBUG_T
+  printf ("Stopping Thread: Client = %d\n", client);
+#endif
+}
+
+int do_ccl_server(void *arg)
+{
+  SSL *ssl;
+  BIO *newbio;
+  fd_set rfd;
+  struct timeval delta;
+  /* Now i am going to check for new connections */
+  int fd = ccl->events.listenfd;
+
+  while (1 == BIO_do_accept(ccl->events.listenbio))
+    {
+      newbio = BIO_pop(ccl->events.listenbio);
+      
+#ifdef DEBUG
+      {
+	char *bcp = NULL;
+	struct sockaddr sa;
+	  int fd = BIO_get_fd(newbio, NULL);
+	  socklen_t salen = sizeof(struct sockaddr);
+	  int i;
+	  
+	  getpeername(fd, &sa, &salen);
+	  bcp = BIO_get_accept_port(newbio);
+	  printf("** CCL_check_events(): BIO_get_accept_port: %s **\n", bcp);
+	  for (i=0; i<salen; i++)
+	    printf("%02X ", ((unsigned char *)&sa)[i]);
+	  printf("\n");
+	  if (!bcp) free(bcp);
+	  
+      }
+#endif
+      if (ccl->events.ssl_ctx)
+	{
+	  ssl = SSL_new(ccl->events.ssl_ctx);
+	  SSL_set_fd(ssl, BIO_get_fd(newbio, NULL));
+	    BIO_set(newbio, BIO_f_ssl());
+	    BIO_set_ssl(newbio, ssl, 0);
+	    BIO_set_ssl_mode(newbio, FALSE);
+	}
+      FD_SET(BIO_get_fd(newbio, NULL), &rfd);
+      
+      /* Only perform the handshake if this is a genuine connection, 
+       * I dont want to block forever, if the connection is not valid */
+      if (!select(BIO_get_fd(newbio, NULL) + 1, &rfd, NULL, NULL, &delta))
+	BIO_free(newbio);
+      else if (!ccl->events.ssl_ctx || 1 == BIO_do_handshake(newbio))
+	{
+	  gchar *name = NULL;
+	  gint size;
+	  CCL_client *client = NULL;
+	  gint id;
+	  
+	  if (BIO_read(newbio, &size, sizeof(size))>0){
+	    size  = ntohl(size);
+	    if (size > 256)  size = 256;  /* sanity check */
+	    name = g_malloc0(size);
+	    /* read the client name */ 
+	    BIO_read(newbio, name, size);
+	    
+	    id = CCL_client_new(name);
+	    g_free(name);
+	    
+	    client = g_datalist_id_get_data(&(ccl->clients), id);		
+	    /* Obtain Client IP address */
+	    {
+	      socklen_t salen = sizeof(struct sockaddr);
+	      struct sockaddr sa;
+	      int v1=0, v2=0, v3=0, v4=0;
+	      int fd = BIO_get_fd(newbio, NULL);
+	      
+	      getpeername(fd, &sa, &salen);
+	      v1 = (int)(((unsigned char *)&sa)[4]);
+	      v2 = (int)(((unsigned char *)&sa)[5]);
+	      v3 = (int)(((unsigned char *)&sa)[6]);
+	      v4 = (int)(((unsigned char *)&sa)[7]);
+	      /*client->ipaddr = *(guint32 *)cp;*/
+	      client->ipaddr = (v4<<24) | (v3<<16) | (v2<<8) | v1;
+#ifdef DEBUG_A
+	      printf("v1=%02X, v2=%02X, v3=%02X, v4=%02X, ipaddr=%08X\n", 
+		     v1, v2, v3, v4, client->ipaddr);
+#endif
+	    }
+	    /* If a connection for this client already exists, lets
+	     * make sure, that our old connection still exists.
+	     * If not, then free it, and set it as disconnected */
+	    if (INVALID_SOCKET != client->sockfd) 
+	      {
+		fd_set wfd;
+		
+		FD_ZERO(&wfd);
+		FD_SET(client->sockfd, &wfd);
+		if (!select(client->sockfd + 1, NULL, &wfd, NULL, &delta))
+		  {
+		    BIO_free(client->bio);
+		    client->sockfd = INVALID_SOCKET;
+		  }
+	      }
+	    
+	    /*Now open the new connection */
+	    if (INVALID_SOCKET == client->sockfd)
+	      {
+		pthread_t th;
+		
+		client->bio = newbio;
+		client->sockfd = BIO_get_fd(newbio, NULL);
+		
+		if (ccl->events.on_connect)
+		  ccl->events.on_connect(id, ccl->events.on_connect_data);
+		
+		client->tid = pthread_create(&th, NULL, do_cnxn_proc, (void *)id);
+		
+	      }
+	    else
+	      BIO_free(newbio);
+	  }
+	}
+    }
+}
+
 /**
  * Check for incoming connections, disconnectons, or messages from the clients.
  *
@@ -644,205 +846,7 @@ CCL_product_stock_get(gint product)
 gboolean
 CCL_check_events(void)
 {
-  struct timeval delta;
-  gint maxfd = ccl->events.maxfd;
-  gint nfds;
-  gint fd;
-  fd_set readfds = ccl->events.readfds;
-
-  if (!maxfd || !(ccl->events.listenbio))
-    return FALSE;
-
-  delta.tv_usec = 0;
-  delta.tv_sec = 0;
-
-  nfds = select(maxfd + 1, &readfds, NULL, NULL, &delta);
-
-  if (nfds <= 0)
-    return FALSE;
-  
-  for (fd = 0; fd <= maxfd; fd++)
-    {
-      if (FD_ISSET(fd, &readfds) && fd != ccl->events.listenfd)
-	{
-	  gint fd_cid[2];
-	  gint client = 0;
-	  gint sockfd = 0;
-
-	  fd_cid[0] = fd;
-	  fd_cid[1] = 0;
-
-	  g_datalist_foreach(&(ccl->clients), _FindClientByFdFunc,
-			     (void *)fd_cid);
-	  sockfd = fd_cid[0];
-	  client = fd_cid[1];
-
-	  if (client)
-	    {
-	      gboolean connection_closed = FALSE;
-	      guint cmd = 0;
-	      guint size = 0;
-	      void *data = NULL;
-	      gint bytes = 0;
-	      CCL_client *c = g_datalist_id_get_data(&(ccl->clients), client);
-	      BIO *bio = c->bio;
-	      
-	      bytes = _recvall(bio, &cmd, sizeof(cmd));
-	      if (0 >= bytes || bytes != sizeof(cmd))
-		connection_closed = TRUE;
-	     
-	      if (!connection_closed)
-		{
-		  bytes = _recvall(bio, &size, sizeof(size));
-		  if (0 >= bytes || bytes != sizeof(size))
-		    connection_closed = TRUE;
-		}
-
-	      cmd = CCL_ntohl(cmd);
-	      size = CCL_ntohl(size);
-	      
-	      if (!connection_closed && 0 < cmd && 0 < size)
-		{
-		  data = g_malloc0(size);
-		  bytes = _recvall(bio, data, size);
-		  if (0 >= bytes || bytes != size)
-		    connection_closed = TRUE;
-		}
-	      if (ccl->events.on_event)
-		ccl->events.on_event(client, cmd, data, size,
-				     ccl->events.on_event_data);
-	      if (data)
-		g_free(data);
-	      /* If the connection broke, or was closed */
-	      if (connection_closed)
-		{
-		  _shutdown_client_connection(client);
-		  if (ccl->events.on_disconnect)
-		    ccl->events.on_disconnect(client,
-					      ccl->events.on_disconnect_data);
-		}
-	    }
-	}
-    }
-
-  /* Now i am going to check for new connections */
-  fd = ccl->events.listenfd;
-  if (FD_ISSET(fd, &readfds))
-    {
-      SSL *ssl;
-      BIO *newbio;
-      fd_set rfd;
-
-      FD_ZERO(&rfd);
-
-      if (1 == BIO_do_accept(ccl->events.listenbio))
-	{
-	  newbio = BIO_pop(ccl->events.listenbio);
-
-#ifdef DEBUG
-	  {
-	    char *bcp = NULL;
-	    struct sockaddr sa;
-	    int fd = BIO_get_fd(newbio, NULL);
-	    socklen_t salen = sizeof(struct sockaddr);
-	    int i;
-	    
-	    getpeername(fd, &sa, &salen);
-	    bcp = BIO_get_accept_port(newbio);
-	    printf("** CCL_check_events(): BIO_get_accept_port: %s **\n", bcp);
-	    for (i=0; i<salen; i++)
-	      printf("%02X ", ((unsigned char *)&sa)[i]);
-	    printf("\n");
-	    if (!bcp) free(bcp);
-	    
-	  }
-#endif
-	  if (ccl->events.ssl_ctx)
-	    {
-	      ssl = SSL_new(ccl->events.ssl_ctx);
-	      SSL_set_fd(ssl, BIO_get_fd(newbio, NULL));
-	      BIO_set(newbio, BIO_f_ssl());
-	      BIO_set_ssl(newbio, ssl, 0);
-	      BIO_set_ssl_mode(newbio, FALSE);
-	    }
-	  FD_SET(BIO_get_fd(newbio, NULL), &rfd);
-
-	  /* Only perform the handshake if this is a genuine connection, 
-	   * I dont want to block forever, if the connection is not valid */
-	  if (!select(BIO_get_fd(newbio, NULL) + 1, &rfd, NULL, NULL, &delta))
-	    BIO_free(newbio);
-	  else if (!ccl->events.ssl_ctx || 1 == BIO_do_handshake(newbio))
-	    {
-	      gchar *name = NULL;
-	      gint size;
-	      CCL_client *client = NULL;
-	      gint id;
-
-	      if (BIO_read(newbio, &size, sizeof(size))>0){
-		size  = ntohl(size);
-		if (size > 256)  size = 256;  /* sanity check */
-		name = g_malloc0(size);
-		BIO_read(newbio, name, size);
-		
-		id = CCL_client_new(name);
-		g_free(name);
-		
-		client = g_datalist_id_get_data(&(ccl->clients), id);		
-		/* */
-
-		{
-		  socklen_t salen = sizeof(struct sockaddr);
-		  struct sockaddr sa;
-		  int v1=0, v2=0, v3=0, v4=0;
-		  int fd = BIO_get_fd(newbio, NULL);
-
-		  getpeername(fd, &sa, &salen);
-		  v1 = (int)(((unsigned char *)&sa)[4]);
-		  v2 = (int)(((unsigned char *)&sa)[5]);
-		  v3 = (int)(((unsigned char *)&sa)[6]);
-		  v4 = (int)(((unsigned char *)&sa)[7]);
-		  /*client->ipaddr = *(guint32 *)cp;*/
-		  
-		  client->ipaddr = (v4<<24) | (v3<<16) | (v2<<8) | v1;
-#ifdef DEBUG_A
-		  printf("v1=%02X, v2=%02X, v3=%02X, v4=%02X, ipaddr=%08X\n", 
-			 v1, v2, v3, v4, client->ipaddr);
-#endif
-		}
-		/* If a connection for this client already exists, lets
-		 * make sure, that our old connection still exists.
-		 * If not, then free it, and set it as disconnected */
-		if (INVALID_SOCKET != client->sockfd)
-		  {
-		    fd_set wfd;
-		    
-		    FD_ZERO(&wfd);
-		    FD_SET(client->sockfd, &wfd);
-		    
-		    if (!select(client->sockfd + 1, NULL, &wfd, NULL, &delta))
-		      {
-			  BIO_free(client->bio);
-			  client->sockfd = INVALID_SOCKET;
-		      }
-		  }
-		
-		if (INVALID_SOCKET == client->sockfd)
-		  {
-		    client->bio = newbio;
-		    client->sockfd = BIO_get_fd(newbio, NULL);
-		    FD_SET(client->sockfd, &(ccl->events.readfds));
-		    
-		    if (ccl->events.maxfd < client->sockfd)
-		      ccl->events.maxfd = client->sockfd;
-		    if (ccl->events.on_connect)
-			ccl->events.on_connect(id, ccl->events.on_connect_data);
-		  }
-		else
-		  BIO_free(newbio);
-	      }
-	    }
-	}
-    }
+  /*do nothing*/
   
   return TRUE;
 }

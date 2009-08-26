@@ -118,7 +118,7 @@ libccls_la_LDFLAGS = -version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE)
 include_HEADERS = ccls.h
 
 INCLUDES = $(GLIB_CFLAGS)
-libccls_la_LIBADD = -L/usr/local/lib $(GLIB_LIBS)
+libccls_la_LIBADD = -L/usr/local/lib $(GLIB_LIBS) -lpthread
 AM_CFLAGS = -Wall -ansi -pedantic
 subdir = src
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
@@ -193,7 +193,7 @@ uninstall-libLTLIBRARIES:
 clean-libLTLIBRARIES:
 	-test -z "$(lib_LTLIBRARIES)" || rm -f $(lib_LTLIBRARIES)
 libccls.la: $(libccls_la_OBJECTS) $(libccls_la_DEPENDENCIES) 
-	$(LINK) -rpath $(libdir) $(libccls_la_LDFLAGS) $(libccls_la_OBJECTS) $(libccls_la_LIBADD) $(LIBS)
+	$(LINK) -rpath $(libdir) $(libccls_la_LDFLAGS) $(libccls_la_OBJECTS) $(libccls_la_LIBADD) $(LIBS) 
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT) core *.core
