@@ -108,7 +108,7 @@ int
 main(int argc,char *argv[])
 {
 #ifndef WIN32
-  FXSystem::setCurrentDirectory(FXSystem::getHomeDirectory() + "/.cclcfox/");
+  FXSystem::setCurrentDirectory(FXSystem::getHomeDirectory() + "/.mkahawa/");
 #else
   if (FXFile::isAbsolute(argv[0]))
     FXFile::setCurrentDirectory(FXFile::directory(argv[0]));
@@ -116,9 +116,9 @@ main(int argc,char *argv[])
   // Gettext
 #ifdef HAVE_GETTEXT
   setlocale(LC_MESSAGES,"");
-  textdomain("cclcfox");
+  textdomain("mkahawa");
 # ifdef WIN32
-  bindtextdomain("cclcfox","./locale");
+  bindtextdomain("mkahawa","./locale");
 # endif
 #endif
 
@@ -127,7 +127,7 @@ main(int argc,char *argv[])
     return 1;
   }
 
-  FXApp app("CCLCFox","Unwire Technologies Cyber Timer");
+  FXApp app("Mkahawa","Mkahawa Cyber Timer, by Unwire Technologies");
 
   app.init(argc,argv);
   clientwin = new ClientWin(&app);

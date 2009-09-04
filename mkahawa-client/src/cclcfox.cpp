@@ -18,6 +18,7 @@ extern Grabber *grabber;
 
 struct CHUNK *chunk;
 void print_hash(unsigned char *hash, int len);
+void *dispMessage(void * message);
 
 void
 onEventCallback(FXuint cmd,void * data,FXuint size,void * userdata)
@@ -125,7 +126,7 @@ CCLCFox *CCLCFox::cclc = NULL;
 CCLCFox::CCLCFox()
 {
   if (CCLCFox::cclc)
-    fxerror("An instance of Client is already loaded\n");
+    fxerror("An instance of Mkahawa Client is already loaded\n");
   //fxerror("Ya existe una instancia de CCLCFox\n");
   active = FALSE;
   stime = 0;
@@ -376,18 +377,33 @@ CCLCFox::turnOffMonitor()
 }
 
 void
-CCLCFox::showMessage(char * message)
+CCLCFox::showMessage(void * message)
 {
   //FXMessageBox::information(grabber->getRoot(),MBOX_OK,_("Message"),message);
 
-  FXDialogBox dialog(clientwin->getApp(),_("Message from Operator"), 
-		     DECOR_TITLE|DECOR_BORDER, 200, 200);
-  FXLabel lbl2(&dialog,_(message));
+  //FXDialogBox dialog(clientwin->getApp(),_("Message from Operator"), 
+  //FXDialogBox dialog(clientwin->getOwner(),_("Message from Operator"), 
+  //FXDialogBox dialog(clientwin->getRoot(),_("Message from Operator"), 
+  //		     DECOR_TITLE|DECOR_BORDER, 600, 600);
+  //FXLabel lbl2(&dialog,_(message));
 
-  FXButton okbtn(&dialog,_("   Ok   "),NULL,&dialog,FXDialogBox::ID_ACCEPT);
-  FXButton cancelbtn(&dialog,_("Cancel"),NULL,&dialog,FXDialogBox::ID_CANCEL);
+  //FXButton okbtn(&dialog,_("Ok"),NULL,&dialog,FXDialogBox::ID_ACCEPT);
+  //FXButton cancelbtn(&dialog,_("Cancel"),NULL,&dialog,FXDialogBox::ID_CANCEL);
+  //dialog.show();
+  FXMessageBox::information(clientwin->getRoot(),
+  			MBOX_OK,_("Message From Manager"), (char *)message);
 
-  dialog.show();
+}
+
+void *
+dispMessage(void * message)
+{
+
+  printf("Thread was started\n");
+  FXMessageBox::information(grabber->getRoot(),
+  			MBOX_OK,_("Message From Manager"), (char *)message);
+
+  printf("Thread was ended\n");
 }
 
 void
@@ -489,11 +505,14 @@ CCLCFox::exitProgram()
   exit(0);
 }
 
+#include <pthread.h>
+
 void
 CCLCFox::execCommand(FXuint cmd,const void *data,FXuint datasize)
 {
   FXuint hdata = 0;
   long resp, chsize;
+  pthread_t th;
 
   switch (cmd) {
     case CS_STOP:
@@ -529,7 +548,8 @@ CCLCFox::execCommand(FXuint cmd,const void *data,FXuint datasize)
       timeout = CCLC_ntohl(*((int *) data));
       break;
     case CS_DISPLAYMESSAGE:
-      showMessage((char *) data);
+      pthread_create(&th, NULL, &dispMessage, (void *)data);
+      //showMessage((void *)data);
       break;
     case CS_QUITCLIENT:
       exitProgram();
@@ -562,7 +582,9 @@ CCLCFox::execCommand(FXuint cmd,const void *data,FXuint datasize)
 #ifdef DEBUG
       printf("Start Chatting\n");
 #endif
-      FXMessageBox::information(clientwin,MBOX_OK,_("Message"), (char *)data);
+      pthread_create(&th, NULL, &dispMessage, (void *)data);
+      //FXMessageBox::information(clientwin->getRoot(),
+      //			MBOX_OK,_("Message From Manager"), (char *)data);
       break;
     case CS_CALLASSIST:
 #ifdef DEBUG

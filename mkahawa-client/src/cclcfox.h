@@ -66,7 +66,7 @@ public:
   void turnOffMonitor();
   void setOwed(FXuint owed);
   void setProducts(FXuint owed);
-  void showMessage(char *message);
+  void showMessage(void *message);
   void execCommand(FXuint cmd,const void *data,FXuint datasize);
   void unlockWithPass(int id,FXString password);
   void unlockWithPass(FXString login,FXString password);
