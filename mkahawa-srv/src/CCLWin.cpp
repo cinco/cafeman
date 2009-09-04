@@ -2475,7 +2475,8 @@ CCLWin::onMsgClient(FXObject*, FXSelector, void*)
 			       _("Message:")) && result.length()) {
     char *cmsg = fxstrdup(result.text());
 
-    CCL_client_send_cmd(client, CS_CHATSERVER, cmsg, strlen(cmsg));
+    //CCL_client_send_cmd(client, CS_CHATSERVER, cmsg, strlen(cmsg));
+    CCL_client_send_cmd(client, CS_DISPLAYMESSAGE, cmsg, strlen(cmsg));
     FXFREE(&cmsg);
   }
   return 1;
@@ -2495,6 +2496,7 @@ CCLWin::onMsgServer(FXObject*, FXSelector, void*)
 			       _("Message:")) && result.length()) {
     char *cmsg = fxstrdup(result.text());
 
+    //CCL_client_send_cmd(client, CS_DISPLAYMESSAGE, cmsg, strlen(cmsg));
     CCL_client_send_cmd(client, CS_CHATSERVER, cmsg, strlen(cmsg));
     FXFREE(&cmsg);
   }
