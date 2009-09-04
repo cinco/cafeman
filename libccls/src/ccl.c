@@ -8,7 +8,7 @@
 
 /*#define DEBUG 1*/
 /*#define DEBUG_A*/
-#define DEBUG_T
+/*#define DEBUG_T */
 /* Static functions */
 static void _init_db(sqlite3 * db);
 static gint _loadMembersCB(gpointer ptr, gint argc,
