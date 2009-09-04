@@ -1,7 +1,7 @@
 m4_define([libcclc_major_version], [0])
-m4_define([libcclc_minor_version], [7])
-m4_define([libcclc_micro_version], [1])
-m4_define([libcclc_interface_age], [1])
+m4_define([libcclc_minor_version], [8])
+m4_define([libcclc_micro_version], [0])
+m4_define([libcclc_interface_age], [0])
 
 m4_define([libcclc_lt_current],
           [m4_eval(libcclc_minor_version + libcclc_micro_version - libcclc_interface_age)])
