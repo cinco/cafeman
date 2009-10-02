@@ -45,7 +45,7 @@ int print_job[256];
 int job_pages[256];
 int warn_lvl[256];
 FXuint prev_price[256];
-char *cybername = "mkahawa, By Unwire Technologies";
+char *cybername = "Mkahawa - from Unwire Technologies";
 
 FXDEFMAP(CCLWin) CCLWinMap[] =
 {
@@ -433,6 +433,17 @@ CCLWin::create()
   clientslist2->sortItems();
 
   show();
+}
+
+FXbool
+CCLWin::close(FXbool notify)
+{
+  if (FXMessageBox::question(this,MBOX_YES_NO,_("Exit Mkahawa"),
+			     _("Do you really want to quit Mkahawa?")) == MBOX_CLICKED_YES) {
+    FXMainWindow::close(TRUE);
+    return TRUE;
+  }
+  return FALSE;
 }
 
 void CCLWin::loadClients()
@@ -1739,6 +1750,9 @@ CCLWin::onCommand(FXObject*,FXSelector sel,void*)
 	  setAllClientPass();
 	break;
       case ID_QUITCLIENT:
+	break;
+      case ID_CLOSE:
+	printf("User is exiting now.\n");
 	break;
     }
     updateClientIcon(client);

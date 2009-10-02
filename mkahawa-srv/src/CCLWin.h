@@ -142,6 +142,7 @@ public:
   long onAllAllowMemberLogin(FXObject*,FXSelector,void* ptr);
   long onAllAllowUserLogin(FXObject*,FXSelector,void* ptr);
   long onListShutter(FXObject*,FXSelector,void* ptr);
+  long onExitPressed(FXObject*,FXSelector,void* ptr);
   FXbool employeeLogin(FXObject*, FXSelector, void*ptr);
   void employeeLogout(FXObject*, FXSelector, void*ptr);
   FXbool clientHelpIsUp(int client);
@@ -151,6 +152,7 @@ public:
   int  doNextUpdateFile(int client);
   int  getCurrentClient();
   long setAllClientPass();
+  FXbool close(FXbool notify);
 public:
   enum {
     ID_START = FXMainWindow::ID_LAST,ID_STOP,ID_UNSTOP,ID_SWAP,
