@@ -28,6 +28,10 @@ protected:
   FXIcon        *emplogicon;
   FXIcon        *delicon;
   FXIcon        *newicon;
+  FXIcon        *min10icon;
+  FXIcon        *min20icon;
+  FXIcon        *min30icon;
+  FXIcon        *min60icon;
   FXButton	*playbutton;
   FXButton	*stopbutton;
   FXButton	*unstopbutton;
@@ -40,6 +44,10 @@ protected:
   FXButton	*passbutton;
   FXButton      *loginbutton;
   FXButton      *msgbutton;
+  FXButton      *min10btn;
+  FXButton      *min20btn;
+  FXButton      *min30btn;
+  FXButton      *min60btn;
   FXIconList	*clientslist;
   FXFoldingList	*clientslist2;
   FXGIFIcon	*bpcicons[4];
@@ -68,14 +76,14 @@ protected:
   int		 toSwap;    // Client selected to be swaped with another
   int            curempid;
   int            loginstat;
-  FILE          *upfp;
-  UpdateInfo     upinfo;
   enum ListTypeEnum  ListType;
 public:
+  UpdateInfo     upinfo;
   int            curUpdClient;
   int            updFileCount;
-  FILE          *upfpx;
   char           flname[128];
+  FILE          *upfp;
+  FILE          *upfpx;
 protected:
   CCLWin(){}
 public:
@@ -111,6 +119,7 @@ public:
   uint getPageCount(char *cupstr, int *client);
   void updateSummaryInfo();
   void getClientInfoStr(int client, char *clbuf, int len);
+  int  dispMessage(char * message);
 
 public:
   long onCheckEvents(FXObject*,FXSelector,void*);
@@ -136,6 +145,7 @@ public:
   long onEmpLogin(FXObject*,FXSelector,void* ptr);
   long onMsgClient(FXObject*,FXSelector, void* ptr);
   long onMsgServer(FXObject*,FXSelector, void* ptr);
+  long onAlertClient(FXObject*,FXSelector, void* ptr);
   long onCallAssist(FXObject*,FXSelector,void* ptr);
   long onEnableAssist(FXObject*,FXSelector,void* ptr);
   long onEnableAllAssist(FXObject*,FXSelector,void* ptr);
@@ -163,7 +173,8 @@ public:
     ID_ALLSETMEMBER, ID_ALLPOWEROFF, ID_ALLREBOOT, ID_ALLMONITOROFF,
     ID_ALLALLOWUSERLOGIN, ID_ALLALLOWMEMBERLOGIN, ID_ALLENABLEASSIST,
     ID_UPDATECLIENT, ID_ALLUPDATECLIENT,ID_TOGGLELIST, ID_CLIENTSLIST2,
-    ID_SHUTTER, ID_SHUTTER2, ID_ALLADMINPASS, ID_LAST
+    ID_SHUTTER, ID_SHUTTER2, ID_ALLADMINPASS, ID_10MIN, ID_20MIN, ID_30MIN,
+    ID_60MIN, ID_LAST
   };
 };
 

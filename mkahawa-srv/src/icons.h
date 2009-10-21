@@ -40,15 +40,28 @@ extern const unsigned char swap_gif[];
 extern const unsigned char time_gif[];
 
 /* created by reswrap from file delbtn.gif */
-extern const unsigned char delbtn[];
+extern const unsigned char delbtn_gif[];
 
 /* created by reswrap from file emplogbtn.gif */
-extern const unsigned char emplogbtn[];
+extern const unsigned char emplogbtn_gif[];
 
 /* created by reswrap from file msgbtn.gif */
-extern const unsigned char msgbtn[];
+extern const unsigned char msgbtn_gif[];
 
 /* created by reswrap from file newbtn.gif */
-extern const unsigned char newbtn[];
+extern const unsigned char newbtn_gif[];
 
+/* created by reswrap from file flat3dbluebutton_10mins.gif */
+extern const unsigned char min10btn_gif[];
 
+/* created by reswrap from file flat3dbluebutton_20min.gif */
+extern const unsigned char min20btn_gif[];
+
+/* created by reswrap from file flat3dbluebutton_30min.gif */
+extern const unsigned char min30btn_gif[];
+
+/* created by reswrap from file flat3dbluebutton_1hr.gif */
+extern const unsigned char min60btn_gif[];
+
+/* created by reswrap from file flat3dbluebutton_1hr.gif */
+extern const unsigned char minemptybtn_gif[];

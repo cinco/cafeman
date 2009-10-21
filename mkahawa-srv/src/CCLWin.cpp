@@ -1,6 +1,8 @@
 #include <ccls.h>
 #include <fox-1.6/fx.h>
 #include <unistd.h>
+#include <pthread.h>
+
 using namespace FX;
 using namespace std;
 
@@ -21,8 +23,12 @@ using namespace std;
 #include "icons.h"
 #include "verifiers.h"
 
-//#define DEBUG 1
-//#define DEBUG_GUI 1
+long sendUpdateChunks(int client);
+void *dispMessage(void * message);
+
+//#define DEBUG
+//#define DEBUG_GUI
+//#define DEBUG_UPD 
 
 #define WARNTENMINUTE    10
 #define WARNFIVEMINUTE   5
@@ -41,11 +47,12 @@ extern EmployeesFrame     *employeesframe;
 extern ReportFrame        *reportframe;
 //extern FXApp              app;
 
-int print_job[256];
-int job_pages[256];
-int warn_lvl[256];
-FXuint prev_price[256];
-char *cybername = "Mkahawa - from Unwire Technologies";
+pthread_t    updth, msgth;
+int          print_job[256];
+int          job_pages[256];
+int          warn_lvl[256];
+FXuint       prev_price[256];
+char        *cybername = "Mkahawa Cyber Manager";
 
 FXDEFMAP(CCLWin) CCLWinMap[] =
 {
@@ -83,7 +90,11 @@ FXDEFMAP(CCLWin) CCLWinMap[] =
   FXMAPFUNC(SEL_SELECTED,CCLWin::ID_CLIENTSLIST2,CCLWin::onClientSelected2),
   FXMAPFUNC(SEL_RIGHTBUTTONRELEASE,CCLWin::ID_CLIENTSLIST,CCLWin::onShowClientMenu),
   FXMAPFUNC(SEL_RIGHTBUTTONRELEASE,CCLWin::ID_CLIENTSLIST2,CCLWin::onShowClientMenu2),
-  //  FXMAPFUNC(SEL_KEYPRESS,0,CCLWin::onKeyPress),
+  FXMAPFUNC(SEL_COMMAND,CCLWin::ID_10MIN,CCLWin::onCommand),
+  FXMAPFUNC(SEL_COMMAND,CCLWin::ID_20MIN,CCLWin::onCommand),
+  FXMAPFUNC(SEL_COMMAND,CCLWin::ID_30MIN,CCLWin::onCommand), 
+  FXMAPFUNC(SEL_COMMAND,CCLWin::ID_60MIN,CCLWin::onCommand),
+ //  FXMAPFUNC(SEL_KEYPRESS,0,CCLWin::onKeyPress),
   FXMAPFUNC(SEL_TIMEOUT,CCLWin::ID_TIMERTICK,CCLWin::onTimerTick)
 };
 
@@ -109,6 +120,22 @@ clitemSortFunc(const FXFoldingItem * l,const FXFoldingItem * r)
   return compare(lname,rname);
 }
 
+void *
+dispMessage(void * message)
+{
+  mainwin->dispMessage((char *)message);
+  free (message);
+}
+
+int
+CCLWin::dispMessage(char * message)
+{
+  FXMessageBox::information(getRoot(),
+  			MBOX_OK,_("Information Update"), (char *)message);
+  free (message);
+  return 0;
+}
+
 /****** CCLWin ******/
 CCLWin::CCLWin(FXApp * app)
 :FXMainWindow(app, cybername,NULL,NULL,DECOR_ALL,0,50,800,550)
@@ -131,7 +158,6 @@ CCLWin::CCLWin(FXApp * app)
   FXShutter *lshutter =
     new FXShutter(vsplitter,NULL,0,LAYOUT_FILL_X|LAYOUT_FILL_Y,
 		  0,0,0,0,0,0,0,0,0,0);
-  //FXFont *s_fonthandle = new FXFont(getApp(),"arial",10,FXFont::Bold);
   FXShutterItem *litem1 = new FXShutterItem(lshutter,_("Clients"),NULL,
 					    LAYOUT_FILL_X|LAYOUT_FILL_Y,
 					    0,0,0,0,0,0,0,0);
@@ -161,10 +187,10 @@ CCLWin::CCLWin(FXApp * app)
   unstopicon = new FXGIFIcon(getApp(),continue_gif);
   swapicon =   new FXGIFIcon(getApp(),swap_gif);
   timeicon =   new FXGIFIcon(getApp(),time_gif);
-  msgicon =    new FXGIFIcon(getApp(),msgbtn);
-  emplogicon = new FXGIFIcon(getApp(),emplogbtn);
-  delicon =    new FXGIFIcon(getApp(),delbtn);
-  newicon =    new FXGIFIcon(getApp(),newbtn);
+  msgicon =    new FXGIFIcon(getApp(),msgbtn_gif);
+  emplogicon = new FXGIFIcon(getApp(),emplogbtn_gif);
+  delicon =    new FXGIFIcon(getApp(),delbtn_gif);
+  newicon =    new FXGIFIcon(getApp(),newbtn_gif);
   //updicon =    new FXGIFIcon(getApp(),updbtn);
 
   playbutton =
@@ -261,15 +287,45 @@ CCLWin::CCLWin(FXApp * app)
   //  if (prgrs) delete prgrs;
   //prgrs = new FXProgressDialog(this, "Updating...", "Update in Progress",
   //		       PROGRESSDIALOG_NORMAL, 600, 400, 200, 50);
+
   prgrs = new FXProgressBar(hsplitter,NULL,0,PROGRESSBAR_NORMAL,0,0,300,10,
 			    DEFAULT_PAD,DEFAULT_PAD,DEFAULT_PAD,DEFAULT_PAD);
   //prgrs->setBarSize(10);
-  prgrs->setBarColor(FXRGB(50,70,190));
-  prgrs->setBarBGColor(FXRGB(200,200,230));
+  //prgrs->setBarColor(FXRGB(50,70,190));
+  //prgrs->setBarBGColor(FXRGB(200,200,230));
+  //prgrs->hide();
 
-  notpaidframe = new NotpaidFrame(hsplitter);
+
+  FXToolBar *speedbar;
+  speedbar = new FXToolBar(hsplitter,FRAME_RAISED|LAYOUT_TOP|LAYOUT_FILL_X,
+			   0,0,0,0,0,0,0,0,0,0);
+  hsplitter->setSplit(2,37);
+  min10icon =   new FXGIFIcon(getApp(),min10btn_gif);
+  min20icon =  new FXGIFIcon(getApp(),min20btn_gif);
+  min30icon =   new FXGIFIcon(getApp(),min30btn_gif);
+  min60icon =   new FXGIFIcon(getApp(),min60btn_gif);
+  //FXGIFIcon *minemptyicon =   new FXGIFIcon(getApp(),minemptybtn_gif);
+  min10btn = 
+    new FXButton(speedbar,_("\tGrant 10 Minutes"),min10icon,this,ID_10MIN,
+		 BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT,
+		 0,0,0,0,0,0,0,0);
+  min20btn =
+    new FXButton(speedbar,_("\tGrant 20 Minutes"),min20icon,this,ID_20MIN,
+		 BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT,
+		 0,0,0,0,0,0,0,0);
+  min30btn =
+    new FXButton(speedbar,_("\tGrant 30 Minutes"),min30icon,this,ID_30MIN,
+		 BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT,
+		 0,0,0,0,0,0,0,0);
+  min60btn =
+    new FXButton(speedbar,_("\tGrant 1 Hour"),min60icon,this,ID_60MIN,
+		 BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT,
+		 0,0,0,0,0,0,0,0);
+  /*  new FXButton(speedbar,_("Test"),minemptyicon,this,ID_60MIN,
+	       BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT,
+	       0,0,0,0,0,0,0,0); */  notpaidframe = new NotpaidFrame(hsplitter);
   hsplitter->setSplit(1,10);
-  hsplitter->setSplit(2,100);
+  //  hsplitter->setSplit(2,100);
   /* Log */
   logframe = new LogFrame(litem2->getContent());
   reportframe = new ReportFrame(litem3->getContent());
@@ -412,7 +468,16 @@ CCLWin::~CCLWin()
   delete delicon;
   delete emplogicon;
   delete msgicon;
+  delete min10icon;
+  delete min20icon;
+  delete min30icon;
+  delete min60icon;
 
+  /*  delete min10btn;
+  delete min20btn;
+  delete min30btn;
+  delete min60btn;
+  */
   for (int i = 0; i < 4; i++)
     delete bpcicons[i];
 
@@ -507,7 +572,6 @@ CCLWin::setClientDisconnected(int client,FXbool disconnected)
     if (client == curUpdClient)   curUpdClient = 0;
     CCL_client_flags_toggle(client, CLIENT_CONNECTED, !disconnected);
   }
-
 }
 
 void
@@ -1059,10 +1123,10 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
 	    }
 	  }
 	  else{
-	    char buf[64];
-
-	    snprintf(buf,64,"%s account has insufficient credit", 
-		     CCL_member_name_get(memberid));
+	    char buf[64], *cp;
+	    cp = _("account has insufficient credit");
+	    snprintf(buf,64,"%s %s",
+		     CCL_member_name_get(memberid), cp);
 	    FXMessageBox::information(mainwin,MBOX_OK,_("Member Login Failure"),
 				      buf);
 	  }
@@ -1192,9 +1256,10 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
       }
       break;
     case CC_CALLASSIST:
-      char buf[100];
+      char buf[100], *cp;
       
-      sprintf(buf, "[ %s ] requests for help.", CCL_client_name_get(client));
+      cp = "requests for help.";
+      sprintf(buf, "[ %s ] %s", CCL_client_name_get(client), cp);
       //FXMessageBox::information(mainwin,MBOX_OK,_("Message"),buf);
       //MSGWin *msgwin = new MSGWin(mainwin->getApp());
       //msgwin->show();
@@ -1204,7 +1269,7 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
 #endif
       break;
     case CC_UPDATE: 
-      //response to update
+      //response to CS_UPDATE
       long resp;
 
       resp = CCL_ntohl(((FXuint*) data)[0]);
@@ -1214,38 +1279,42 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
       if (resp) {
 	mainwin->curUpdClient = client;
 	//start sending the data
-	mainwin->sendUpdateChunk(client, 0);
+	//mainwin->sendUpdateChunk(client, 0);
+	pthread_create(&updth, NULL, (void *(*)(void *))sendUpdateChunks, (void *)client);
       }
       break;
     case CC_UPDATEDATA:
       //response to updatedata
-      resp = CCL_ntohl(((FXuint*) data)[0]);
-      if (resp) {
+      //resp = CCL_ntohl(((FXuint*) data)[0]);
+      /*if (resp) {
 	//start sending the data
 	mainwin->sendUpdateChunk(client, resp);
-	//wait a moment
-	usleep(1000);
-      }
+	}*/
       break;
     case CC_UPDATEEND:
       resp = CCL_ntohl(((FXuint*) data)[0]);
       mainwin->curUpdClient = 0;
       if (resp) { //success
 	//release data
-#ifdef DEBUG
-	printf("CC_UPDATEEND: Update Success\n");
+#ifdef DEBUG_UPD
+	printf("CC_UPDATEEND: Update Success: updFileCount = [%d]\n",
+	       mainwin->updFileCount);
 #endif
 	if (mainwin->updFileCount) {
 	  mainwin->updFileCount--;
 	  if (!mainwin->updFileCount){ //only message when complete
-	    char errstr[64];
-	  
+	    char errstr[128];
+	    
 	    sprintf(errstr, "Client %s update was successful", 
 		    CCL_client_name_get(client));
-	    FXMessageBox::information(mainwin,MBOX_OK,_("Update Complete"),
-				      _(errstr));    	  
+#ifdef DEBUG_UPD
+	    printf("CC_UPDATEEND: Update Success: %s\n", errstr);
+#endif
+	    //cp = strdup(errstr); 
+	    //pthread_create(&msgth, NULL, dispMessage, (void *)cp);
 	  }
-	  mainwin->doNextUpdateFile(client);
+	  else
+	    mainwin->doNextUpdateFile(client);
 	}
       }else{
 	char *cp, errstr[64];
@@ -1253,11 +1322,11 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
 	cp = (char *)data;
 	if (size > sizeof(FXuint)) cp += sizeof(FXuint);
 	snprintf(errstr, 64, "Update Failed: %s", cp);
-#ifdef DEBUG
+#ifdef DEBUG_UPD
 	printf("CC_UPDATEEND: Update Failed\n");
 #endif
-	FXMessageBox::information(mainwin,MBOX_OK,_("Update Complete"),
-				    _(errstr));    
+	//cp = strdup(errstr);
+	//pthread_create(&msgth, NULL, &dispMessage, (void *)cp);
       }
       break;
   }
@@ -1339,7 +1408,6 @@ CCLWin::onCheckEvents(FXObject*,FXSelector,void*)
 {
   CCL_check_events();
   getApp()->addTimeout(this,ID_CHECKEVENTS,100);
-
   return 1;
 }
 
@@ -1392,7 +1460,7 @@ CCLWin::getUpdateFileName(char *fname, int *buf)
 	|| FXMessageBox::question(this,MBOX_YES_NO,_("No File Selected"),
 				  _("Select an Update File?"),
 				  filename.text()) == MBOX_CLICKED_YES) {
-      snprintf(fname, 64, "%s", filename.text());
+      snprintf(fname, 256, "%s", filename.text());
       retval = FXStat::size(filename);
       //store path
       CCL_data_set_string(CCL_DATA_NONE,0,"update/path",filename.text());
@@ -1433,11 +1501,10 @@ CCLWin::doNextUpdateFile(int client)
     if (bp = strrchr(cp, '/')) *(++bp)=0; //delete filename part
     strncat(cp, fname, 64);
     startUpdateClient(client, cp);
-#ifdef DEBUG
+#ifdef DEBUG_UPD
     printf("doNextUpdateFile(): fname = %s\n", cp);
 #endif     
   }
-  
   return 0;
 }
 
@@ -1449,8 +1516,8 @@ CCLWin::startUpdateClient(int client, char *fname)
 
   upfp = fopen(fname, "r");
   if (!upfp){
-    msgstr = "Unable to open update file\n";
-#ifdef DEBUG
+    msgstr = _("Unable to open update file\n");
+#ifdef DEBUG_UPD
     printf("startUpdateClient(): %s [%s]\n", msgstr, fname);
 #endif
     return 0;
@@ -1458,29 +1525,27 @@ CCLWin::startUpdateClient(int client, char *fname)
   memset(&upinfo, 0, sizeof(upinfo));
   retval = fread(&upinfo, sizeof(upinfo), 1, upfp);
   if (!retval){
-    msgstr = "Unable to read update file\n";
-#ifdef DEBUG
+    msgstr = _("Unable to read update file\n");
+#ifdef DEBUG_UPD
     printf("startUpdateClient(): %s\n", msgstr);
 #endif
   }
   //Initiate update
-#ifdef DEBUG
+#ifdef DEBUG_UPD
   msgstr = "Initiating Update: ";
   printf("startUpdateClient(): %s -%s\n", msgstr,fname);
   print_update_info(&upinfo);
 #endif
   //prgrs->execute();
-  /* prgrs->raise();
-  prgrs->show();
-  prgrs->setFocus();*/
-  //printf("Progress: %d\n", prgrs->getProgress());
-  //printf("Progress Total: %d\n", prgrs->getTotal());
-  
-  prgrs->setTotal(FXuint(upinfo.fsize));
-  prgrs->setProgress(FXuint(1));
-
+  /* prgrs->raise(); 
+  //prgrs->show();
+  //repaint();
+  //prgrs->repaint();
+  //prgrs->setTotal(FXuint(upinfo.fsiz
+  //prgrs->setProgress(0);e));
+  //prgrs->setProgress(FXuint(1));
+  */
   CCL_client_send_cmd(client, CS_UPDATE, &upinfo, sizeof(upinfo));
-
   return retval;
 }
 
@@ -1488,26 +1553,25 @@ long
 CCLWin::updateClient(int client)
 {
   int retval, fd;
-  char fname[64], *msgstr, *cp;
+  char fname[256], *msgstr, *cp;
   int status = CCL_client_status_get(client);
   char hdrstr[100], sgnstr[32], filecntstr[32];
 
   msgstr = NULL;
   /*Must be admin*/
   if (getEmployeeID() != 1){
-    msgstr = "Only Admin can update clients.";
-#ifdef DEBUG
+    msgstr = _("Only Admin can update clients.");
+#ifdef DEBUG_UPD
     printf("updateClient(): %s [employee = %d]\n", msgstr, getEmployeeID());
 #endif
   }
   if (!(CCL_client_flags_get(client) & CLIENT_CONNECTED)){
-    msgstr = "Only connected Clients can be updated";
-#ifdef DEBUG
+    msgstr = _("Only connected Clients can be updated");
+#ifdef DEBUG_UPD
     printf("updateClient(): %s [client = %d]\n", msgstr, client);
 #endif
     return 0;
   }
-
   if (curUpdClient){  // a client is being updated
     FXMessageBox::information(getRoot(),MBOX_OK,_("Update in Progress"),
 			      _("Updates can only be made one at a time."));    
@@ -1520,24 +1584,27 @@ CCLWin::updateClient(int client)
   }
   //obtain the update filename
   if (!(retval = getUpdateFileName(fname, &fd)) ){
-    msgstr = "Update File not found\n"; 
-#ifdef DEBUG
-    printf("updateClient(): %s\n", msgstr);
+    msgstr = _("Update File not found\n"); 
+#ifdef DEBUG_UPD
+    printf("updateClient(): %s [%s]\n", msgstr, fname);
 #endif
     return 0;
   }
   //open the file
   if(!(upfpx = fopen(fname, "r"))){
-    msgstr = "Unable to open file\n"; 
-#ifdef DEBUG
+    msgstr = _("Unable to open file\n"); 
+#ifdef DEBUG_UPD
     printf("updateClient(): %s\n", msgstr);
+    printf("updateClient(): Filename [%s]\n", fname);
 #endif
     return 0;
   }
+  //CALL THE UPDATER THREAD HERE
   //check signature and decided how to update
   if (fgets(hdrstr, 100, upfpx)){
     if (!strncmp(hdrstr, "UTUF", 4)) { //an update file
       fclose(upfpx); 
+      updFileCount = 1;
       startUpdateClient(client, fname);
     }
     else if (!strncmp(hdrstr, "UTUL", 4)) { //an update list 
@@ -1550,14 +1617,14 @@ CCLWin::updateClient(int client)
       }
     }
     else{
-      msgstr = "Not an Unwire Technologies Update File\n";
-#ifdef DEBUG
+      msgstr = _("Not a Mkahawa Update File\n");
+#ifdef DEBUG_UPD
       printf("updateClient(): %s\n", msgstr);
 #endif
     }
   }
-#ifdef DEBUG
-  msgstr = "Started";
+#ifdef DEBUG_UPD
+  msgstr = "Started Update";
   printf("updateClient(): %s\n", msgstr);
 #endif
   return 1;
@@ -1567,7 +1634,7 @@ long
 CCLWin::updateAllClients()
 {
   int retval, fd;
-  char fname[64], buf[256];
+  char fname[256], buf[256];
 
   retval = getUpdateFileName(fname, &fd);
   if (retval){
@@ -1580,13 +1647,11 @@ CCLWin::updateAllClients()
 long
 CCLWin::setAllClientPass()
 {
-
   FXString clipass;
   int      size;
   FXInputDialog *dlg = new FXInputDialog(this,_("Admin Password"),
 					 _("New Client Admin Password: "),
-					 NULL,INPUTDIALOG_STRING);
-  
+					 NULL,INPUTDIALOG_STRING);  
   clipass = FXString((FXchar*)CCL_data_get_blob(CCL_DATA_NONE, 0, "adminpassword",&size));
   if (clipass.length())
     dlg->setText(clipass);
@@ -1620,7 +1685,6 @@ long
 CCLWin::onCommand(FXObject*,FXSelector sel,void*)
 {
   int current = clientslist->getCurrentItem();
-
   if (-1 == current)    return 1;
   int client = (int) (clientslist->getItemData(current));
   int status = CCL_client_status_get(client);
@@ -1689,12 +1753,10 @@ CCLWin::onCommand(FXObject*,FXSelector sel,void*)
 	etime = CCL_client_etime_get(client);
 	usedtime = CCL_client_time_used(client);
 	nusedtime = CCL_htonl(usedtime);
-
 	if (CCL_INACTIVE == CCL_client_status_get(client)
 	    && cashingframe->getSession() == CCL_log_session_find(client,
 								  stime,etime))
 	  cashingframe->setSession(0);
-
 	CCL_client_flags_toggle(client,USERSTOP,FALSE);
 	CCL_client_unstop(client);
 	CCL_client_unpause(client);
@@ -1718,7 +1780,7 @@ CCLWin::onCommand(FXObject*,FXSelector sel,void*)
 	break;
       case ID_UPDATECLIENT:
 	updateClient(client);
-#ifdef DEBUG
+#ifdef DEBUG_UPD
 	printf("End of Client Update Command\n");
 #endif
 	break;
@@ -1728,7 +1790,7 @@ CCLWin::onCommand(FXObject*,FXSelector sel,void*)
 	  setAllClientMember(client);
 	break;
       case ID_ALLMONITOROFF:
-	if (confirmAll())
+        if (confirmAll())
 	  send_cmd_to_all(CS_MONITOROFF,NULL,0);
 	//CCL_client_send_cmd(client,CS_MONITOROFF,NULL,0);
 	break;
@@ -1751,8 +1813,45 @@ CCLWin::onCommand(FXObject*,FXSelector sel,void*)
 	break;
       case ID_QUITCLIENT:
 	break;
+      case ID_60MIN:
+      case ID_30MIN:
+      case ID_20MIN:
+      case ID_10MIN:
+	{
+	  int     rem_time = CCL_client_timeout_get(client) / 60;
+	  int     sesstime;
+	  char    inqstr[100];
+	  int     was_inactive = 0;
+
+	  switch (FXSELID(sel)) {
+	  case ID_10MIN: sesstime = 10; break;
+	  case ID_20MIN: sesstime = 20; break;
+	  case ID_30MIN: sesstime = 30; break;
+	  case ID_60MIN: sesstime = 60; break;
+	  }
+	  /*confirm*/
+	  sprintf(inqstr, "Add %d mins to %s?", sesstime, CCL_client_name_get(client));
+	  if (FXMessageBox::question(this,MBOX_YES_NO,_("Adjust Timeout"),
+			     _(inqstr)) == MBOX_CLICKED_YES) {
+	    if (status == CCL_INACTIVE){ // start session
+	      onCommand(NULL, ID_START, NULL);
+	      was_inactive = 1;
+	      rem_time = 0;
+	    }					
+	    int    timeout = (rem_time + sesstime) * 60;
+	    if (was_inactive){ //subtract elapsed time from client
+	      timeout -=  (CCL_client_time_used(client) / 60);
+	      if (timeout < 0) timeout = 0;
+	    }
+	    FXuint ntimeout = CCL_htonl(timeout);
+	    CCL_client_timeout_set(client,timeout);
+	    CCL_client_send_cmd(client,CS_SETTIMEOUT,&ntimeout,sizeof(ntimeout));
+	    updateClientIcon(client);
+	  }
+	}
+	break;
       case ID_CLOSE:
-	printf("User is exiting now.\n");
+	//printf("User is exiting now.\n");
 	break;
     }
     updateClientIcon(client);
@@ -1766,11 +1865,9 @@ CCLWin::onAbout(FXObject*,FXSelector,void*)
 {
   FXMessageBox
     about(this,_("About"),getApp()->getAppName() + " " + VERSION + "\n" +
-	  "Modified by Bernard Owuor, Unwire Technologies (owuor@unwiretechnologies.com)",
+	  _("Modified by Bernard Owuor, Unwire Technologies (owuor@unwiretechnologies.net)"),
 	  bigicon,MBOX_OK|DECOR_TITLE|DECOR_BORDER);
-
   about.execute();
-
   return 1;
 }
 
@@ -1778,10 +1875,8 @@ long
 CCLWin::onSwap(FXObject*,FXSelector,void*)
 {
   int current = clientslist->getCurrentItem();
-
   if (-1 == current)
     return 1;
-
   if (-1 != toSwap) {
     playbutton->enable();
     pausebutton->enable();
@@ -1808,15 +1903,12 @@ long
 CCLWin::onTime(FXObject*,FXSelector,void*)
 {
   int current = clientslist->getCurrentItem();
-
   if (-1 == current)
     return 1;
-
   int client = (int) (clientslist->getItemData(current));
   int time = CCL_client_timeout_get(client) / 60;
   FXInputDialog *dlg = new FXInputDialog(this,_("Time"),_("Minutes:"),
 					 NULL,INPUTDIALOG_INTEGER);
-
   dlg->setLimits(1,0);
   dlg->setText(FXStringVal(time));
   if (client && dlg->execute()) {
@@ -1829,7 +1921,6 @@ CCLWin::onTime(FXObject*,FXSelector,void*)
     updateClientIcon(client);
   }
   delete dlg;
-
   return 1;
 }
 
@@ -1837,7 +1928,6 @@ long
 CCLWin::onAllAllowUserLogin(FXObject*,FXSelector,void*)
 {
   int i, client;
-
   int allow = clsmenu_allowuserlogin_check->getCheck() & ALLOWUSERLOGIN;
   for (int i=0; (-1 != (client = CCL_client_get_nth(i))); i++){
     CCL_client_flags_toggle(client,ALLOWUSERLOGIN, allow);
@@ -1850,11 +1940,9 @@ long
 CCLWin::onAllowUserLogin(FXObject*,FXSelector,void*)
 {
   int current = clientslist->getCurrentItem();
-
   if (-1 == current)
     return 1;
   int client = (int) (clientslist->getItemData(current));
-
   CCL_client_flags_toggle(client,ALLOWUSERLOGIN,
 			  !(CCL_client_flags_get(client) & ALLOWUSERLOGIN));
   int allow = CCL_htonl(CCL_client_flags_get(client) & ALLOWUSERLOGIN);
@@ -1887,7 +1975,6 @@ CCLWin::confirmAll()
   FXDialogBox dlg(this, _("Confirm Action"));
   FXVerticalFrame *vframe =
     new FXVerticalFrame(&dlg,LAYOUT_FILL_X|LAYOUT_FILL_Y,0,0,0,0,0,0,0,0,0,0);
-
   //confirm all first
   FXHorizontalFrame *hframe1 =
     new FXHorizontalFrame(vframe,LAYOUT_FILL_X|LAYOUT_FILL_Y);
@@ -1960,7 +2047,6 @@ CCLWin::onAllowMemberLogin(FXObject*,FXSelector,void*)
 			  !(CCL_client_flags_get(client) & ALLOWMEMBERLOGIN));
   int allow = CCL_htonl(CCL_client_flags_get(client) & ALLOWMEMBERLOGIN);
   CCL_client_send_cmd(client,CS_ALLOWMEMBERLOGIN,&allow,sizeof(allow));
-
   return 1;
 }
 
@@ -2042,7 +2128,6 @@ CCLWin::onListShutter(FXObject* fxo,FXSelector fxs,void* ptr)
   printf("Toggle ListType = Icons\n");
 #endif
   }
-
   return 1;
 }
 
@@ -2078,8 +2163,7 @@ CCLWin::onClientSelected2(FXObject*,FXSelector,void* ptr)
   int client = (int) (clientslist2->getItemData(item));
 
   if (-1 != toSwap) {
-  FXFoldingItem *oldidx = clientslist2->findItem(CCL_client_name_get(toSwap));
-
+    FXFoldingItem *oldidx = clientslist2->findItem(CCL_client_name_get(toSwap));
     CCL_client_swap(toSwap,client);
     updateClientIcon(client);
     updateClientIcon(toSwap);
@@ -2087,7 +2171,6 @@ CCLWin::onClientSelected2(FXObject*,FXSelector,void* ptr)
     updateClientStatus(toSwap);
     onSwap(NULL,0,NULL);	// Reenable buttons
   }
-
   item = clientslist2->getCurrentItem();
   client = (int) (clientslist2->getItemData(item));
   updateInfo(client);
@@ -2101,10 +2184,8 @@ CCLWin::onShowClientMenu(FXObject*,FXSelector,void* ptr)
 {
   FXEvent *event = (FXEvent *) ptr;
   int idx = clientslist->getItemAt(event->click_x,event->click_y);
-
   if (-1 != idx) { /* menu for client x */
     int client = (int) clientslist->getItemData(idx);
-
     clmenu_caption->setText(CCL_client_name_get(client));
     if (CCL_client_flags_get(client) & ALLOWUSERLOGIN)
       clmenu_allowuserlogin_check->setCheck(TRUE);
@@ -2125,7 +2206,6 @@ CCLWin::onShowClientMenu(FXObject*,FXSelector,void* ptr)
   else{  /*Now menu for all clients*/
     clsmenu->popup(NULL,event->root_x,event->root_y);
   }
-
   return 0;
 }
 
@@ -2135,10 +2215,8 @@ CCLWin::onShowClientMenu2(FXObject*,FXSelector,void* ptr)
 {
   FXEvent *event = (FXEvent *) ptr;
   FXFoldingItem *item = clientslist2->getItemAt(event->click_x,event->click_y);
-  
   if (item != NULL) { /* menu for client x */
     int client = (int) clientslist2->getItemData(item);
-
     clmenu_caption->setText(CCL_client_name_get(client));
     if (CCL_client_flags_get(client) & ALLOWUSERLOGIN)
       clmenu_allowuserlogin_check->setCheck(TRUE);
@@ -2189,8 +2267,7 @@ CCLWin::onTimerTick(FXObject*,FXSelector,void*)
     printf("LV_DETAILS\n");
 #endif
     if (int num = clientslist2->getNumItems()) {
-      int idx, client;
-      
+      int idx, client;      
       char buf[128];
 
       //clientslist2->clearItems();
@@ -2221,33 +2298,24 @@ void
 CCLWin::updateInfo(int client)
 {
   time_t time = 0;
-
   if (-2 != CCL_client_time_left(client))
     time = CCL_client_time_left(client);
   else
     time = CCL_client_time_used(client);
   int h = time / 3600,m = (time % 3600) / 60,s = (time % 3600) % 60;
   char buf[32];
-
   if (time > 0)
     snprintf(buf,32,"%.2d:%.2d:%.2d",h,m,s);
   else
     snprintf(buf,32,"--:--");
-
   i_time->setText(buf);
-
   int owedp = CCL_client_owed_products(client);
-
   snprintf(buf,32,"%.2f",owedp / 100.0);
   i_products->setText(buf);
-
   int owedt = CCL_client_owed_terminal(client);
-
   snprintf(buf,32,"%.2f",owedt / 100.0);
   i_terminal->setText(buf);
-
   int owed = owedt + owedp;
-
   snprintf(buf,32,"%.2f",owed / 100.0);
   i_owes->setText(buf);
 }
@@ -2263,7 +2331,8 @@ CCLWin::getClientInfoStr(int client, char *clbuf, int len)
   int h = ctime / 3600,m = (ctime % 3600) / 60;
   char startt[32], endt[32], clname[128], ststr[32];
   char sesslen[10], sesscost[20], prn[10];
-  char clistr[5][16] = {"FREE", "IN USE", "PAUSE", "STOPPED" };
+  //char clistr[5][16] = {"FREE", "IN USE"), _("PAUSE"), _("STOPPED")};
+  char clistr[5][16] = {"FREE", "IN USE", "PAUSE", "STOPPED"};
 
   //client name
   snprintf(clname, 64, "%s", CCL_client_name_get(client));
@@ -2276,7 +2345,6 @@ CCLWin::getClientInfoStr(int client, char *clbuf, int len)
   time_t etime = CCL_client_etime_get(client);
   if (!etime) etime = time(NULL);
   strftime(endt,32,"%H:%M",localtime(&etime));
-
   //end time
   time_t stime = CCL_client_stime_get(client);
   if (!stime) stime = time(NULL);
@@ -2306,7 +2374,6 @@ CCLWin::updateClientIcon(int client)
   int idx = clientslist->findItem(CCL_client_name_get(client));
 
   if (-1 == idx) return;
-
   if (CCL_client_time_left(client) == 0
       && CCL_ACTIVE == CCL_client_status_get(client))
     clientslist->setItemBigIcon(idx,bpcicons[3]);
@@ -2325,18 +2392,14 @@ CCLWin::onProductAdd(FXObject*,FXSelector,void* ptr)
 
   if (!prnt || -1 == idx)
     return 0;
-
   int client = (int) (clientslist->getItemData(idx));
   int amount = 0;
-
   if (FXInputDialog::getInteger(amount,this,_("Add Products"),
 				_("Enter the quantity:")) && amount >= 1) {
     int pid = (int) child->getData();
-
     CCL_client_product_add(client,pid,amount);
     productsframe->updateClientProducts(client);
   }
-
   return 1;
 }
 
@@ -2346,19 +2409,15 @@ CCLWin::onProductRemove(FXObject*,FXSelector,void* ptr)
   FXFoldingItem *item = (FXFoldingItem *) ptr;
   int idx = clientslist->getCurrentItem();
 
-  if (-1 == idx)
-    return 0;
+  if (-1 == idx) return 0;
   int client = (int) (clientslist->getItemData(idx));
   int amount = 0;
-
   if (FXInputDialog::getInteger(amount,this,_("Remove Products"),
 				_("Quantity:")) && amount >= 1) {
     int pid = (int) item->getData();
-
     CCL_client_product_sub(client,pid,amount);
     productsframe->updateClientProducts(client);
   }
-
   return 1;
 }
 
@@ -2394,7 +2453,6 @@ CCLWin::employeeLogin(FXObject*,FXSelector,void*)
     new FXVerticalFrame(&dialog,LAYOUT_FILL_X|LAYOUT_FILL_Y,0,0,0,0,0,0,0,0,0,0);
   FXHorizontalFrame *hframe =
     new FXHorizontalFrame(vframe,LAYOUT_FILL_X|LAYOUT_FILL_Y);
-
   FXButton okbtn(hframe,_("   Ok   "),NULL,&dialog,FXDialogBox::ID_ACCEPT, 
 		 FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT,
 		 0,0,100,20);
@@ -2402,7 +2460,6 @@ CCLWin::employeeLogin(FXObject*,FXSelector,void*)
 		     FRAME_RAISED|LAYOUT_TOP|LAYOUT_RIGHT,
 		     0,0,100,20);
   FXbool retval; 
-
   okbtn.setWidth(100);
   cancelbtn.setWidth(100);
   retval = FALSE;
@@ -2415,14 +2472,13 @@ CCLWin::employeeLogin(FXObject*,FXSelector,void*)
       if (authemp((FXuchar *)usrname.getText().text(), 
 		  (FXuchar *)passwd.getText().text())){
 	FXMessageBox::information(getRoot(),MBOX_OK,_("Welcome"),
-			    _("Welcome to Unwire Technologies Cyber Manager"));
+			    _("Welcome to Mkahawa Cyber Manager"));
 	retval = TRUE;
 	loginstat = 1;
 	setPerms(e_inf.lvl);
 	/****/
 	btn = clientshutter->getButton();
-	
-        //sprintf(buf, "Client - %s", usrname.getText().text()); 
+	//sprintf(buf, "Client - %s", usrname.getText().text()); 
 	sprintf(buf, "Client - %s", CCL_employee_name_get(e_inf.empID));
 	btn->setText(buf);
       }
@@ -2430,7 +2486,6 @@ CCLWin::employeeLogin(FXObject*,FXSelector,void*)
 	FXMessageBox::information(getRoot(),MBOX_OK,_("Login Failure"),
 
 				    _("Invalid Username or Password"));
-
 	retval = TRUE;
 	loginstat = 0;
 	setPerms(0);
@@ -2439,7 +2494,6 @@ CCLWin::employeeLogin(FXObject*,FXSelector,void*)
     else 
       break;
   } while (!retval);
-
   return retval;
 }
 
@@ -2469,7 +2523,6 @@ CCLWin::setPerms(unsigned long perm)
   if(!(perm & PERMMBREDIT)) membersframe->disable();
   employeesframe->setPerms(perm);
   if (!(perm & PERMEMPEDIT)) employeesframe->disable();
-
 #ifdef DEBUG 
   printf("Perms set to %08X\n", perm);
 #endif
@@ -2484,7 +2537,6 @@ CCLWin::onMsgClient(FXObject*, FXSelector, void*)
 
   if (-1 == current) return 1;
   int client = (int)(clientslist->getItemData(current));
-
   if (FXInputDialog::getString(result,this,_("Message to Client"), 
 			       _("Message:")) && result.length()) {
     char *cmsg = fxstrdup(result.text());
@@ -2509,14 +2561,11 @@ CCLWin::onMsgServer(FXObject*, FXSelector, void*)
   if (FXInputDialog::getString(result,this,_("Message to Client"),
 			       _("Message:")) && result.length()) {
     char *cmsg = fxstrdup(result.text());
-
-    //CCL_client_send_cmd(client, CS_DISPLAYMESSAGE, cmsg, strlen(cmsg));
     CCL_client_send_cmd(client, CS_CHATSERVER, cmsg, strlen(cmsg));
     FXFREE(&cmsg);
   }
   return 1;
 }
-
 
 FXbool
 CCLWin::clientHelpIsUp(int client)
@@ -2525,6 +2574,25 @@ CCLWin::clientHelpIsUp(int client)
   return TRUE;
   */
   return FALSE;
+}
+
+
+long
+CCLWin::onAlertClient(FXObject*, FXSelector, void*)
+{
+  char     *cmsg; 
+  FXString  result;
+  int       current = clientslist->getCurrentItem();
+
+  if (-1 == current) return 1;
+  int client = (int)(clientslist->getItemData(current));
+  if (FXInputDialog::getString(result,this,_("Message to Client"), 
+			       _("Message:")) && result.length()) {
+    char *cmsg = fxstrdup(result.text());
+    CCL_client_send_cmd(client, CS_ALERTCLIENT, cmsg, strlen(cmsg));
+    FXFREE(&cmsg);
+  }
+  return 1;
 }
 
 long
@@ -2536,11 +2604,12 @@ CCLWin::sendUpdateChunk(int client, long pos)
 
   if (pos >= (upinfo.fsize-sizeof(UpdateInfo))){ //complete update
     CCL_client_send_cmd(client, CS_UPDATEEND, NULL, 0);
-#ifdef DEBUG
+#ifdef DEBUG_UPD
     printf("sendUpdateChunk(): Server Ending: Sent [%d bytes] Offset[%d]\n", 
 	   upinfo.fsize, 0);
 #endif
-    prgrs->setProgress(0);
+    //prgrs->setProgress(0);
+    //prgrs->hide();
     fclose(upfp);
     return 0;
   }
@@ -2548,18 +2617,52 @@ CCLWin::sendUpdateChunk(int client, long pos)
   retval = fread(chunk.buf, 1, MAXCHUNKSIZE, upfp);
   if (!retval){
     msgstr = "Unable to read update file\n";
-#ifdef DEBUG
+#ifdef DEBUG_UPD
     printf("sendUpdateChunk(): [retval = %d] %s\n", retval, msgstr);
 #endif
     return 0;
   }
-  prgrs->setProgress(pos);
+  //prgrs->setProgress(pos);
   chunk.blen = retval;
   chunk.pos = pos;
   chunksize = sizeof(chunk.blen) + sizeof(chunk.pos) + chunk.blen;
   CCL_client_send_cmd(client, CS_UPDATEDATA, (char *)&chunk, chunksize);
-#ifdef DEBUG
+#ifdef DEBUG_UPD
   printf("sendUpdateChunk(): Sent [%d bytes] Offset[%d]\n", retval, pos);
 #endif
+  return 1;
+}
+
+
+long
+sendUpdateChunks(int client)
+{
+  struct CHUNK chunk;
+  int retval, chunksize, pos;
+  char *msgstr;
+
+  for (pos=0; pos < mainwin->upinfo.fsize; pos += MAXCHUNKSIZE){
+    retval = fread(chunk.buf, 1, MAXCHUNKSIZE, mainwin->upfp);
+    if (!retval){
+      msgstr = "Unable to read update file\n";
+#ifdef DEBUG_UPD
+      printf("sendUpdateChunks(): [retval = %d] %s\n", retval, msgstr);
+#endif
+      return 0;
+    }
+    chunk.blen = retval;
+    chunk.pos = pos;
+    chunksize = sizeof(chunk.blen) + sizeof(chunk.pos) + chunk.blen;
+    CCL_client_send_cmd(client, CS_UPDATEDATA, (char *)&chunk, chunksize);
+#ifdef DEBUG_UPD
+    printf("sendUpdateChunks(): [%d] Sent [%d bytes] Offset[%d]\n", client, retval, pos);
+#endif
+  }
+  CCL_client_send_cmd(client, CS_UPDATEEND, NULL, 0);
+#ifdef DEBUG_UPD
+  printf("sendUpdateChunks(): Server Ending: Sent [%d bytes] Offset[%d]\n", 
+	 mainwin->upinfo.fsize, pos);
+#endif
+  fclose(mainwin->upfp);
   return 1;
 }
