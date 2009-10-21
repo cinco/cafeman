@@ -18,6 +18,7 @@ static int runMainLoop(FXApp *app);
 #include "gui.h"
 #include "cclcfox.h"
 #include "locker.h"
+extern int init_img(char *libname, const char *version);
 
 CCLCFox *cclcfox;
 ClientWin *clientwin;
@@ -121,13 +122,14 @@ main(int argc,char *argv[])
   bindtextdomain("mkahawa","./locale");
 # endif
 #endif
+  init_img("/usr/local/lib/libmkwimg.so","1.0");
 
   if (!parse_args(argc,argv)) {
     show_help(argv[0]);
     return 1;
   }
 
-  FXApp app("Mkahawa","Mkahawa Cyber Timer, by Unwire Technologies");
+  FXApp app("mkahawa","mkahawa Cyber Timer");
 
   app.init(argc,argv);
   clientwin = new ClientWin(&app);
@@ -137,7 +139,6 @@ main(int argc,char *argv[])
   app.create();
 
   cclcfox->initNetworking(server,port,myname);
-  
   clientwin->move(grabber->getX(),grabber->getY() + grabber->getHeight());
   cclcfox->showInfo();
   //now grab the screen

@@ -31,6 +31,8 @@
 #define CS_UPDATEDATA     23UL  /* Send update data */
 #define CS_UPDATEEND      24UL  /* End update */ 
 #define CS_SETADMINPASS   25UL  /* Set client admin password */ 
+#define CS_REQVERSION     26UL  /* Request Version */
+#define CS_ALERTCLIENT    27UL  /* Send an alert / transient message */
 
 
 /* Commands sent by the client */
@@ -49,6 +51,15 @@
 #define CC_UPDATE         14UL  /* Respond to CS_UPDATE */
 #define CC_UPDATEDATA     15UL  /* Respond to CS_UPDATEDATA */
 #define CC_UPDATEEND      16UL  /* Respond to CS_UPDATEEND */
-#define CC_MAXCMDNR       16UL  /* Maximum Command ID*/
+#define CC_VERSION        17UL  /* Respond to CS_REQVERSION */
+#define CC_ALERTSERVER    18UL  /* Send alert to Server */
+#define CC_MAXCMDNR       18UL  /* Maximum Command ID*/
+
+
+#define MK_MAJOR_VER 1
+#define MK_MINOR_VER 0
+#define MK_RELEASE   1
+
+extern unsigned long MkahawaVersion;
 
 #endif /* ifndef CMDS_H */

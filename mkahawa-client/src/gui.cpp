@@ -12,10 +12,10 @@ using namespace FX;
 
 #include "cclcfox.h"
 #include "gui.h"
-#include "lockpix.h"
 
 extern CCLCFox *cclcfox;
 extern ClientWin *clientwin;
+extern unsigned char *grabber_gif;
 
 #ifdef WIN32
 static HHOOK kHook = NULL;

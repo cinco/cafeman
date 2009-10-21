@@ -11,14 +11,19 @@ using namespace FX;
 
 //#define DEBUG 1
 //#define DEBUG_PASS 1
+//#define DEBUG_UPD 1
 extern CCLCFox *cclcfox;
 extern ClientWin *clientwin;
 extern Locker *locker;
 extern Grabber *grabber;
 
+unsigned long MkahawaVersion = (((MK_MAJOR_VER << 8)|MK_MINOR_VER) << 8) | MK_RELEASE;
 struct CHUNK *chunk;
 void print_hash(unsigned char *hash, int len);
 void *dispMessage(void * message);
+pthread_t th, chatthr;
+int updateState = OFFUPDATESTATE;
+
 
 void
 onEventCallback(FXuint cmd,void * data,FXuint size,void * userdata)
@@ -30,8 +35,8 @@ long
 setAdminPass(char *pass, int plen)
 {
 
-  FXString path = FXSystem::getHomeDirectory() + "/.unwtimer";
-  FXString fname = "unwtimer.inf";
+  FXString path = FXSystem::getHomeDirectory() + "/.mkahawa";
+  FXString fname = "mkahawa.inf";
 
 #ifdef DEBUG_PASS
   printf("setAdminPass(): pass = %s\n", pass);
@@ -81,7 +86,7 @@ checkPass(char *pass, int plen)
   FILE *fp;
   FXString pname;
 
-  pname = FXSystem::getHomeDirectory() + "/.unwtimer/unwtimer.inf";
+  pname = FXSystem::getHomeDirectory() + "/.mkahawa/mkahawa.inf";
   fp = fopen(pname.text(), "r");
   if (fp){
     FXuchar digest[CCLC_MD5_DIGEST_LENGTH];
@@ -136,6 +141,7 @@ CCLCFox::CCLCFox()
   CCLCFox::cclc = this;
   clientwin->disableHelpBtn();
   updata = NULL;
+  //init data
 }
 
 CCLCFox::~CCLCFox()
@@ -352,9 +358,7 @@ CCLCFox::rebootSystem()
   tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
   // Get the shutdown privilege for this process.
   AdjustTokenPrivileges(hToken,FALSE,&tkp,0,(PTOKEN_PRIVILEGES) NULL,0);
-
   OSVERSIONINFO osversion;
-
   osversion.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
   GetVersionEx(&osversion);
   if (osversion.dwPlatformId == VER_PLATFORM_WIN32_NT)	// NT/2000/XP
@@ -379,31 +383,15 @@ CCLCFox::turnOffMonitor()
 void
 CCLCFox::showMessage(void * message)
 {
-  //FXMessageBox::information(grabber->getRoot(),MBOX_OK,_("Message"),message);
-
-  //FXDialogBox dialog(clientwin->getApp(),_("Message from Operator"), 
-  //FXDialogBox dialog(clientwin->getOwner(),_("Message from Operator"), 
-  //FXDialogBox dialog(clientwin->getRoot(),_("Message from Operator"), 
-  //		     DECOR_TITLE|DECOR_BORDER, 600, 600);
-  //FXLabel lbl2(&dialog,_(message));
-
-  //FXButton okbtn(&dialog,_("Ok"),NULL,&dialog,FXDialogBox::ID_ACCEPT);
-  //FXButton cancelbtn(&dialog,_("Cancel"),NULL,&dialog,FXDialogBox::ID_CANCEL);
-  //dialog.show();
   FXMessageBox::information(clientwin->getRoot(),
   			MBOX_OK,_("Message From Manager"), (char *)message);
-
 }
 
 void *
 dispMessage(void * message)
 {
-
-  printf("Thread was started\n");
   FXMessageBox::information(grabber->getRoot(),
   			MBOX_OK,_("Message From Manager"), (char *)message);
-
-  printf("Thread was ended\n");
 }
 
 void
@@ -444,14 +432,11 @@ CCLCFox::unlockWithPass(int id,FXString password)
 {
   char val[sizeof(id) + CCLC_MD5_DIGEST_LENGTH * sizeof(FXuchar)];
   FXuchar digest[CCLC_MD5_DIGEST_LENGTH];
-
   CCLC_MD5((FXuchar*)(password.text()),password.length(),digest);
   ((FXuint*)val)[0] = CCLC_htonl(id);
   memcpy(((FXuint*)val)+1,digest,CCLC_MD5_DIGEST_LENGTH); 
-  
   CCLC_send_cmd(CC_MEMBERLOGIN,val,sizeof(val) * sizeof(char));
 }
-
 
 void
 CCLCFox::unlockWithPass(FXString login,FXString password)
@@ -463,13 +448,11 @@ CCLCFox::unlockWithPass(FXString login,FXString password)
 
   CCLC_MD5((FXuchar*)(password.text()),password.length(),digest);
   memcpy(val,login_name,strlen(login_name) + 1);
-  memcpy(val + strlen(login_name) + 1,digest,CCLC_MD5_DIGEST_LENGTH); 
-  
+  memcpy(val + strlen(login_name) + 1,digest,CCLC_MD5_DIGEST_LENGTH);   
   CCLC_send_cmd(CC_MEMBERLOGINWITHNAME,val,sizeof(val) * sizeof(char));
-  if (!strncmp(login_name, "administrator", 13)){
+  if (!strncmp(login_name, _("administrator"), 13)){
     if (checkPass((char *)password.text(), password.length())) 
-      //unlock all the same
-      unlockScreen();
+      unlockScreen();      //unlock all the same
   }
 }
 
@@ -492,7 +475,6 @@ CCLCFox::exitProgram()
   GetVersionEx(&osversion);
   if (osversion.dwPlatformId == VER_PLATFORM_WIN32_NT) {	// NT/2000/XP
     HWND hwnd = FindWindow("Shell_traywnd",NULL);
-
     EnableWindow(hwnd,TRUE);
     HKEY hk;
     const char *key =
@@ -512,7 +494,6 @@ CCLCFox::execCommand(FXuint cmd,const void *data,FXuint datasize)
 {
   FXuint hdata = 0;
   long resp, chsize;
-  pthread_t th;
 
   switch (cmd) {
     case CS_STOP:
@@ -549,22 +530,15 @@ CCLCFox::execCommand(FXuint cmd,const void *data,FXuint datasize)
       break;
     case CS_DISPLAYMESSAGE:
       pthread_create(&th, NULL, &dispMessage, (void *)data);
-      //showMessage((void *)data);
       break;
     case CS_QUITCLIENT:
       exitProgram();
       break;
     case CS_UNLOCKSCREEN:
       unlockScreen();
-#ifdef DEBUG
-      printf("UnLocking Screen\n");
-#endif
       break;
     case CS_LOCKSCREEN:
       lockScreen();
-#ifdef DEBUG
-      printf("Locking Screen\n");
-#endif
       break;
     case CS_ENABLEPASSWORDEDIT:
       clientwin->setPasswordEnabled(CCLC_ntohl((*((int *) data))));
@@ -579,17 +553,9 @@ CCLCFox::execCommand(FXuint cmd,const void *data,FXuint datasize)
       clientwin->enableAssist(bool(CCLC_ntohl((*((int *) data)))));
       break;
     case CS_CHATSERVER:
-#ifdef DEBUG
-      printf("Start Chatting\n");
-#endif
-      pthread_create(&th, NULL, &dispMessage, (void *)data);
-      //FXMessageBox::information(clientwin->getRoot(),
-      //			MBOX_OK,_("Message From Manager"), (char *)data);
+      pthread_create(&chatthr, NULL, &dispMessage, (void *)data);
       break;
     case CS_CALLASSIST:
-#ifdef DEBUG
-      printf("Assistant Acknowledged\n");
-#endif
       ack_assist = 1;
       clientwin->enableHelpBtn();
       break;
@@ -601,15 +567,15 @@ CCLCFox::execCommand(FXuint cmd,const void *data,FXuint datasize)
 	resp = CCLC_htonl(0);
       }
       CCLC_send_cmd(CC_UPDATE, &resp, sizeof(resp));
-#ifdef DEBUG
+#ifdef DEBUG_UPD
       printf("Update Acknowledged: resp=%d\n", resp);
 #endif
       break;
     case CS_UPDATEDATA:
+      updateState = ONUPDATESTATE;
       chunk = (struct CHUNK*)data;
-      
-      resp = chunk->pos;//CCLC_ntohl(((FXuint*) data)[0]);
-      chsize = chunk->blen;//CCLC_ntohl(((FXuint*) data)[1]);
+      resp = chunk->pos;
+      chsize = chunk->blen;
       if (storeUpdateChunk((char *)data, (long)datasize)){
 	resp += chsize;
 	resp = CCLC_htonl(resp);
@@ -617,20 +583,15 @@ CCLCFox::execCommand(FXuint cmd,const void *data,FXuint datasize)
       else{
 	resp = CCLC_htonl(resp);
       }
-      CCLC_send_cmd(CC_UPDATEDATA, &resp, sizeof(resp));
-#ifdef DEBUG
+      //CCLC_send_cmd(CC_UPDATEDATA, &resp, sizeof(resp));
+#ifdef DEBUG_UPD
       printf("Update Data Acknowledged\n");
 #endif
-      //wait awhile
-      usleep(1000);
       break;
     case CS_UPDATEEND:
       long resp;
       char msgstr[100], *cp;
       
-#ifdef DEBUG
-      printf("Update End\n");
-#endif
       if (doUpdate()){ //success
 	resp = 1;
 	resp = CCLC_htonl(resp);
@@ -641,10 +602,11 @@ CCLCFox::execCommand(FXuint cmd,const void *data,FXuint datasize)
 	cp = msgstr;
 	*cp = CCLC_htonl(resp);
 	cp += sizeof(long);
-	snprintf(cp, 100, "Was unable to write update file");
+	snprintf(cp, 100, _("Was unable to write update file"));
 	CCLC_send_cmd(CC_UPDATEEND, msgstr, sizeof(resp)+strlen(cp));
       }
-#ifdef DEBUG
+      updateState = OFFUPDATESTATE;
+#ifdef DEBUG_UPD
       printf("Update End Acknowledged\n");
 #endif
       break;
@@ -670,7 +632,8 @@ CCLCFox::onTimer(FXObject*,FXSelector,void*)
 
     snprintf(buf,8,"%.2d:%.2d",hours,mins);
     clientwin->setTime(buf);
-    CCLC_send_cmd(CC_GETOWED,NULL,0);
+    if (updateState != ONUPDATESTATE)  //quiet during update
+      CCLC_send_cmd(CC_GETOWED,NULL,0);
     if (0 < timeout && usedtime > timeout)
       userExit();
   }
@@ -682,7 +645,7 @@ CCLCFox::onTimer(FXObject*,FXSelector,void*)
 long
 CCLCFox::onPollPrinting(FXObject*,FXSelector,void*)
 {
-  int poll_len = 1500; //Normal polling is every 1.5 secs
+  int poll_len = 1500; 
 
   if (active) {
     pollPrinting();
@@ -721,8 +684,8 @@ void
 CCLCFox::pollPrinting()
 {
   struct stat tstat;
-  int n, lnlen;
-  char buf[BUFSIZE], *cp, *np;
+  int         n, lnlen;
+  char        buf[BUFSIZE], *cp, *np;
 
   if (!can_print_poll) {
 #ifdef DEBUG
@@ -786,9 +749,7 @@ void
 CCLCFox::askForHelp()
 {
   ack_assist = 0;
-  //send the help message
   CCLC_send_cmd(CC_CALLASSIST,NULL,0);
-  /*CCLC_send_cmd(CC_CALLASSIST,buf,10);*/
 #ifdef DEBUG
   printf("askForHelp: Called the assistant\n");
 #endif
@@ -801,17 +762,6 @@ print_update_info(UpdateInfo *ui)
   printf("dest_fname: [%s]\n", ui->dest_fname);
   printf("dest_path: [%s]\n", ui->dest_path);
   printf("File Size: [%ld]\n", ui->fsize);
-  /*
-  char dest_fname[24];
-  char dest_path[128];
-  long fsize;
-  long fmode;
-  long vernr;
-  char verstr[16];
-  long key;
-  long lbuf;
-  char cbuf[24];
-  */
 }
 
 long
@@ -821,34 +771,30 @@ CCLCFox::authUpdate(void *hdr, long len)
 
   if (len < sizeof(UpdateInfo))
     return 0; //size checking
-
   memset(&cui, 0, sizeof(UpdateInfo));
   ui = (UpdateInfo *)hdr;
   cui = *ui;
   //authenticate & verify data
-#ifdef DEBUG
+#ifdef DEBUG_UPD
   print_update_info(ui);
 #endif
   if (cui.fsize > 4000000) {
-#ifdef DEBUG
+#ifdef DEBUG_UPD
     printf("authUpdate(): file is too large\n");
 #endif
     return 0;
   }
-  //allocate memory
   if (updata) {
     free(updata);
     updata = NULL;
   }
-      
   updata = (char *)malloc(cui.fsize);
   if (!updata){
-#ifdef DEBUG
+#ifdef DEBUG_UPD
     printf("authUpdate(): Unable to allocate memory\n");
 #endif
     return 0;
   }
-  
   return 1;
 }
 
@@ -856,7 +802,7 @@ long
 CCLCFox::storeUpdateChunk(char *dat, long datlen)
 {
   memcpy((updata+chunk->pos), chunk->buf, chunk->blen);
-#ifdef DEBUG
+#ifdef DEBUG_UPD
   printf("storeUpdateChunk(): Update Chunk Stored: %6d [%6d]\n",
 	 chunk->pos, chunk->blen);
 #endif
@@ -872,27 +818,28 @@ CCLCFox::process_update_data()
 long 
 CCLCFox::doUpdate()
 {
-  FXString   pname;// = cui.dest_path;
-  FXString   fname;// =  pname +"/"+ cui.dest_fname;
+  FXString   pname;
+  FXString   fname;
   FILE      *fp;
   int        retval = 0;
   FXuint     fmode;
   char       md[50];
 
   fname = FXString(cui.dest_path) + FXString(cui.dest_fname);
-#ifdef DEBUG
+#ifdef DEBUG_UPD
   printf("doUpdate(): Filename: %s\n", fname.text());
 #endif
-  //If the file already exists, change the name
   if (FXStat::exists(fname)){
-    FXFile::rename(fname, fname+".old");
+    int i;
+    for (i=0; (FXStat::exists(fname+"."+FXStringVal(i))); i++);
+    FXFile::rename(fname, fname+"."+FXStringVal(i));
   }
   //now authenticate / decrypt
   if (!process_update_data()) return 0;
   //then write file
   fp = fopen(fname.text(), "w");
   if (!fp){
-#ifdef DEBUG
+#ifdef DEBUG_UPD
     printf("doUpdate(): Unable to open file: %s\n", fname.text());
 #endif
     return 0;
@@ -900,7 +847,7 @@ CCLCFox::doUpdate()
   retval = fwrite(updata, cui.fsize, 1, fp);
   fclose(fp);
   fmode = (FXuint) cui.fmode;
-#ifdef DEBUG
+#ifdef DEBUG_UPD
   printf("doUpdate(): Update Completed: %s [mode=%O]\n", fname.text(), 
 	 fmode);
 #endif

@@ -12,9 +12,7 @@
 #include <time.h>
 
 #include "update.h"
-
 #include "cmds.h"
-#include "update.h"
 
 #include <cclc.h>
 
@@ -96,3 +94,4 @@ public:
   char *cupslogfile;
 };
 #endif
+

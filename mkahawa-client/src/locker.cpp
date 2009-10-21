@@ -15,10 +15,9 @@
 using namespace FX;
 
 #include "cclcfox.h"
-#include "lockpix.h"
 #include "locker.h"
-
 extern CCLCFox *cclcfox;
+extern unsigned char *locker_gif;
 #ifdef MACOSX
 extern Locker *locker;
 #endif
@@ -210,9 +209,9 @@ Locker::onHandleMacOSXEvents(FXObject*,FXSelector,void*)
 }
 #endif
 
-Locker::Locker(FXApp * app)
-:FXShell(app,0,0,0,0,0)
+Locker::Locker(FXApp * app):FXShell(app,0,0,0,0,0)
 {
+  void *imgpix = (void *)locker_gif;
   enable();
   ctext = fxstrdup(_("Click here to start"));
   mid = -1;
@@ -234,7 +233,7 @@ Locker::Locker(FXApp * app)
     lockpix->loadPixels(stream);
     stream.close();
   } else // If not, lets show the CCL logo
-    lockpix = new FXGIFImage(getApp(),lockscreen_gif,IMAGE_OPAQUE);
+    lockpix = new FXGIFImage(getApp(),imgpix,IMAGE_OPAQUE);
 
   allowmemberlogin = FALSE;
   allowuserlogin = TRUE;

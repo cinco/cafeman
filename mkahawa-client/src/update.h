@@ -16,11 +16,14 @@ typedef struct
   char cbuf[24];
 } UpdateInfo;
 
-#define MAXCHUNKSIZE 1024
+#define MAXCHUNKSIZE 2048
 struct CHUNK{
   uint pos;
   uint blen;
   char buf[MAXCHUNKSIZE];
 };
+#define ONUPDATESTATE 1
+#define OFFUPDATESTATE 0
 
+extern int updateState;
 #endif
