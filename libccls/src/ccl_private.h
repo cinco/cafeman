@@ -25,6 +25,7 @@
 #ifndef G_OS_WIN32
 #define INVALID_SOCKET	-1
 #define SOCKET_ERROR	-1
+#define MAX_CLIENT_PACKET_SIZE  256
 #else
 typedef gint socklen_t;
 #endif

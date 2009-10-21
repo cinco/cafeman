@@ -677,14 +677,14 @@ int do_cnxn_proc(void *arg)
 	bytes = _recvall(bio, &size, sizeof(size));
 	if (0 >= bytes || bytes != sizeof(size))
 	  connection_closed = TRUE;
-#ifdef DEBUG_T
-	printf ("Client = %d: Command [%04X] Size: %d\n", client, cmd, size);
-#endif
       }
     cmd = CCL_ntohl(cmd);
     size = CCL_ntohl(size);
-    
-    if (!connection_closed && 0 < cmd && 0 < size)
+#ifdef DEBUG_T
+    printf ("Client = %d: Command [%04X] Size: %d\n", client, cmd, size);
+#endif
+    data = NULL;
+    if (!connection_closed && 0 < cmd && 0 < size && size < MAX_CLIENT_PACKET_SIZE)
       {
 	/*read command's data from client*/
 	data = g_malloc0(size);
