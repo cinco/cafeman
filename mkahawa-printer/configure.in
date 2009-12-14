@@ -9,7 +9,7 @@ dnl Combined Product Release Number
 VERSION=$MKAHAWA_PRN_MAJOR_VERSION.$MKAHAWA_PRN_MINOR_VERSION.$MKAHAWA_PRN_PATCH_LEVEL
 
 dnl Initialize automake
-AM_INIT_AUTOMAKE(cclcfox,$VERSION)
+AM_INIT_AUTOMAKE(mkahawa_printer,$VERSION)
 
 dnl Report what was found
 AC_MSG_CHECKING(major version)

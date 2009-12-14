@@ -1,4 +1,4 @@
 src/gui.cpp
-src/cclcfox.cpp
+src/cclpfox.cpp
 src/locker.cpp
 src/main.cpp

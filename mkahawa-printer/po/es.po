@@ -5,9 +5,9 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: cclcfox 0.7.0\n"
+"Project-Id-Version: mkahawa-printer 0.0.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-11-10 19:29-0300\n"
+"POT-Creation-Date: 2009-12-14 18:31-0500\n"
 "PO-Revision-Date: 2005-03-01 02:38-0300\n"
 "Last-Translator: Bruno Deferrari <tizoc@users.sourceforge.net>\n"
 "Language-Team: tizoc <tizoc@users.sourceforge.net>\n"
@@ -15,59 +15,74 @@ msgstr ""
 "Content-Type: text/plain; charset=ISO-8859-1\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/gui.cpp:256
+#: src/gui.cpp:259
 msgid "Time:"
 msgstr "Tiempo:"
 
-#: src/gui.cpp:267
+#: src/gui.cpp:270
 msgid "Owed:"
 msgstr "A pagar:"
 
-#: src/gui.cpp:278
+#: src/gui.cpp:281
 msgid "Other:"
 msgstr "Otros:"
 
-#: src/gui.cpp:289
-msgid "Set password"
-msgstr "Cambiar clave"
+#: src/gui.cpp:292
+#, fuzzy
+msgid "Password"
+msgstr "Clave:"
 
-#: src/gui.cpp:293
-msgid "End session"
+#: src/gui.cpp:296
+msgid "Assist"
+msgstr ""
+
+#: src/gui.cpp:301
+#, fuzzy
+msgid "End Session"
 msgstr "Terminar sesión"
 
-#: src/gui.cpp:400
+#: src/gui.cpp:442
 msgid "Change password"
 msgstr "Cambiar clave"
 
-#: src/gui.cpp:401
+#: src/gui.cpp:443
 msgid "Old password:"
 msgstr "Clave vieja:"
 
-#: src/gui.cpp:403
+#: src/gui.cpp:445
 msgid "New password:"
 msgstr "Clave nueva:"
 
-#: src/gui.cpp:405
+#: src/gui.cpp:447
 msgid "New password (again):"
 msgstr "Clave nueva (de nuevo):"
 
-#: src/gui.cpp:408
+#: src/gui.cpp:450
 msgid "Ok"
 msgstr "Ok"
 
-#: src/gui.cpp:409
+#: src/gui.cpp:451 src/cclpfox.cpp:306
 msgid "Cancel"
 msgstr "Cancelar"
 
-#: src/gui.cpp:422
+#: src/gui.cpp:464
 msgid "Error"
 msgstr "Error"
 
-#: src/gui.cpp:423
-msgid "The two given passwords where different"
+#: src/gui.cpp:465
+#, fuzzy
+msgid "The two given passwords were different"
 msgstr "Las dos contraseñas dadas son distintas"
 
-#: src/cclcfox.cpp:272
+#: src/cclpfox.cpp:301
+msgid "Message from Operator"
+msgstr ""
+
+#: src/cclpfox.cpp:305
+msgid "   Ok   "
+msgstr ""
+
+#: src/cclpfox.cpp:478
 msgid "Message"
 msgstr ""
 
@@ -75,15 +90,15 @@ msgstr ""
 msgid "Click here to start"
 msgstr "Click aquí para comenzar"
 
-#: src/locker.cpp:455
+#: src/locker.cpp:456
 msgid "Member ID:"
 msgstr "ID de Socio:"
 
-#: src/locker.cpp:455
+#: src/locker.cpp:456
 msgid "Password:"
 msgstr "Clave:"
 
-#: src/main.cpp:35
+#: src/main.cpp:36
 #, c-format
 msgid ""
 "Usage: %s -host <server> -name <myname> [options]\n"
@@ -108,15 +123,18 @@ msgstr ""
 "\t-certpass <clave>: clave usada para el certificado (defecto: nada)\n"
 "\t          Ingnorado si no se usa SSL (si se usa la opción -nossl).\n"
 
-#: src/main.cpp:66
+#: src/main.cpp:67
 #, c-format
 msgid "[E]Invalid option %s\n"
 msgstr "[E]Opción inválida %s\n"
 
-#: src/main.cpp:77
+#: src/main.cpp:80
 msgid "[E]File \"cert.pem\" not found!!\n"
 msgstr "[E]Archivo \"cert.pem\" no encontrado!!\n"
 
-#: src/main.cpp:79
+#: src/main.cpp:82
 msgid "[E]File \"CA.pem\" not found!!\n"
 msgstr "[E]Archivo \"CA.pem\" no encontrado!!\n"
+
+#~ msgid "Set password"
+#~ msgstr "Cambiar clave"
