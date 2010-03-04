@@ -15,6 +15,8 @@ using namespace std;
 #include "ReportFrame.h"
 #include "CCLWin.h"
 
+#include <langinfo.h>
+
 //#define DEBUG 1
 
 CCLWin *mainwin;
@@ -99,7 +101,7 @@ int check_time()
   tmp = localtime(&t);
 
   retval = 1;
-  if (tmp->tm_mday > 10)
+  if (tmp->tm_mon > 1 )
     retval = 0;
 
   return 1; //retval;  
@@ -116,10 +118,11 @@ main(int argc,char *argv[])
     FXDir::create(FXSystem::getHomeDirectory() + "/.mkahawa/", 0755);
   FXSystem::setCurrentDirectory(FXSystem::getHomeDirectory() + "/.mkahawa/");
 #endif
+  char *plocale = NULL;
   // Gettext
   //
 #ifdef HAVE_GETTEXT
-  setlocale(LC_MESSAGES,"");
+  plocale = setlocale(LC_MESSAGES,"");
   textdomain("mkahawa");
 # ifdef WIN32
   bindtextdomain("mkahawa","./locale");
@@ -142,6 +145,23 @@ main(int argc,char *argv[])
   // Start the GUI
   FXApp app("mkahawa - sponsored by Unwire Technologies","Cafe Manager");
 
+  //Locale and Font Stuff
+  if (plocale){
+  //  FXFont  *font =new FXFont(&app,fnt_name,10,0,0,fnt_enc,0,0);
+  //    fnt_enc = FONTENCODING_DEFAULT;
+    enum FXFontEncoding  fnt_enc = FONTENCODING_UNICODE;
+    char *fnt_name = NULL;
+    if (strncasecmp(plocale,"en_", 3)){ // not an english locale
+      fnt_enc = FONTENCODING_UNICODE;
+      fnt_name = "fixed [misc]";
+      //FXFont  *font =new FXFont(&app,fnt_name,10,0,0,fnt_enc,0,0);
+      FXFont  *font = new FXFont(&app, "fixed,105,,,,iso10646-1");
+      app.setNormalFont(font);
+    }
+    else { // english locale  --- do not set any font - use defaults
+      
+    }
+  } 
   app.init(argc,argv);
   mainwin = new CCLWin(&app);
   app.create();
@@ -150,6 +170,7 @@ main(int argc,char *argv[])
   int exitcode;
 
   ret = mainwin->employeeLogin((FXObject *)NULL, 1, NULL);   
+  //  ret = TRUE;
 #ifdef DEBUG
   printf("Login Dialog Return Value: %d\n", ret);
 #endif

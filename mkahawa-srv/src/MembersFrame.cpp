@@ -10,6 +10,10 @@ using namespace FX;
 
 /*#define DEBUG 1*/
 
+extern FXGIFIcon *dbIcon1;
+extern FXGIFIcon *dbIcon2;
+extern FXGIFIcon *dbIcon3;
+
 FXDEFMAP(MembersFrame) MembersFrameMap[] =
 {
   FXMAPFUNC(SEL_COMMAND,MembersFrame::ID_ADDMEMBER,MembersFrame::onAddMember),
@@ -19,14 +23,13 @@ FXDEFMAP(MembersFrame) MembersFrameMap[] =
   FXMAPFUNC(SEL_COMMAND,MembersFrame::ID_ADDCREDIT,MembersFrame::onAddCredit),
   FXMAPFUNC(SEL_COMMAND,MembersFrame::ID_REFUNDCREDIT,MembersFrame::onSubCredit),
   FXMAPFUNC(SEL_COMMAND,MembersFrame::ID_RESETPASS,MembersFrame::onResetPass),
+  FXMAPFUNC(SEL_COMMAND,MembersFrame::ID_TICKETS,MembersFrame::onTickets),
   FXMAPFUNC(SEL_CHANGED,MembersFrame::ID_FILTER,MembersFrame::onFilter),
   FXMAPFUNC(SEL_SELECTED,MembersFrame::ID_MEMBERSLIST,MembersFrame::onMemberSelect)
 };
 
 FXIMPLEMENT(MembersFrame,FXVerticalFrame,MembersFrameMap,
 	    ARRAYNUMBER(MembersFrameMap))
-
-#define MEMBER_DELETED	(1<<16)	// This member was deleted
 
 extern FXSettings *passwords;
   
@@ -42,17 +45,23 @@ MembersFrame::MembersFrame(FXComposite * parent)
 		      FOLDINGLIST_SINGLESELECT|LAYOUT_FILL_X|LAYOUT_FILL_Y);
   memberslist->appendHeader(_("User ID"),NULL,50);
   memberslist->appendHeader(_("Full Name"),NULL,200);
-  //FXHorizontalFrame *hframe0 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
-  //filtertf = new FXTextField(hframe0,40,this,ID_FILTER,TEXTFIELD_NORMAL);
   FXHorizontalFrame *hframe1 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
-  addmember = new FXButton(hframe1,_("New"),NULL,this,ID_ADDMEMBER,
-			   FRAME_RAISED|FRAME_THICK);
-  delmember = new FXButton(hframe1,_("Delete"),NULL,this,ID_DELMEMBER,
-			   FRAME_RAISED|FRAME_THICK);
-  settarif = new FXButton(hframe1,_(" Set Tariff "),NULL,this,ID_SETTARIF,
-			  FRAME_RAISED|FRAME_THICK);
-  applychanges = new FXButton(hframe1,_("Save Changes"),NULL,this,
-			      ID_APPLY,FRAME_RAISED|FRAME_THICK);
+
+  /*  min10btn = 
+    new FXButton(speedbar,_("\tGrant 10 Minutes"),min10icon,this,ID_10MIN,
+		 BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT,
+		 0,0,0,0,0,0,0,0);*/
+
+  addmember = new FXButton(hframe1,_("New"),dbIcon1,this,ID_ADDMEMBER,
+			   BUTTON_TOOLBAR|FRAME_RAISED|FRAME_LINE);
+  delmember = new FXButton(hframe1,_("Delete"),dbIcon1,this,ID_DELMEMBER,
+			   BUTTON_TOOLBAR|FRAME_RAISED|FRAME_LINE);
+  settarif = new FXButton(hframe1,_("Tariff"),dbIcon1,this,ID_SETTARIF,
+			   BUTTON_TOOLBAR|FRAME_RAISED|FRAME_LINE);
+  applychanges = new FXButton(hframe1,_("Save"),dbIcon1,this,ID_APPLY,
+			   BUTTON_TOOLBAR|FRAME_RAISED|FRAME_LINE);
+  btnTickets = new FXButton(hframe1,_("Tickets"),dbIcon1,this,ID_TICKETS,
+			   BUTTON_TOOLBAR|FRAME_RAISED|FRAME_LINE|LAYOUT_RIGHT);
   new FXHorizontalSeparator(this);
   new FXLabel(this,_("Member Details"),NULL,LAYOUT_CENTER_X);
   new FXHorizontalSeparator(this);
@@ -73,12 +82,12 @@ MembersFrame::MembersFrame(FXComposite * parent)
   emailtf = new FXTextField(hframe5,30,NULL,0,TEXTFIELD_NORMAL);
 
   FXHorizontalFrame *hframe6 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
-  addcredit = new FXButton(hframe6,_(" Add Credit "),NULL,this,ID_ADDCREDIT,
-			  FRAME_RAISED|FRAME_THICK);
-  refundcredit = new FXButton(hframe6,_("Refund Credit"),NULL,this,ID_REFUNDCREDIT,
-			  FRAME_RAISED|FRAME_THICK);
-  resetpass = new FXButton(hframe6,_("Reset Password"),NULL,this,ID_RESETPASS,
-			   FRAME_RAISED|FRAME_THICK|LAYOUT_RIGHT);
+  addcredit = new FXButton(hframe6,_(" Add Credit "),dbIcon3,this,ID_ADDCREDIT,
+			   BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
+  refundcredit = new FXButton(hframe6,_("Refund Credit"),dbIcon3,this,ID_REFUNDCREDIT,
+			   BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
+  resetpass = new FXButton(hframe6,_("Reset Password"),dbIcon3,this,ID_RESETPASS,
+			   BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK|LAYOUT_RIGHT);
   editedmember = 0;
   tarifset = 0;
   clear();
@@ -103,6 +112,7 @@ MembersFrame::setPerms(long perm)
     addmember->disable();
     delmember->disable();
     applychanges->disable();
+    btnTickets->disable();
     settarif->disable();
     resetpass->disable();
     addcredit->disable();
@@ -112,6 +122,7 @@ MembersFrame::setPerms(long perm)
     addmember->enable();
     delmember->enable();
     applychanges->enable();
+    btnTickets->enable();
     settarif->enable();
     resetpass->enable();
     addcredit->enable();
@@ -140,7 +151,8 @@ MembersFrame::readAllMembers(const char * filter)
 
   memberslist->clearItems();
   for (FXuint i = 0; -1 != (id = CCL_member_get_nth(i)); i++) {
-    if (!(CCL_member_flags_get(id) & MEMBER_DELETED)) {
+    if (!(CCL_member_flags_get(id) & (MEMBER_DELETED | MEMBER_TICKET))) {
+    //if (!(CCL_member_flags_get(id) & (MEMBER_DELETED))) {
       name = CCL_member_name_get(id);
       if (rex.match(name)) {
 	snprintf(buf,128,"%d\t%s",id,name);
@@ -253,6 +265,22 @@ MembersFrame::onApplyChanges(FXObject*,FXSelector,void*)
   return 1;
 }
 
+#include "TicketsBox.h"
+
+long
+MembersFrame::onTickets(FXObject*,FXSelector,void*)
+{
+  TicketsBox  tBox(this);
+
+#ifdef DEBUG
+  printf("onTickets(): tickets button was pressed\n");
+#endif
+  tBox.execute();
+
+  return 1;
+}
+
+
 long
 MembersFrame::onMemberSelect(FXObject*,FXSelector,void*)
 {
@@ -280,8 +308,8 @@ MembersFrame::onSetTarif(FXObject*,FXSelector,void*)
   FXFoldingList *tlist =
     new FXFoldingList(tlistframe,NULL,0,
 		      LAYOUT_FILL_X|LAYOUT_FILL_Y|FOLDINGLIST_SINGLESELECT);
-  new FXButton(vframe,_("Select Tariff"),NULL,&dlg,FXDialogBox::ID_ACCEPT,
-	       FRAME_RAISED|FRAME_THICK);
+  new FXButton(vframe,_("Select Tariff"),dbIcon3,&dlg,FXDialogBox::ID_ACCEPT,
+	       FRAME_RAISED|FRAME_THICK|LAYOUT_RIGHT);
 
   tlist->appendHeader(_("ID"),NULL,40);
   tlist->appendHeader(_("Name"),NULL,180);
@@ -356,7 +384,7 @@ MembersFrame::onSubCredit(FXObject*,FXSelector,void*)
       retval = CCL_pay_account(id, (int)(-amount*100), e_inf.empID);
       if (retval < 0)
 	FXMessageBox::error(this, MBOX_OK, _("Error"), 
-			    _("Could not subtract the amount"));
+			    _("Could not deduct the amount"));
     }
     snprintf(buf,64,"Credit: %.2f", (double)(CCL_member_credit_get(id)/100));
     creditlbl->setText(buf);

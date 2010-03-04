@@ -33,6 +33,11 @@
 #define CS_SETADMINPASS   25UL  /* Set client admin password */ 
 #define CS_REQVERSION     26UL  /* Request Version */
 #define CS_ALERTCLIENT    27UL  /* Send an alert / transient message */
+#define CS_ALLOWTICKETLOGIN    28UL  /* enable login by ticket */
+#define CS_TICKETLOGIN    29UL  /* login by ticket */
+#define CS_SETPOLLINTERVAL   30UL  /* Set poll interval */
+#define CS_WARNCLIENT     31UL  /* Set poll interval */
+
 
 /* Commands sent by the client */
 #define CC_USEREXIT	  1UL	/* The user ended the session */
@@ -52,12 +57,13 @@
 #define CC_UPDATEEND      16UL  /* Respond to CS_UPDATEEND */
 #define CC_VERSION        17UL  /* Respond to CS_REQVERSION */
 #define CC_ALERTSERVER    18UL  /* Send alert to Server */
-#define CC_MAXCMDNR       18UL  /* Maximum Command ID*/
+#define CC_TICKETLOGIN    19UL  /* Start logging in by ticket */
+#define CC_MAXCMDNR       19UL  /* Maximum Command ID*/
 
 
 #define MK_MAJOR_VER 1
 #define MK_MINOR_VER 0
-#define MK_RELEASE   1
+#define MK_RELEASE   2
 
 unsigned long MkahawaVersion = (((MK_MAJOR_VER << 8)|MK_MINOR_VER) << 8) | MK_RELEASE;
 

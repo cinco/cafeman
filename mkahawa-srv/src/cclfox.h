@@ -16,8 +16,10 @@
 #define ALLOWUSERLOGIN	 (1<<17)	// Allow the user to start the session?
 #define CLIENT_DELETED	 (1<<18) // This client was deleted
 #define ALLOWMEMBERLOGIN (1<<19)// Allow members to start the session?
-#define ENABLEASSIST     (1<<20)// Allow members to start the session?
+#define ENABLEASSIST     (1<<20)// allow assist requests from clients the session?
 #define CLIENT_CONNECTED (1<<21) // client is connected
+#define ALLOWTICKETLOGIN (1<<22)// Allow ticket holders to start the session?
+#define CLIENT_BLOCKED   (1<<23)// Allow ticket holders to start the session?
 
 
 #define NOTPAID		0

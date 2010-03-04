@@ -9,6 +9,13 @@ using namespace FX;
 
 //#define DEBUG 1
 
+extern FXGIFIcon *dbIcon01;
+extern FXGIFIcon *dbIcon0;
+extern FXGIFIcon *dbIcon1;
+extern FXGIFIcon *dbIcon2;
+extern FXGIFIcon *dbIcon3;
+
+
 FXDEFMAP(TarifFrame) TarifFrameMap[] =
 {
   FXMAPFUNC(SEL_COMMAND,TarifFrame::ID_ADDPART,TarifFrame::onAddPart),
@@ -49,8 +56,8 @@ TarifFrame::TarifFrame(FXComposite * parent)
   tnametf = new FXTextField(nameframe,15,this,ID_TARIFNAME,TEXTFIELD_NORMAL);
   // TODO: setname
 
-  settarif = new FXButton(nameframe,_("Set Tariff"),NULL,this,ID_SETTARIF,
-			  FRAME_RAISED|FRAME_THICK);
+  settarif = new FXButton(nameframe,_("Change"),dbIcon1,this, ID_SETTARIF,
+			  BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
   FXVerticalFrame *tarifframe =
     new FXVerticalFrame(this,FRAME_SUNKEN|LAYOUT_FILL_X|LAYOUT_FILL_Y,
 			0,0,0,0,0,0,0,0);
@@ -63,14 +70,14 @@ TarifFrame::TarifFrame(FXComposite * parent)
 
   //settarif = new FXButton(hframe1,_("Set Tariff"),NULL,this,ID_SETTARIF,
   //			  FRAME_RAISED|FRAME_THICK);
-  addpart = new FXButton(hframe1,_("Add"),NULL,this,ID_ADDPART,
-			 FRAME_RAISED|FRAME_THICK);
-  delpart = new FXButton(hframe1,_("Delete"),NULL,this,ID_DELPART,
-			 FRAME_RAISED|FRAME_THICK);
-  applychanges = new FXButton(hframe1,_("Apply"),NULL,this,
-			      ID_APPLY,FRAME_RAISED|FRAME_THICK);
-  newtarif = new FXButton(hframe1,_("New"),NULL,this,
-			  ID_NEWTARIF,FRAME_RAISED|FRAME_THICK);
+  addpart = new FXButton(hframe1,_("Add"),dbIcon1,this,ID_ADDPART,
+			 BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
+  delpart = new FXButton(hframe1,_("Delete"),dbIcon1,this,ID_DELPART,
+			 BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
+  applychanges = new FXButton(hframe1,_("Apply"),dbIcon1,this,
+			      ID_APPLY,BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
+  newtarif = new FXButton(hframe1,_("New"),dbIcon1,this,
+			  ID_NEWTARIF,BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
   new FXHorizontalSeparator(this);
   new FXLabel(this,_("Tariff Elements"),NULL,LAYOUT_CENTER_X);
   new FXHorizontalSeparator(this);
@@ -91,27 +98,35 @@ TarifFrame::TarifFrame(FXComposite * parent)
   FXHorizontalFrame *hframe4 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
   new FXLabel(hframe4,_("Days:"));
   
-  daybtn[0] = new FXToggleButton(hframe4,_("Sun"),_("Sun"),NULL,NULL,
-				 this,ID_CHECKVALID,TOGGLEBUTTON_NORMAL|
-				 TOGGLEBUTTON_KEEPSTATE);
+  daybtn[0] = new FXToggleButton(hframe4,_("Sun"),_("Sun"),dbIcon0,dbIcon01,
+				 this,ID_CHECKVALID,
+				 TOGGLEBUTTON_TOOLBAR|TOGGLEBUTTON_KEEPSTATE);
+  //				 this,ID_CHECKVALID,TOGGLEBUTTON_NORMAL|
+  //				 TOGGLEBUTTON_KEEPSTATE & ~ICON_BEFORE_TEXT);
   daybtn[1] =
-    new FXToggleButton(hframe4,_("Mon"),_("Mon"),NULL,NULL,this,ID_CHECKVALID,
-		       TOGGLEBUTTON_NORMAL|TOGGLEBUTTON_KEEPSTATE);
+    new FXToggleButton(hframe4,_("Mon"),_("Mon"),dbIcon0, dbIcon01,this,ID_CHECKVALID,
+				 TOGGLEBUTTON_TOOLBAR|TOGGLEBUTTON_KEEPSTATE);
+  //		       TOGGLEBUTTON_NORMAL|TOGGLEBUTTON_KEEPSTATE);
   daybtn[2] =
-    new FXToggleButton(hframe4,_("Tue"),_("Tue"),NULL,NULL,this,ID_CHECKVALID,
-		       TOGGLEBUTTON_NORMAL|TOGGLEBUTTON_KEEPSTATE);
+    new FXToggleButton(hframe4,_("Tue"),_("Tue"),dbIcon0,dbIcon01,this,ID_CHECKVALID,
+				 TOGGLEBUTTON_TOOLBAR|TOGGLEBUTTON_KEEPSTATE);
+  //		       TOGGLEBUTTON_NORMAL|TOGGLEBUTTON_KEEPSTATE);
   daybtn[3] =
-    new FXToggleButton(hframe4,_("Wed"),_("Wed"),NULL,NULL,this,ID_CHECKVALID,
-		       TOGGLEBUTTON_NORMAL|TOGGLEBUTTON_KEEPSTATE);
+    new FXToggleButton(hframe4,_("Wed"),_("Wed"),dbIcon0,dbIcon01,this,ID_CHECKVALID,
+				 TOGGLEBUTTON_TOOLBAR|TOGGLEBUTTON_KEEPSTATE);
+  //		       TOGGLEBUTTON_NORMAL|TOGGLEBUTTON_KEEPSTATE);
   daybtn[4] =
-    new FXToggleButton(hframe4,_("Thu"),_("Thu"),NULL,NULL,this,ID_CHECKVALID,
-		       TOGGLEBUTTON_NORMAL|TOGGLEBUTTON_KEEPSTATE);
+    new FXToggleButton(hframe4,_("Thu"),_("Thu"),dbIcon0,dbIcon01,this,ID_CHECKVALID,
+				 TOGGLEBUTTON_TOOLBAR|TOGGLEBUTTON_KEEPSTATE);
+  //		       TOGGLEBUTTON_NORMAL|TOGGLEBUTTON_KEEPSTATE);
   daybtn[5] =
-    new FXToggleButton(hframe4,_("Fri"),_("Fri"),NULL,NULL,this,ID_CHECKVALID,
-		       TOGGLEBUTTON_NORMAL|TOGGLEBUTTON_KEEPSTATE);
+    new FXToggleButton(hframe4,_("Fri"),_("Fri"),dbIcon0,dbIcon01,this,ID_CHECKVALID,
+				 TOGGLEBUTTON_TOOLBAR|TOGGLEBUTTON_KEEPSTATE);
+  //		       TOGGLEBUTTON_NORMAL|TOGGLEBUTTON_KEEPSTATE);
   daybtn[6] =
-    new FXToggleButton(hframe4,_("Sat"),_("Sat"),NULL,NULL,this,ID_CHECKVALID,
-		       TOGGLEBUTTON_NORMAL|TOGGLEBUTTON_KEEPSTATE);
+    new FXToggleButton(hframe4,_("Sat"),_("Sat"),dbIcon0,dbIcon01,this,ID_CHECKVALID,
+				 TOGGLEBUTTON_TOOLBAR|TOGGLEBUTTON_KEEPSTATE);
+  //		       TOGGLEBUTTON_NORMAL|TOGGLEBUTTON_KEEPSTATE);
   FXVerticalFrame *priceframe =
     new FXVerticalFrame(this,FRAME_SUNKEN|LAYOUT_FILL_X|LAYOUT_FILL_Y,
 			0,0,0,0,0,0,0,0);
@@ -124,10 +139,10 @@ TarifFrame::TarifFrame(FXComposite * parent)
   pricelist->appendHeader(_("Price"),NULL,120);
   FXHorizontalFrame *hframe5 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
 
-  addprice = new FXButton(hframe5,_("Add Price"),NULL,this,ID_ADDPRICE,
-			  FRAME_RAISED|FRAME_THICK);
-  delprice = new FXButton(hframe5,_("Delete Price"),NULL,this,ID_DELPRICE,
-			  FRAME_RAISED|FRAME_THICK|LAYOUT_LEFT);
+  delprice = new FXButton(hframe5,_("Delete Price"),dbIcon2,this,ID_DELPRICE,
+			  BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT);
+  addprice = new FXButton(hframe5,_("Add Price"),dbIcon2,this,ID_ADDPRICE,
+			  BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP| LAYOUT_RIGHT);
   editedpart = 0;
   clear();
 }
@@ -482,10 +497,10 @@ TarifFrame::onAddPrice(FXObject*,FXSelector,void*)
   new FXHorizontalSeparator(&dlg);
 
   FXHorizontalFrame *hframe = new FXHorizontalFrame(&dlg,LAYOUT_FILL_X);
-  new FXButton(hframe,_("Accept"),NULL,&dlg,FXDialogBox::ID_ACCEPT,
-	       FRAME_RAISED|FRAME_THICK);
-  new FXButton(hframe,_("Cancel"),NULL,&dlg,FXDialogBox::ID_CANCEL,
-	       FRAME_RAISED|FRAME_THICK);
+  new FXButton(hframe,_("Cancel"),dbIcon2,&dlg,FXDialogBox::ID_CANCEL,
+	       BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT);
+  new FXButton(hframe,_("Accept"),dbIcon2,&dlg,FXDialogBox::ID_ACCEPT,
+	       BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_RIGHT);
   if (dlg.execute() && price >= 0.0) {
     char buf[128];
 
@@ -565,8 +580,8 @@ TarifFrame::onSetTarif(FXObject*,FXSelector,void*)
   FXFoldingList *tlist =
     new FXFoldingList(tlistframe,NULL,0,
 		      LAYOUT_FILL_X|LAYOUT_FILL_Y|FOLDINGLIST_SINGLESELECT);
-  new FXButton(vframe,_("Accept"),NULL,&dlg,FXDialogBox::ID_ACCEPT,
-	       FRAME_RAISED|FRAME_THICK);
+  new FXButton(vframe,_("Accept"),dbIcon2,&dlg,FXDialogBox::ID_ACCEPT,
+	       BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK|LAYOUT_LEFT);
 
   tlist->appendHeader(_("ID"),NULL,40);
   tlist->appendHeader(_("Name"),NULL,180);
@@ -614,7 +629,7 @@ TarifFrame::onNewTarif(FXObject*,FXSelector,void*)
   }
 
   if (FXInputDialog::getString(name,this,_("Use New Tariff"),
-			   _("Tariff Name:")) && name.length()) {
+			       _("Tariff Name:")) && name.length(), dbIcon2) {
     //write place-holder into file
     tarif = CCL_tarif_new(0,0,127,6000,1,10, (char *)name.text());
     //update tariffs in memory

@@ -21,6 +21,12 @@ LogFrame.cpp \
 LogFrame.h \
 ReportFrame.cpp \
 ReportFrame.h \
+TicketsBox.cpp \
+TicketsBox.h \
+QTicketsBox.cpp \
+QTicketsBox.h \
+SettingsBox.cpp \
+SettingsBox.h \
 verifiers.cpp \
 verifiers.h \
 MSGWin.cpp \

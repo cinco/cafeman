@@ -32,6 +32,8 @@ protected:
   FXIcon        *min20icon;
   FXIcon        *min30icon;
   FXIcon        *min60icon;
+  FXIcon        *csicon;
+
   FXButton	*playbutton;
   FXButton	*stopbutton;
   FXButton	*unstopbutton;
@@ -44,10 +46,12 @@ protected:
   FXButton	*passbutton;
   FXButton      *loginbutton;
   FXButton      *msgbutton;
+  FXButton      *csbutton;
   FXButton      *min10btn;
   FXButton      *min20btn;
   FXButton      *min30btn;
   FXButton      *min60btn;
+
   FXIconList	*clientslist;
   FXFoldingList	*clientslist2;
   FXGIFIcon	*bpcicons[4];
@@ -65,9 +69,11 @@ protected:
   FXMenuCaption	*clsmenu_caption;
   FXMenuCheck	*clmenu_allowuserlogin_check;
   FXMenuCheck	*clmenu_allowmemberlogin_check;
+  FXMenuCheck	*clmenu_allowticketlogin_check;
   FXMenuCheck	*clmenu_enableassist_check;
   FXMenuCheck	*clsmenu_allowuserlogin_check;
   FXMenuCheck	*clsmenu_allowmemberlogin_check;
+  FXMenuCheck	*clsmenu_allowticketlogin_check;
   FXMenuCheck	*clsmenu_enableassist_check;
   //progress
   //FXProgressDialog *prgrs;
@@ -120,14 +126,17 @@ public:
   void updateSummaryInfo();
   void getClientInfoStr(int client, char *clbuf, int len);
   int  dispMessage(char * message);
+  int  applySettings(unsigned long settings);
 
 public:
   long onCheckEvents(FXObject*,FXSelector,void*);
   long onCommand(FXObject*,FXSelector sel,void*);
   long onSwap(FXObject*,FXSelector,void*);
   long onTime(FXObject*,FXSelector,void*);
+  void toggleClientSetting(int client,  int flag);
   long onAllowUserLogin(FXObject*,FXSelector,void*);
   long onAllowMemberLogin(FXObject*,FXSelector,void*);
+  long onAllowTicketLogin(FXObject*,FXSelector,void*);
   long onAbout(FXObject*,FXSelector,void*);
   long onNewClient(FXObject*,FXSelector,void*);
   long onDelClient(FXObject*,FXSelector,void*);
@@ -150,9 +159,11 @@ public:
   long onEnableAssist(FXObject*,FXSelector,void* ptr);
   long onEnableAllAssist(FXObject*,FXSelector,void* ptr);
   long onAllAllowMemberLogin(FXObject*,FXSelector,void* ptr);
+  long onAllAllowTicketLogin(FXObject*,FXSelector,void* ptr);
   long onAllAllowUserLogin(FXObject*,FXSelector,void* ptr);
   long onListShutter(FXObject*,FXSelector,void* ptr);
   long onExitPressed(FXObject*,FXSelector,void* ptr);
+  long onCyberSet(FXObject*,FXSelector, void* ptr);
   FXbool employeeLogin(FXObject*, FXSelector, void*ptr);
   void employeeLogout(FXObject*, FXSelector, void*ptr);
   FXbool clientHelpIsUp(int client);
@@ -169,12 +180,12 @@ public:
     ID_TIME,ID_MONITOROFF,ID_REBOOT,ID_POWEROFF,ID_PAUSE,ID_ABOUT,
     ID_ALLOWUSERLOGIN,ID_NEWCLIENT,ID_DELCLIENT,ID_SETPASS, ID_SETMEMBER,
     ID_CLIENTSLIST,ID_TIMERTICK,ID_QUITCLIENT,ID_CHECKEVENTS,
-    ID_ALLOWMEMBERLOGIN, ID_EMPLOGIN, ID_MSGCLIENT, ID_ENABLEASSIST,
+    ID_ALLOWMEMBERLOGIN, ID_ALLOWTICKETLOGIN, ID_EMPLOGIN, ID_MSGCLIENT, ID_ENABLEASSIST,
     ID_ALLSETMEMBER, ID_ALLPOWEROFF, ID_ALLREBOOT, ID_ALLMONITOROFF,
-    ID_ALLALLOWUSERLOGIN, ID_ALLALLOWMEMBERLOGIN, ID_ALLENABLEASSIST,
+    ID_ALLALLOWUSERLOGIN, ID_ALLALLOWTICKETLOGIN, ID_ALLALLOWMEMBERLOGIN, ID_ALLENABLEASSIST,
     ID_UPDATECLIENT, ID_ALLUPDATECLIENT,ID_TOGGLELIST, ID_CLIENTSLIST2,
     ID_SHUTTER, ID_SHUTTER2, ID_ALLADMINPASS, ID_10MIN, ID_20MIN, ID_30MIN,
-    ID_60MIN, ID_LAST
+    ID_60MIN, ID_CYBERSET, ID_LAST
   };
 };
 

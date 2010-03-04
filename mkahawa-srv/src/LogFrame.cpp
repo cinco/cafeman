@@ -11,6 +11,11 @@ using namespace std;
 #include "verifiers.h"
 
 //#define DEBUG 
+extern FXGIFIcon *dbIcon01;
+extern FXGIFIcon *dbIcon0;
+extern FXGIFIcon *dbIcon1;
+extern FXGIFIcon *dbIcon2;
+extern FXGIFIcon *dbIcon3;
 
 static void printTicket(const char *description, unsigned int amount);
 static void openCashRegister();
@@ -125,29 +130,29 @@ LogFrame::LogFrame(FXComposite * parent)
 
   FXHorizontalFrame *hframe10 =
     new FXHorizontalFrame(this,LAYOUT_FILL_X,0,0,0,0,0,0,0,0,0,0);
-  clearbtn = new FXButton(hframe10,_("Clear"),NULL,this,ID_CLEAR,
-			  BUTTON_NORMAL|LAYOUT_CENTER_X|LAYOUT_FILL_X);
-  refreshbtn = new FXButton(hframe10,_("Refresh"),NULL,this,ID_REFRESH,
-			    BUTTON_NORMAL|LAYOUT_CENTER_X|LAYOUT_FILL_X);
+  clearbtn = new FXButton(hframe10,_("Clear"),dbIcon3,this,ID_CLEAR,
+		 FRAME_RAISED|LAYOUT_CENTER_X|LAYOUT_FILL_X);
+  refreshbtn = new FXButton(hframe10,_("Refresh"),dbIcon3,this,ID_REFRESH,
+		 FRAME_RAISED|LAYOUT_CENTER_X|LAYOUT_FILL_X);
+  //			    BUTTON_NORMAL|LAYOUT_CENTER_X|LAYOUT_FILL_X);
   //  logexpensebtn = new FXButton(hframe10,_("Log Expense"),NULL,this,
   //			       ID_LOGEXPENSE,BUTTON_NORMAL|LAYOUT_CENTER_X|
   //			       LAYOUT_FILL_X);
-
-  sesssumbtn = new FXButton(hframe10,_("Sessions"),NULL,this,
-			       ID_SESSIONS,BUTTON_NORMAL|LAYOUT_CENTER_X|
-			       LAYOUT_FILL_X);
-  prodsumbtn = new FXButton(hframe10,_("Products"),NULL,this,
-			       ID_PRODUCTS,BUTTON_NORMAL|LAYOUT_CENTER_X|
-			       LAYOUT_FILL_X);
-  expensebtn = new FXButton(hframe10,_("Expenses"),NULL,this,
-			       ID_EXPENSES,BUTTON_NORMAL|LAYOUT_CENTER_X|
-			       LAYOUT_FILL_X);
-  saverptbtn = new FXButton(hframe10,_("Save Report"),NULL,this,
-			       ID_SAVEREPORT,BUTTON_NORMAL|LAYOUT_CENTER_X|
-			       LAYOUT_FILL_X);
-  savelogbtn = new FXButton(hframe10,_("Save Log"),NULL,this,
-			       ID_SAVELOG,BUTTON_NORMAL|LAYOUT_CENTER_X|
-			       LAYOUT_FILL_X);
+  sesssumbtn = new FXButton(hframe10,_("Sessions"),dbIcon3,this, ID_SESSIONS,
+		 FRAME_RAISED|LAYOUT_CENTER_X|LAYOUT_FILL_X);
+  //			    BUTTON_NORMAL|LAYOUT_CENTER_X| LAYOUT_FILL_X);
+  prodsumbtn = new FXButton(hframe10,_("Products"),dbIcon3,this, ID_PRODUCTS,
+		 FRAME_RAISED|LAYOUT_CENTER_X|LAYOUT_FILL_X);
+  //			    BUTTON_NORMAL|LAYOUT_CENTER_X| LAYOUT_FILL_X);
+  expensebtn = new FXButton(hframe10,_("Expenses"),dbIcon3,this, ID_EXPENSES,
+		 FRAME_RAISED|LAYOUT_CENTER_X|LAYOUT_FILL_X);
+  //			    BUTTON_NORMAL|LAYOUT_CENTER_X| LAYOUT_FILL_X);
+  saverptbtn = new FXButton(hframe10,_("Save Report"),dbIcon3,this, ID_SAVEREPORT,
+		 FRAME_RAISED|LAYOUT_CENTER_X|LAYOUT_FILL_X);
+  //			    BUTTON_NORMAL|LAYOUT_CENTER_X| LAYOUT_FILL_X);
+  savelogbtn = new FXButton(hframe10,_("Save Log"),dbIcon3,this,ID_SAVELOG,
+		 FRAME_RAISED|LAYOUT_CENTER_X|LAYOUT_FILL_X);
+  //			    BUTTON_NORMAL|LAYOUT_CENTER_X| LAYOUT_FILL_X);
 
   FXVerticalFrame *vframe1 = new FXVerticalFrame(this,LAYOUT_FILL_X);
   FXHorizontalFrame *hframe2 = new FXHorizontalFrame(vframe1,LAYOUT_FILL_X);
@@ -207,8 +212,9 @@ LogFrame::LogFrame(FXComposite * parent)
 			      TEXTFIELD_NORMAL|TEXTFIELD_LIMITED);
   // canceledcheck = new FXCheckButton(hframe5,_("Canceled"),NULL,0,
   //			    CHECKBUTTON_NORMAL|LAYOUT_RIGHT);
-  resetbtn = new FXButton(hframe5,_("  Reset  "),NULL,this,ID_RESET,
-			  BUTTON_NORMAL|LAYOUT_RIGHT);
+  resetbtn = new FXButton(hframe5,_("  Reset  "),dbIcon2,this,ID_RESET,
+		          FRAME_RAISED|LAYOUT_TOP|LAYOUT_RIGHT);
+  //                      BUTTON_NORMAL|LAYOUT_RIGHT);
   //new FXLabel(hframe12,_("Start:"));
   //startcashsp = new FXRealSpinner(hframe12,6,this,ID_STARTCASH,
   //				  FRAME_SUNKEN|FRAME_THICK);

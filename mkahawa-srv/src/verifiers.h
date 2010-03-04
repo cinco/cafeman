@@ -22,6 +22,14 @@
 #define PERMPRODSTOCK      (1<<22)
 //Employee Permissions
 #define PERMEMPEDIT        (1<<25)
+//Tickets Permissions
+#define PERMTKTEDIT        (1<<26)
+#define PERMTKTALLOC       (1<<27)
+#define PERMQTKT           (1<<28)
+
+//Settings Permissions
+#define PERMSETTINGS      (1<<29)
+
 //General permissions
 #define PERMGENCONF        (1<<30)
 

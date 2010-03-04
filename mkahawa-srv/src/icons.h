@@ -65,3 +65,12 @@ extern const unsigned char min60btn_gif[];
 
 /* created by reswrap from file flat3dbluebutton_1hr.gif */
 extern const unsigned char minemptybtn_gif[];
+
+/* created by reswrap from file mkahawa-settings-btn.gif */
+extern const unsigned char cyber_settings_gif[];
+
+extern const unsigned char dbutton01_gif[];
+extern const unsigned char dbutton0_gif[];
+extern const unsigned char dbutton1_gif[];
+extern const unsigned char dbutton2_gif[];
+extern const unsigned char dbutton3_gif[];

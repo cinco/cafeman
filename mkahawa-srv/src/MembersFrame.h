@@ -1,6 +1,10 @@
 #ifndef MEMBERSFRAME_H
 #define MEMBERSFRAME_H
 
+#define MEMBER_LOGGEDIN	(1<<18)	// This member is logged in
+#define MEMBER_TICKET	(1<<17)	// This member is a ticket
+#define MEMBER_DELETED	(1<<16)	// This member was deleted
+
 class MembersFrame : public FXVerticalFrame
 {
 FXDECLARE(MembersFrame)
@@ -13,6 +17,7 @@ protected:
   FXButton	 *addcredit;
   FXButton	 *refundcredit;
   FXButton	 *applychanges;
+  FXButton	 *btnTickets;
   FXFoldingList  *memberslist;
   FXTextField	 *nametf;
   FXTextField	 *emailtf;
@@ -43,11 +48,12 @@ public:
   long onResetPass(FXObject*,FXSelector,void*);
   long onAddCredit(FXObject*,FXSelector,void*);
   long onSubCredit(FXObject*,FXSelector,void*);
+  long onTickets(FXObject*,FXSelector,void*);
 public:
   enum {
     ID_ADDMEMBER = FXVerticalFrame::ID_LAST, ID_DELMEMBER, ID_APPLY,
     ID_CHECKVALID, ID_MEMBERSLIST, ID_SETTARIF, ID_FILTER,
-    ID_ADDCREDIT, ID_REFUNDCREDIT, ID_RESETPASS,
+    ID_ADDCREDIT, ID_REFUNDCREDIT, ID_RESETPASS, ID_TICKETS,
     ID_LAST
   };
 };

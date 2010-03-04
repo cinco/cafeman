@@ -16,24 +16,39 @@ using namespace std;
 #include "LogFrame.h"
 #include "ReportFrame.h"
 
+#include "SettingsBox.h"
 #include "CCLIconItem.h"
 #include "MSGWin.h"
 #include "CCLWin.h"
 #include "cmds.h"
 #include "icons.h"
 #include "verifiers.h"
+#include <ctype.h>
 
 long sendUpdateChunks(int client);
 void *dispMessage(void * message);
+void applySettings(unsigned long settings);
+
+
+FXGIFIcon *dbIcon01;
+FXGIFIcon *dbIcon0;
+FXGIFIcon *dbIcon1;
+FXGIFIcon *dbIcon2;
+FXGIFIcon *dbIcon3;
 
 //#define DEBUG
 //#define DEBUG_GUI
 //#define DEBUG_UPD 
+//#define DEBUG_TICKET
+//#define DEBUG_CREDIT
+//#define DEBUG_PRINT 1
+//#define  DEBUG_CALLBACK
+//#define DEBUG_SETTINGS
 
 #define WARNTENMINUTE    10
 #define WARNFIVEMINUTE   5
 #define WARNONEMINUTE    1
-#define MINCREDIT        500
+#define MINCREDIT        100
 
 extern FXSettings         *passwords;
 extern CCLWin             *mainwin;
@@ -45,6 +60,8 @@ extern LogFrame           *logframe;
 extern MembersFrame       *membersframe;
 extern EmployeesFrame     *employeesframe;
 extern ReportFrame        *reportframe;
+CyberSettings             *cyber_settings = NULL;
+
 //extern FXApp              app;
 
 pthread_t    updth, msgth;
@@ -75,9 +92,11 @@ FXDEFMAP(CCLWin) CCLWinMap[] =
   FXMAPFUNC(SEL_COMMAND,CCLWin::ID_PAUSE,CCLWin::onCommand),
   FXMAPFUNC(SEL_COMMAND,CCLWin::ID_ALLOWUSERLOGIN,CCLWin::onAllowUserLogin),
   FXMAPFUNC(SEL_COMMAND,CCLWin::ID_ALLOWMEMBERLOGIN,CCLWin::onAllowMemberLogin),
+  FXMAPFUNC(SEL_COMMAND,CCLWin::ID_ALLOWTICKETLOGIN,CCLWin::onAllowTicketLogin),
   FXMAPFUNC(SEL_COMMAND,CCLWin::ID_ENABLEASSIST,CCLWin::onEnableAssist),
   FXMAPFUNC(SEL_COMMAND,CCLWin::ID_ALLALLOWUSERLOGIN,CCLWin::onAllAllowUserLogin),
   FXMAPFUNC(SEL_COMMAND,CCLWin::ID_ALLALLOWMEMBERLOGIN,CCLWin::onAllAllowMemberLogin),
+  FXMAPFUNC(SEL_COMMAND,CCLWin::ID_ALLALLOWTICKETLOGIN,CCLWin::onAllAllowTicketLogin),
   FXMAPFUNC(SEL_COMMAND,CCLWin::ID_ALLENABLEASSIST,CCLWin::onEnableAllAssist),
   FXMAPFUNC(SEL_COMMAND,CCLWin::ID_QUITCLIENT,CCLWin::onCommand),
   FXMAPFUNC(SEL_COMMAND,CCLWin::ID_ABOUT,CCLWin::onAbout),
@@ -85,6 +104,7 @@ FXDEFMAP(CCLWin) CCLWinMap[] =
   FXMAPFUNC(SEL_COMMAND,CCLWin::ID_DELCLIENT,CCLWin::onDelClient),
   FXMAPFUNC(SEL_COMMAND,CCLWin::ID_EMPLOGIN,CCLWin::onEmpLogin),
   FXMAPFUNC(SEL_COMMAND,CCLWin::ID_MSGCLIENT,CCLWin::onMsgClient),
+  FXMAPFUNC(SEL_COMMAND,CCLWin::ID_CYBERSET,CCLWin::onCyberSet),
   FXMAPFUNC(SEL_COMMAND,CCLWin::ID_SHUTTER,CCLWin::onListShutter),
   FXMAPFUNC(SEL_SELECTED,CCLWin::ID_CLIENTSLIST,CCLWin::onClientSelected),
   FXMAPFUNC(SEL_SELECTED,CCLWin::ID_CLIENTSLIST2,CCLWin::onClientSelected2),
@@ -147,6 +167,7 @@ CCLWin::CCLWin(FXApp * app)
   setIcon(bigicon);
   setMiniIcon(miniicon);
   //
+  FXFont  *font =new FXFont(app,"fixed,105,,,,iso10646-1");
   new FXToolTip(app,0);
   //
   FXHorizontalFrame *infoframe =
@@ -154,7 +175,7 @@ CCLWin::CCLWin(FXApp * app)
 			  0,0,0,0,0,0,0,0,10,0);
   vsplitter = new FXSplitter(this,FRAME_RAISED|LAYOUT_FILL_X|LAYOUT_FILL_Y|
 			     SPLITTER_REVERSED,0,0,0,0);
-  FXSplitter *vsplitter1;
+  //FXSplitter *vsplitter1;
   FXShutter *lshutter =
     new FXShutter(vsplitter,NULL,0,LAYOUT_FILL_X|LAYOUT_FILL_Y,
 		  0,0,0,0,0,0,0,0,0,0);
@@ -191,6 +212,7 @@ CCLWin::CCLWin(FXApp * app)
   emplogicon = new FXGIFIcon(getApp(),emplogbtn_gif);
   delicon =    new FXGIFIcon(getApp(),delbtn_gif);
   newicon =    new FXGIFIcon(getApp(),newbtn_gif);
+  csicon =    new FXGIFIcon(getApp(),cyber_settings_gif);
   //updicon =    new FXGIFIcon(getApp(),updbtn);
 
   playbutton =
@@ -220,6 +242,10 @@ CCLWin::CCLWin(FXApp * app)
   msgbutton =
     new FXButton(ctoolbar,_("\tMessage Client"),msgicon,this,ID_MSGCLIENT,
 		 BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT,
+		 0,0,0,0,0,0,0,0);
+  csbutton =
+    new FXButton(ctoolbar,_("\tCyber Settings"),csicon,this,ID_CYBERSET,
+		 BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_RIGHT,
 		 0,0,0,0,0,0,0,0);
   loginbutton =
     new FXButton(ctoolbar,_("\tStaff Login"),emplogicon,this,ID_EMPLOGIN,
@@ -304,6 +330,13 @@ CCLWin::CCLWin(FXApp * app)
   min20icon =  new FXGIFIcon(getApp(),min20btn_gif);
   min30icon =   new FXGIFIcon(getApp(),min30btn_gif);
   min60icon =   new FXGIFIcon(getApp(),min60btn_gif);
+
+  dbIcon01 = new FXGIFIcon(getApp(), dbutton01_gif);
+  dbIcon0 = new FXGIFIcon(getApp(), dbutton0_gif);
+  dbIcon1 = new FXGIFIcon(getApp(), dbutton1_gif);
+  dbIcon2 = new FXGIFIcon(getApp(), dbutton2_gif);
+  dbIcon3 = new FXGIFIcon(getApp(), dbutton3_gif);
+  
   //FXGIFIcon *minemptyicon =   new FXGIFIcon(getApp(),minemptybtn_gif);
   min10btn = 
     new FXButton(speedbar,_("\tGrant 10 Minutes"),min10icon,this,ID_10MIN,
@@ -323,7 +356,8 @@ CCLWin::CCLWin(FXApp * app)
 		 0,0,0,0,0,0,0,0);
   /*  new FXButton(speedbar,_("Test"),minemptyicon,this,ID_60MIN,
 	       BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT,
-	       0,0,0,0,0,0,0,0); */  notpaidframe = new NotpaidFrame(hsplitter);
+	       0,0,0,0,0,0,0,0); */  
+  notpaidframe = new NotpaidFrame(hsplitter);
   hsplitter->setSplit(1,10);
   //  hsplitter->setSplit(2,100);
   /* Log */
@@ -378,6 +412,9 @@ CCLWin::CCLWin(FXApp * app)
   clmenu_allowmemberlogin_check =
     new FXMenuCheck(clmenu,_("Member May Start Session"),this,
 		    ID_ALLOWMEMBERLOGIN);
+  clmenu_allowticketlogin_check =
+    new FXMenuCheck(clmenu,_("Login by Ticket"),this,
+		    ID_ALLOWTICKETLOGIN);
   clmenu_enableassist_check = 
     new FXMenuCheck(clmenu,_("Allow Assistance Request"),this,
 		    ID_ENABLEASSIST);
@@ -397,6 +434,9 @@ CCLWin::CCLWin(FXApp * app)
   clsmenu_allowmemberlogin_check =
     new FXMenuCheck(clsmenu,_("Member May Start Session"),this,
 		    ID_ALLALLOWMEMBERLOGIN);
+  clsmenu_allowticketlogin_check = 
+    new FXMenuCheck(clsmenu,_("Login by Ticket"),this,
+		    ID_ALLALLOWTICKETLOGIN);
   clsmenu_enableassist_check = 
     new FXMenuCheck(clsmenu,_("Allow Assistance Request"),this,
 		    ID_ALLENABLEASSIST);
@@ -418,7 +458,7 @@ CCLWin::CCLWin(FXApp * app)
 		      0,0,0,0,0,0,0,0);
   tarifframe = new TarifFrame(ritem3->getContent());
   FXShutterItem *ritem4 =
-    new FXShutterItem(rshutter,_("Members"),NULL,LAYOUT_FILL_X|LAYOUT_FILL_Y,
+    new FXShutterItem(rshutter,_("Members / Tickets"),NULL,LAYOUT_FILL_X|LAYOUT_FILL_Y,
 		      0,0,0,0,0,0,0,0);
   membersframe = new MembersFrame(ritem4->getContent());
   
@@ -426,12 +466,8 @@ CCLWin::CCLWin(FXApp * app)
     new FXShutterItem(rshutter,_("Staff"),NULL,LAYOUT_FILL_X|LAYOUT_FILL_Y,
 		      0,0,0,0,0,0,0,0);
   employeesframe = new EmployeesFrame(ritem5->getContent());
-  /*FXShutterItem *ritem6 =
-    new FXShutterItem(rshutter,_("Reports"),NULL,LAYOUT_FILL_X|LAYOUT_FILL_Y,
-		      0,0,0,0,0,0,0,0);
-  reportframe = new ReportFrame(ritem6->getContent());
-  */
-  vsplitter->setSplit(1,300);
+
+  vsplitter->setSplit(1,400);
   if (clientslist->getCurrentItem() != -1)
     onClientSelected(NULL,0,NULL);
 
@@ -450,7 +486,11 @@ CCLWin::CCLWin(FXApp * app)
   }
   upfp = NULL;
   curUpdClient = 0;
+  //Set active List Type
   ListType = LV_ICONLIST;
+  //Load defaults
+  applySettings(0);
+  //settingsbox->loadSettings();
 }
 
 CCLWin::~CCLWin()
@@ -504,7 +544,8 @@ FXbool
 CCLWin::close(FXbool notify)
 {
   if (FXMessageBox::question(this,MBOX_YES_NO,_("Exit Mkahawa"),
-			     _("Do you really want to quit Mkahawa?")) == MBOX_CLICKED_YES) {
+			     _("Do you really want to quit Mkahawa?")) == MBOX_CLICKED_YES,
+                             dbIcon2) {
     FXMainWindow::close(TRUE);
     return TRUE;
   }
@@ -607,7 +648,7 @@ CCLWin::setAllClientMember(int client)
       }
     }
     else
-      FXMessageBox::error(this,MBOX_OK,_("Error"),_("Invalid member"));
+      FXMessageBox::error(this,MBOX_OK,_("Error"),_("Invalid member"), dbIcon2);
   }
   delete dlg;
 }
@@ -615,35 +656,64 @@ CCLWin::setAllClientMember(int client)
 void
 CCLWin::setClientMember(int client)
 {
-  int member = CCL_client_member_get(client);
-  FXInputDialog *dlg = new FXInputDialog(this,_("Member"),
-					 _("Member ID (0 for none):"),
-					 NULL,INPUTDIALOG_INTEGER);
-  dlg->setLimits(0,9999);
-  dlg->setText(FXStringVal(member));
-  if (dlg->execute()) {
-    member = FXIntVal(dlg->getText());
-    if ((CCL_member_exists(member) || 0 == member)) {
+  int smember = CCL_client_member_get(client);
+  FXDialogBox dlg(this,_("Set Member to Client"));
+  FXVerticalFrame *vframe =  new FXVerticalFrame(&dlg,LAYOUT_FILL_X|LAYOUT_FILL_Y);
+  FXVerticalFrame *mlistframe = new FXVerticalFrame(vframe,FRAME_SUNKEN|LAYOUT_FILL_X|LAYOUT_FILL_Y,
+			0,0,0,0,0,0,0,0);
+  FXFoldingList *mlist = new FXFoldingList(mlistframe,NULL,0,
+		      LAYOUT_FILL_X|LAYOUT_FILL_Y|FOLDINGLIST_SINGLESELECT);
+  FXHorizontalFrame *hframe = new FXHorizontalFrame(vframe,FRAME_SUNKEN|LAYOUT_FILL_X,
+			0,0,0,50,0,0,0,0);
+  new FXButton(hframe,_("Cancel"),dbIcon2,&dlg,FXDialogBox::ID_CANCEL,
+	       BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK|LAYOUT_LEFT);
+  new FXButton(hframe,_("Set Member"),dbIcon2,&dlg,FXDialogBox::ID_ACCEPT,
+	       BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK|LAYOUT_RIGHT);
+  mlist->appendHeader(_("Member Name"),NULL,170);
+  
+  dlg.resize(200,300);
+
+  char buf[128];
+  int  id=0, count=0;
+  mlist->clearItems();
+  snprintf(buf,128,"** NO MEMBER **");
+  mlist->appendItem(NULL,buf,NULL,NULL,(void *)id);
+  for (FXuint i = 0; -1 != (id = CCL_member_get_nth(i)); i++) {
+    if (!(CCL_member_flags_get(id) & (MEMBER_DELETED |MEMBER_TICKET))) {
+    //if (!(CCL_member_flags_get(id) & (MEMBER_DELETED))) {
+      const char *name = NULL;
+
+      name = CCL_member_name_get(id);
+      snprintf(buf,128,"%s",name);
+      mlist->appendItem(NULL,buf,NULL,NULL,(void *)id);
+      count++;
+    }
+  }
+
+  if (dlg.execute()) {
+    FXFoldingItem *sitem = mlist->getCurrentItem();
+
+    if (sitem) {
+      smember = (int)(sitem->getData());
       int enablepassbtn = FALSE;
-      int credit = CCL_member_credit_get(member);
-      
-      if ( (credit-CCL_client_owed_terminal(client)) > MINCREDIT ){
-	CCL_client_member_set(client,member);
-	if (0 != member && CCL_data_key_exists(CCL_DATA_MEMBER,member,"password"))
-	  enablepassbtn = TRUE;
-	
-	CCL_client_send_cmd(client,CS_ENABLEPASSWORDEDIT,
-			    &enablepassbtn,sizeof(enablepassbtn));
+      int credit = CCL_member_credit_get(smember);
+      if (!smember){
+	return;
       }
-      else{
+      else if ( (credit-CCL_client_owed_terminal(client)) > MINCREDIT ){
+	// check for enough credit
+	CCL_client_member_set(client,smember);
+	if (0 != smember && CCL_data_key_exists(CCL_DATA_MEMBER,smember,"password"))
+	  enablepassbtn = TRUE;
+	CCL_client_send_cmd(client,CS_ENABLEPASSWORDEDIT,&enablepassbtn,sizeof(enablepassbtn));
+      }
+      else{ // too little credit
 	FXMessageBox::error(this,MBOX_OK,_("Overdrawn Account"),
-			    _("Replenish the account first."));
+			    _("Replenish the account first."), dbIcon2);
       }
     }
-    else
-      FXMessageBox::error(this,MBOX_OK,_("Error"),_("Invalid member"));
   }
-  delete dlg;
+  return;
 }
 
 int CCLWin::getSelectedClient()
@@ -674,7 +744,7 @@ print_hash(unsigned char *hash, int len)
   int i;
   for (i=0; i<len; i++)
     printf("%02X ", hash[i]);
-
+  
   return;
 }
 
@@ -687,7 +757,6 @@ CCLWin::auth(int id,FXuchar *testpass)
 
   if (id > 0) {
     realpass = (FXuchar*)CCL_data_get_blob(CCL_DATA_MEMBER,id,"password",&size);
-
 #ifdef DEBUG
     printf("Realpass Hash: ");
     print_hash((unsigned char *)realpass, CCL_MD5_DIGEST_LENGTH);
@@ -698,14 +767,12 @@ CCLWin::auth(int id,FXuchar *testpass)
 #endif
     valid = (CCL_member_exists(id) && realpass &&
 	     !memcmp(testpass, realpass, size));
-    
     if (realpass) CCL_free(realpass);
     //CCL_employee_info_get(id, NULL, NULL, NULL, NULL, NULL,
     //			  &(e_inf.lvl), NULL, NULL, NULL);
   }
   return valid;
 }
-
 
 /*
   username
@@ -843,7 +910,6 @@ getIPFromStr(char *ipstr)
   return addr;
 }
 
-#define DEBUG_PRINT 1
 /*
   cupstr   : a cups page_log lien
   client   : pointer to the printer client
@@ -886,7 +952,7 @@ CCLWin::getPageCount(char *cupstr, int *lclient)
     printf("[%s = %08X]\n", CCL_client_name_get(*lclient), CCL_client_ip_get(*lclient));
 #endif
     if (cliaddr == CCL_client_ip_get(*lclient)){
-      if (strncmp(CCL_client_name_get(*lclient), "PrintServer", 9)) 
+      if (strncasecmp(CCL_client_name_get(*lclient), "PrintServer", 9)) 
 	//filter out the PrintServer client
 	break;
     }
@@ -965,22 +1031,17 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
   long resp;
 
 
-  if ( (!cmd) || (cmd>CC_MAXCMDNR)) return;
-  if (member != 0){
+  if ( (!cmd) || (cmd>CC_MAXCMDNR)) return; //disregard stray commands
+
+  if (member != 0){   /* MEMBER & TICKET */
     credit = CCL_member_credit_get(member);
-    if (prev_price[client] != (int)owed){
-      //there was a change in owed. update credit in the database
-      if ((credit - owed) > MINCREDIT)
-	CCL_member_credit_set(member, credit-(owed-prev_price[client]));
-    }
-    //a member is attached to this client
-    owed_val = credit - (owed-prev_price[client]);
-    prev_price[client] = owed;
+    owed_val = credit - owed;
     if (owed_val > 0){ //still some credit left
       int tarif = CCL_member_tarif_get(member);
-      if (!tarif) tarif = CCL_tarif_get();
+      if (!tarif) 
+	tarif = CCL_tarif_get();
       int hourrate = (int)CCL_tarifpart_hourprice_get(tarif);
-#ifdef DEBUG
+#ifdef DEBUG_CREDIT
       printf("[tarif: %d][hourrate: %d] [owed_val: %d] [usedtime: %ld]\n", 
 	     tarif, hourrate, owed_val, usedtime);
 #endif
@@ -992,22 +1053,15 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
       CheckWarnClient(client, owed_mins, WARNONEMINUTE);
     }
     else{       //used up the time so stop the station
-      int allow;
-
-      CCL_client_stop(client);
-      //detach member
-      CCL_client_member_set(client, 0);
+      CCL_client_stop(client); //only stops counting and resets flags
+      CCL_client_member_set(client, 0);       //detach member
       CCL_client_send_cmd(client,CS_STOP,NULL,0);
       CCL_client_send_cmd(client,CS_LOCKSCREEN,NULL,0);
-      CCL_log_session(client,0,NOTPAID, mainwin->getEmployeeID());
-      notpaidframe->readNotPaid();
-      //block client until the bill is settled
-      CCL_client_flags_toggle(client, ALLOWUSERLOGIN, FALSE);
-      allow = CCL_htonl(0);
-      CCL_client_send_cmd(client, CS_ALLOWUSERLOGIN, &allow, sizeof(allow));
-      //clear credit
+      CCL_log_session(client,credit,PAID, mainwin->getEmployeeID());
       CCL_member_credit_set(member, 0);
+      CCL_member_flags_toggle(member, MEMBER_LOGGEDIN, FALSE);
     }
+    // End of member processing 
   }
 #ifdef DEBUG
   printf("Message cmd=%d received\n", cmd);
@@ -1038,26 +1092,26 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
 			  mainwin->getEmployeeID());
 	  //Block session - until paid or specifically allowed
 	  mainwin->blockClient(client);
-	}else{
-	  int credit, owed;
-
-	  CCL_log_session(client,0,NOTPAID, mainwin->getEmployeeID());
-	  //log deduct members credit
-	  credit = CCL_member_credit_get(member);
-	  owed = CCL_client_owed_terminal(client);
-	  CCL_member_credit_set(member, credit-(owed-prev_price[client]));
-	  prev_price[client] = 0;
+	  CCL_client_send_cmd(client,CS_LOCKSCREEN,NULL,0);
+	  CCL_client_send_cmd(client,CS_STOP,NULL,0);
+	  notpaidframe->readNotPaid();
 	}
-	notpaidframe->readNotPaid();
+	else{
+	  int    owed = CCL_client_owed_terminal(client);
+	  int    credit = CCL_member_credit_get(member);
+
+	  CCL_log_session(client,owed,PAID,mainwin->getEmployeeID());
+	  CCL_member_credit_set(member, credit-owed);
+	  CCL_member_flags_toggle(member, MEMBER_LOGGEDIN, FALSE);
+	  CCL_client_send_cmd(client,CS_LOCKSCREEN,NULL,0);
+	  CCL_client_send_cmd(client,CS_STOP,NULL,0);
+	}
       }
       else{  //starting up the client
 	CCL_client_reset(client);
       }
       CCL_client_flags_toggle(client,USERSTOP,TRUE);
-      CCL_client_send_cmd(client,CS_STOP,NULL,0);
-      CCL_client_send_cmd(client,CS_LOCKSCREEN,NULL,0);
-      if (CCL_client_member_get(client) != 0)
-	CCL_client_member_set(client, 0);
+      CCL_client_member_set(client, 0);
       break;
     case CC_USERLOGIN:
       //if (CCL_client_flags_get(client) & ALLOWUSERLOGIN) {
@@ -1099,7 +1153,9 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
 #endif
 	}
       
-	if (-1 != memberid &&  mainwin->auth(memberid,md5hash)) {
+	if (-1 != memberid &&  
+	    mainwin->auth(memberid,md5hash) && 
+	    !(CCL_member_flags_get(memberid) & MEMBER_LOGGEDIN)) {
 #ifdef DEBUG
 	  printf("CC_MEMBERLOGIN: Member %s authenticated\n", data);
 #endif
@@ -1117,9 +1173,9 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
 		CCL_client_start(client);
 	      }
 	      CCL_client_member_set(client,memberid);
-	      CCL_client_flags_toggle(client,USERSTOP,FALSE);
+	      CCL_member_flags_toggle(memberid, MEMBER_LOGGEDIN, TRUE); //mark as logged in
+	      CCL_client_flags_toggle(client,USERSTOP,FALSE); 
 	      updateClientStatus(client);
-	      prev_price[client] = 0; //initialize member price
 	    }
 	  }
 	  else{
@@ -1127,8 +1183,8 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
 	    cp = _("account has insufficient credit");
 	    snprintf(buf,64,"%s %s",
 		     CCL_member_name_get(memberid), cp);
-	    FXMessageBox::information(mainwin,MBOX_OK,_("Member Login Failure"),
-				      buf);
+	    //FXMessageBox::information(mainwin,MBOX_OK,_("Member Login Failure"),
+	    //buf, dbIcon2);
 	  }
 	}
 	else{
@@ -1138,6 +1194,77 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
 	}
       }
       break;
+
+      /************************************/
+    case CC_TICKETLOGIN:      
+#ifdef DEBUG_TICKET
+      printf("CC_TICKETLOGIN: Ticket Attempts to log in\n");
+#endif
+      if (CCL_client_flags_get(client) & ALLOWTICKETLOGIN) {
+	  char *cp, *c, tktstr[33];
+	  int memberid, i;
+	  //remove non-alphanumeric characters
+	  bzero(tktstr, 32);
+	  cp = (char *)tktstr;
+	  c = (char*)data;
+	  //for (i=0; i<32 && *c; i++, c++){
+	  for (i=0; i<32 && i<size; i++, c++){
+	    if (isalnum(*c))
+	      *cp++ = toupper(*c);
+	  }
+	  *cp = 0;  //null - terminate this string 
+	  //check if in DB 
+	  memberid = CCL_member_ticket_find(tktstr);
+#ifdef DEBUG_TICKET
+	  printf("CC_TICKETLOGIN: Ticket [%s] tried to log in as [%s]\n", tktstr, data);
+#endif
+	  if (memberid == -1){ //not found - do nothing
+	    return;
+	  }
+   
+	  if (-1 != memberid ) {
+#ifdef DEBUG_TICKET
+	    printf("CC_TICKETLOGIN: Ticket %s authenticated\n", data);
+#endif
+	    //check balance
+	    if (CCL_member_credit_get(memberid) > MINCREDIT){
+	      if (confirmLogin(client)){
+		CCL_client_send_cmd(client,CS_UNLOCKSCREEN,NULL,0);
+		if ((CCL_client_flags_get(client) & USERSTOP) &&
+		    CCL_client_member_get(client) == memberid) {
+		  CCL_client_unstop(client);
+		  notpaidframe->readNotPaid();
+		} else{
+		  if (CCL_client_status_get(client)!=CCL_PAUSED) 
+		    job_pages[client % 256] = 0; //initialize the job_pages
+		  CCL_client_start(client);
+		}
+		CCL_client_member_set(client,memberid);
+		CCL_client_flags_toggle(client,USERSTOP,FALSE);
+		updateClientStatus(client);
+		CCL_member_flags_toggle(memberid, MEMBER_LOGGEDIN, TRUE); //mark as logged in
+	      }
+	    }
+	    else{
+	      char buf[64], *cp;
+	      cp = _("account has insufficient credit");
+	      snprintf(buf,64,"%s %s",
+		       CCL_member_name_get(memberid), cp);
+	      //FXMessageBox::information(mainwin,MBOX_OK,_("Member Login Failure"),
+	      //		      buf, dbIcon2);
+	    }
+	  }
+	  else{
+#ifdef DEBUG_TICKET
+	    printf("CC_TICKETLOGIN: Ticket %s NOT authenticated\n", data);
+#endif
+	  }
+      }
+      break;
+
+
+      /***********************************/
+
   case CC_USERPRINTED:
     {    
       int pgcnt=0, pid=0, pclient;
@@ -1380,14 +1507,19 @@ updateClientStatus(int client)
     CCL_client_send_cmd(client,CS_STOP,NULL,0);
     CCL_client_send_cmd(client,CS_LOCKSCREEN,NULL,0);
   }
+  //these are default settings
   int nallowuserlogin = //ALLOWUSERLOGIN;
     CCL_htonl(CCL_client_flags_get(client) & ALLOWUSERLOGIN);
+  CCL_client_send_cmd(client,CS_ALLOWUSERLOGIN,&nallowuserlogin,
+		      sizeof(nallowuserlogin));
   int nallowmemberlogin =
     CCL_htonl(CCL_client_flags_get(client) & ALLOWMEMBERLOGIN);
   CCL_client_send_cmd(client,CS_ALLOWMEMBERLOGIN,&nallowmemberlogin,
 		      sizeof(nallowmemberlogin));
-  CCL_client_send_cmd(client,CS_ALLOWUSERLOGIN,&nallowuserlogin,
-		      sizeof(nallowuserlogin));
+  int nallowticketlogin =
+    CCL_htonl(CCL_client_flags_get(client) & ALLOWTICKETLOGIN);
+  CCL_client_send_cmd(client,CS_ALLOWTICKETLOGIN,&nallowticketlogin,
+  		      sizeof(nallowticketlogin));
 }
 
 void
@@ -1395,11 +1527,27 @@ onConnectCallback(int client,void *userdata)
 {
   mainwin->appendClient(client);
   mainwin->setClientDisconnected(client,FALSE);
+  unsigned long flags = CCL_client_flags_get(client);
+  
+  if (!(flags & CLIENT_BLOCKED)){
+#ifdef DEBUG_SETTINGS
+    printf("onConnectionCallback(): Client [%d] - Flags [%08X]\n", client, flags);
+#endif    
+    mainwin->unBlockClient(client);
+  }
+  updateClientStatus(client);
+#ifdef DEBUG_CALLBACK
+  printf("onConnectionCallback(): Client [%d] - Flags [%08X]\n", client, flags);
+#endif    
 }
 
 void
 onDisconnectCallback(int client,void *userdata)
 {
+#ifdef DEBUG_CALLBACK
+  unsigned long flags = CCL_client_flags_get(client);
+  printf("onDisconnectCallback(): Client [%d] - Flags [%08X]\n", client, flags);
+#endif    
   mainwin->setClientDisconnected(client,TRUE);
 }
 
@@ -1415,24 +1563,49 @@ long
 CCLWin::unBlockClient(int client)
 {
   int allow;
-  //Block session - until paid or specifically allowed
-  CCL_client_flags_toggle(client, ALLOWUSERLOGIN, TRUE);
-  allow = CCL_htonl(ALLOWUSERLOGIN);
-  CCL_client_send_cmd(client, CS_ALLOWUSERLOGIN, &allow, sizeof(allow));
-  allow = CCL_htonl(ALLOWMEMBERLOGIN);
-  CCL_client_send_cmd(client, CS_ALLOWMEMBERLOGIN, &allow, sizeof(allow));
+  int cli_setting = CCL_data_get_int(CCL_DATA_CLIENT, client, "client_settings", -1);
+
+  //Flag settings
+  CCL_client_flags_toggle(client, CLIENT_BLOCKED, FALSE);
+  //cli_setting &= ~CLIENT_BLOCKED;
+  //CCL_data_get_int(CCL_DATA_CLIENT, client, "client_settings", cli_setting);
+  //Effect unblock  
+  if (cli_setting & ALLOWUSERLOGIN) {
+    CCL_client_flags_toggle(client, ALLOWUSERLOGIN, TRUE);
+    allow = CCL_htonl(ALLOWUSERLOGIN);
+    CCL_client_send_cmd(client, CS_ALLOWUSERLOGIN, &allow, sizeof(allow));
+  }
+  if (cli_setting & ALLOWMEMBERLOGIN) {
+    CCL_client_flags_toggle(client, ALLOWMEMBERLOGIN, TRUE);
+    allow = CCL_htonl(ALLOWMEMBERLOGIN);
+    CCL_client_send_cmd(client, CS_ALLOWMEMBERLOGIN, &allow, sizeof(allow));
+  }
+  if (cli_setting & ALLOWTICKETLOGIN) {
+    CCL_client_flags_toggle(client, ALLOWTICKETLOGIN, TRUE);
+    allow = CCL_htonl(ALLOWTICKETLOGIN);
+    CCL_client_send_cmd(client, CS_ALLOWTICKETLOGIN, &allow, sizeof(allow));
+  }
 }
 
 long
 CCLWin::blockClient(int client)
 {
   int allow;
+  int cli_setting = CCL_data_get_int(CCL_DATA_CLIENT, client, "client_settings", -1);
+
   //Block session - until paid or specifically allowed
   CCL_client_flags_toggle(client, ALLOWUSERLOGIN, FALSE);
   CCL_client_flags_toggle(client, ALLOWMEMBERLOGIN, FALSE);
+  CCL_client_flags_toggle(client, ALLOWTICKETLOGIN, FALSE);
+  //set blocking flags
+  CCL_client_flags_toggle(client, CLIENT_BLOCKED, TRUE);
+  //cli_setting |= CLIENT_BLOCKED;
+  //CCL_data_get_int(CCL_DATA_CLIENT, client, "client_settings", cli_setting);
+  //effect blocking
   allow = CCL_htonl(0);
   CCL_client_send_cmd(client, CS_ALLOWUSERLOGIN, &allow, sizeof(allow));
   CCL_client_send_cmd(client, CS_ALLOWMEMBERLOGIN, &allow, sizeof(allow));
+  CCL_client_send_cmd(client, CS_ALLOWTICKETLOGIN, &allow, sizeof(allow));
 }
 
 /* 
@@ -1459,7 +1632,7 @@ CCLWin::getUpdateFileName(char *fname, int *buf)
     if (FXStat::exists(filename)
 	|| FXMessageBox::question(this,MBOX_YES_NO,_("No File Selected"),
 				  _("Select an Update File?"),
-				  filename.text()) == MBOX_CLICKED_YES) {
+				  filename.text()) == MBOX_CLICKED_YES, dbIcon2) {
       snprintf(fname, 256, "%s", filename.text());
       retval = FXStat::size(filename);
       //store path
@@ -1678,7 +1851,7 @@ CCLWin::setAllClientPass()
 bool
 isPrintServerClient(int client)
 {
-  return (!strncmp(CCL_client_name_get(client), "PrintServer", 9));
+  return (!strncasecmp(CCL_client_name_get(client), "PrintServer", 9));
 }
 
 long
@@ -1717,31 +1890,19 @@ CCLWin::onCommand(FXObject*,FXSelector sel,void*)
       case ID_STOP:
 	if (isPrintServerClient(client)) break;
 	if (status == CCL_ACTIVE) {
-	  int allow, owed, credit;
 	  int member = CCL_client_member_get(client); 
-	  
 	  CCL_client_stop(client);
-	  if (member != 0) {
-	    /*   //log member's session as zero
-		 CCL_log_session(client,0,NOTPAID, mainwin->getEmployeeID());
-		 //log deduct members credit
-		 owed = (int)CCL_member_credit_get(member);
-		 owed -= CCL_client_owed_terminal(client);
-		 CCL_member_credit_set(member, owed);
-	    */
-	    CCL_log_session(client,0,NOTPAID, mainwin->getEmployeeID());
-	    //log deduct members credit
-	    credit = CCL_member_credit_get(member);
-	    owed = CCL_client_owed_terminal(client);
-	    CCL_member_credit_set(member, credit - (owed-prev_price[client]));
-	    prev_price[client] = 0;
+	  if (member != 0) { //for a member/ticket session
+	    int credit = CCL_member_credit_get(member);
+	    int owed = CCL_client_owed_terminal(client);
+	    CCL_member_credit_set(member, credit - owed);
+	    CCL_log_session(client,owed,PAID, mainwin->getEmployeeID());
 	  }
-	  else{
-	    CCL_log_session(client,CCL_client_owed_terminal(client),NOTPAID, 
-			    getEmployeeID());
+	  else{ //a postpaid session (not member / ticket)
+	    CCL_log_session(client,CCL_client_owed_terminal(client),NOTPAID, getEmployeeID());
 	    blockClient(client);
+	    notpaidframe->readNotPaid();
 	  }
-	  notpaidframe->readNotPaid();
 	} else //status is INACTIVE
 	  CCL_client_flags_toggle(client,USERSTOP,FALSE);
 	CCL_client_send_cmd(client,CS_STOP,NULL,0);
@@ -1785,24 +1946,20 @@ CCLWin::onCommand(FXObject*,FXSelector sel,void*)
 #endif
 	break;
       case ID_ALLSETMEMBER:
-	//setClientMember(client);
-	if (confirmAll())
-	  setAllClientMember(client);
+	//if (confirmAll())
+	//  setAllClientMember(client);
 	break;
       case ID_ALLMONITOROFF:
         if (confirmAll())
 	  send_cmd_to_all(CS_MONITOROFF,NULL,0);
-	//CCL_client_send_cmd(client,CS_MONITOROFF,NULL,0);
 	break;
       case ID_ALLREBOOT:
 	if (confirmAll())
 	  send_cmd_to_all(CS_REBOOT,NULL,0);
-	//CCL_client_send_cmd(client,CS_REBOOT,NULL,0);
 	break;
       case ID_ALLPOWEROFF:
 	if (confirmAll())
 	  send_cmd_to_all(CS_SHUTDOWN,NULL,0);
-	//CCL_client_send_cmd(client,CS_SHUTDOWN,NULL,0);
 	break;
       case ID_ALLUPDATECLIENT:
 	updateAllClients();
@@ -1924,6 +2081,40 @@ CCLWin::onTime(FXObject*,FXSelector,void*)
   return 1;
 }
 
+void
+CCLWin::toggleClientSetting(int client, int flag)
+{
+  int settings = CCL_data_get_int(CCL_DATA_CLIENT, client, "client_settings", -1);
+#ifdef DEBUG_SETTINGS
+  int preset = settings;
+#endif
+  if (settings != -1)
+    settings =  (settings & flag) ? settings &= ~flag: settings |= flag;
+  else 
+    settings = flag;
+  CCL_data_set_int(CCL_DATA_CLIENT, client, "client_settings", settings);
+#ifdef DEBUG_SETTINGS
+  printf("CCLWin::toggleClientSetting() Client[%02d] flag [%08X] Setting: [%08X]->[%08X]\n", 
+	 client, flag, preset, settings);
+#endif
+  CCL_client_flags_toggle(client, flag, (settings & flag));
+
+}
+
+long
+CCLWin::onAllowUserLogin(FXObject*,FXSelector,void*)
+{
+  int current = clientslist->getCurrentItem();
+  if (-1 == current)
+    return 1;
+  int client = (int) (clientslist->getItemData(current));
+  toggleClientSetting(client, ALLOWUSERLOGIN);
+  int nallow = CCL_htonl(CCL_client_flags_get(client) & ALLOWUSERLOGIN);
+  CCL_client_send_cmd(client,CS_ALLOWUSERLOGIN,&nallow,sizeof(nallow));
+
+  return 1;
+}
+
 long
 CCLWin::onAllAllowUserLogin(FXObject*,FXSelector,void*)
 {
@@ -1937,21 +2128,6 @@ CCLWin::onAllAllowUserLogin(FXObject*,FXSelector,void*)
 }
 
 long
-CCLWin::onAllowUserLogin(FXObject*,FXSelector,void*)
-{
-  int current = clientslist->getCurrentItem();
-  if (-1 == current)
-    return 1;
-  int client = (int) (clientslist->getItemData(current));
-  CCL_client_flags_toggle(client,ALLOWUSERLOGIN,
-			  !(CCL_client_flags_get(client) & ALLOWUSERLOGIN));
-  int allow = CCL_htonl(CCL_client_flags_get(client) & ALLOWUSERLOGIN);
-  CCL_client_send_cmd(client,CS_ALLOWUSERLOGIN,&allow,sizeof(allow));
-
-  return 1;
-}
-
-long
 CCLWin::onEnableAssist(FXObject*,FXSelector,void*)
 {
   int current = clientslist->getCurrentItem();
@@ -1960,8 +2136,8 @@ CCLWin::onEnableAssist(FXObject*,FXSelector,void*)
     return 1;
   int client = (int) (clientslist->getItemData(current));
 
-  CCL_client_flags_toggle(client,ENABLEASSIST,
-			  !(CCL_client_flags_get(client) & ENABLEASSIST));
+  //  CCL_client_flags_toggle(client,ENABLEASSIST, !(CCL_client_flags_get(client) & ENABLEASSIST));
+  toggleClientSetting(client, ENABLEASSIST);
   int assist = CCL_htonl(CCL_client_flags_get(client) & ENABLEASSIST);
   CCL_client_send_cmd(client,CS_ENABLEASSIST ,&assist,sizeof(assist));
 
@@ -1981,10 +2157,10 @@ CCLWin::confirmAll()
   FXLabel lbl(hframe1, _("Apply this action to all stations?"));
   FXHorizontalFrame *hframe2 =
     new FXHorizontalFrame(vframe,LAYOUT_FILL_X|LAYOUT_FILL_Y);
-  new FXButton(hframe2,_("Apply"),NULL,&dlg,FXDialogBox::ID_ACCEPT,
-	       FRAME_RAISED|FRAME_THICK);
-  new FXButton(hframe2,_("Cancel"),NULL,&dlg,FXDialogBox::ID_CANCEL,
-	       FRAME_RAISED|FRAME_THICK);
+  new FXButton(hframe2,_("Apply"),dbIcon2,&dlg,FXDialogBox::ID_ACCEPT,
+	       BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
+  new FXButton(hframe2,_("Cancel"),dbIcon2,&dlg,FXDialogBox::ID_CANCEL,
+	       BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
   if (dlg.execute()){
 #ifdef DEBUG
     printf("confirmAll(): Applied.\n");
@@ -2020,6 +2196,23 @@ CCLWin::onEnableAllAssist(FXObject*,FXSelector,void*)
   return 1;
 }
 
+
+long
+CCLWin::onAllowMemberLogin(FXObject*,FXSelector,void*)
+{
+  int current = clientslist->getCurrentItem();
+
+  if (-1 == current)
+    return 1;
+  int client = (int) (clientslist->getItemData(current));
+  //CCL_client_flags_toggle(client,ALLOWMEMBERLOGIN, !(CCL_client_flags_get(client) & ALLOWMEMBERLOGIN));
+  toggleClientSetting(client, ALLOWMEMBERLOGIN);
+  int allow = CCL_htonl(CCL_client_flags_get(client) & ALLOWMEMBERLOGIN);
+  CCL_client_send_cmd(client,CS_ALLOWMEMBERLOGIN,&allow,sizeof(allow));
+
+  return 1;
+}
+
 long
 CCLWin::onAllAllowMemberLogin(FXObject*,FXSelector,void*)
 {
@@ -2033,9 +2226,8 @@ CCLWin::onAllAllowMemberLogin(FXObject*,FXSelector,void*)
   return 1;
 }
 
-
 long
-CCLWin::onAllowMemberLogin(FXObject*,FXSelector,void*)
+CCLWin::onAllowTicketLogin(FXObject*,FXSelector,void*)
 {
   int current = clientslist->getCurrentItem();
 
@@ -2043,10 +2235,28 @@ CCLWin::onAllowMemberLogin(FXObject*,FXSelector,void*)
     return 1;
   int client = (int) (clientslist->getItemData(current));
 
-  CCL_client_flags_toggle(client,ALLOWMEMBERLOGIN,
-			  !(CCL_client_flags_get(client) & ALLOWMEMBERLOGIN));
-  int allow = CCL_htonl(CCL_client_flags_get(client) & ALLOWMEMBERLOGIN);
-  CCL_client_send_cmd(client,CS_ALLOWMEMBERLOGIN,&allow,sizeof(allow));
+  //  CCL_client_flags_toggle(client,ALLOWTICKETLOGIN, !(CCL_client_flags_get(client) & ALLOWTICKETLOGIN));
+  toggleClientSetting(client, ALLOWTICKETLOGIN);
+  int allow = CCL_htonl(CCL_client_flags_get(client) & ALLOWTICKETLOGIN);
+  CCL_client_send_cmd(client,CS_ALLOWTICKETLOGIN,&allow,sizeof(allow));
+#ifdef DEBUG_TICKET
+  printf("CCLWin::onAllowTicketLogin(): Sent allow ticket login message\n");
+#endif
+
+  return 1;
+}
+
+
+long
+CCLWin::onAllAllowTicketLogin(FXObject*,FXSelector,void*)
+{
+  int i, client;
+
+  int allow = clsmenu_allowticketlogin_check->getCheck() & ALLOWTICKETLOGIN;
+  for (int i=0; (-1 != (client = CCL_client_get_nth(i))); i++){
+    CCL_client_flags_toggle(client,ALLOWTICKETLOGIN, allow);
+    CCL_client_send_cmd(client,CS_ALLOWTICKETLOGIN,&allow,sizeof(allow));
+  }
   return 1;
 }
 
@@ -2081,10 +2291,10 @@ CCLWin::onDelClient(FXObject*,FXSelector,void*)
   //confirm deletion first
   FXHorizontalFrame *hframe3 =
     new FXHorizontalFrame(vframe,LAYOUT_FILL_X|LAYOUT_FILL_Y);
-  new FXButton(hframe3,_("Delete"),NULL,&dlg,FXDialogBox::ID_ACCEPT,
-	       FRAME_RAISED|FRAME_THICK);
-  new FXButton(hframe3,_("Cancel"),NULL,&dlg,FXDialogBox::ID_CANCEL,
-	       FRAME_RAISED|FRAME_THICK);
+  new FXButton(hframe3,_("Cancel"),dbIcon2,&dlg,FXDialogBox::ID_CANCEL,
+	       BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_LEFT);
+  new FXButton(hframe3,_("Delete"),dbIcon2,&dlg,FXDialogBox::ID_ACCEPT,
+	       BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_RIGHT);
   if (dlg.execute()){
     //FXFoldingItem *item;
 
@@ -2187,10 +2397,16 @@ CCLWin::onShowClientMenu(FXObject*,FXSelector,void* ptr)
   if (-1 != idx) { /* menu for client x */
     int client = (int) clientslist->getItemData(idx);
     clmenu_caption->setText(CCL_client_name_get(client));
-    if (CCL_client_flags_get(client) & ALLOWUSERLOGIN)
-      clmenu_allowuserlogin_check->setCheck(TRUE);
-    else
-      clmenu_allowuserlogin_check->setCheck(FALSE);
+    int settings = CCL_data_get_int(CCL_DATA_CLIENT, client, "client_settings", -1);
+    
+    if (settings != -1){
+      
+      if (settings & ALLOWUSERLOGIN)
+//      if (CCL_client_flags_get(client) & ALLOWUSERLOGIN)
+	clmenu_allowuserlogin_check->setCheck(TRUE);
+      else
+	clmenu_allowuserlogin_check->setCheck(FALSE);
+    }
     if (CCL_client_flags_get(client) & ENABLEASSIST)
       clmenu_enableassist_check->setCheck(TRUE);
     else
@@ -2199,6 +2415,11 @@ CCLWin::onShowClientMenu(FXObject*,FXSelector,void* ptr)
       clmenu_allowmemberlogin_check->setCheck(TRUE);
     else
       clmenu_allowmemberlogin_check->setCheck(FALSE);
+    if (CCL_client_flags_get(client) & ALLOWTICKETLOGIN)
+      clmenu_allowticketlogin_check->setCheck(TRUE);
+    else
+      clmenu_allowticketlogin_check->setCheck(FALSE);
+
     clientslist->setCurrentItem(idx,TRUE);
     clientslist->selectItem(idx,TRUE);
     clmenu->popup(NULL,event->root_x,event->root_y);
@@ -2208,7 +2429,6 @@ CCLWin::onShowClientMenu(FXObject*,FXSelector,void* ptr)
   }
   return 0;
 }
-
 
 long
 CCLWin::onShowClientMenu2(FXObject*,FXSelector,void* ptr)
@@ -2230,6 +2450,12 @@ CCLWin::onShowClientMenu2(FXObject*,FXSelector,void* ptr)
       clmenu_allowmemberlogin_check->setCheck(TRUE);
     else
       clmenu_allowmemberlogin_check->setCheck(FALSE);
+
+    if (CCL_client_flags_get(client) & ALLOWTICKETLOGIN)
+      clmenu_allowticketlogin_check->setCheck(TRUE);
+    else
+      clmenu_allowticketlogin_check->setCheck(FALSE);
+    
     clientslist2->setCurrentItem(item,TRUE);
     clientslist2->selectItem(item,TRUE);
     clmenu->popup(NULL,event->root_x,event->root_y);
@@ -2453,12 +2679,12 @@ CCLWin::employeeLogin(FXObject*,FXSelector,void*)
     new FXVerticalFrame(&dialog,LAYOUT_FILL_X|LAYOUT_FILL_Y,0,0,0,0,0,0,0,0,0,0);
   FXHorizontalFrame *hframe =
     new FXHorizontalFrame(vframe,LAYOUT_FILL_X|LAYOUT_FILL_Y);
-  FXButton okbtn(hframe,_("   Ok   "),NULL,&dialog,FXDialogBox::ID_ACCEPT, 
-		 FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT,
-		 0,0,100,20);
-  FXButton cancelbtn(hframe,_("  Quit  "),NULL,&dialog,FXDialogBox::ID_CANCEL,
-		     FRAME_RAISED|LAYOUT_TOP|LAYOUT_RIGHT,
+  FXButton cancelbtn(hframe,_("  Quit  "),dbIcon1,&dialog,FXDialogBox::ID_CANCEL,
+		     BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT,
 		     0,0,100,20);
+  FXButton okbtn(hframe,_("   Ok   "),dbIcon1,&dialog,FXDialogBox::ID_ACCEPT, 
+		 BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_RIGHT,
+		 0,0,100,20);
   FXbool retval; 
   okbtn.setWidth(100);
   cancelbtn.setWidth(100);
@@ -2472,7 +2698,7 @@ CCLWin::employeeLogin(FXObject*,FXSelector,void*)
       if (authemp((FXuchar *)usrname.getText().text(), 
 		  (FXuchar *)passwd.getText().text())){
 	FXMessageBox::information(getRoot(),MBOX_OK,_("Welcome"),
-			    _("Welcome to Mkahawa Cyber Manager"));
+				  _("Welcome to Mkahawa Cyber Manager"));
 	retval = TRUE;
 	loginstat = 1;
 	setPerms(e_inf.lvl);
@@ -2547,6 +2773,17 @@ CCLWin::onMsgClient(FXObject*, FXSelector, void*)
   }
   return 1;
 }
+
+long
+CCLWin::onCyberSet(FXObject*, FXSelector, void*)
+{
+  SettingsBox stb(this);
+  if (stb.execute()){
+    applySettings(0);
+  }
+  return 1;
+}
+
 
 long
 CCLWin::onMsgServer(FXObject*, FXSelector, void*)
@@ -2665,4 +2902,23 @@ sendUpdateChunks(int client)
 #endif
   fclose(mainwin->upfp);
   return 1;
+}
+
+
+int 
+CCLWin::applySettings(unsigned long setting)
+{
+  if (cyber_settings)
+    cyber_settings->loadSettings();
+  else
+    cyber_settings = new CyberSettings();
+
+#ifdef DEBUG_SETTINGS
+  printf("applySettings(): round_off = %u\n", (unsigned int)cyber_settings->round_off);
+#endif 
+  CCL_set_settings( (void *) cyber_settings->round_off );
+  int npoll_itvl = CCL_htonl(cyber_settings->poll_interval);
+  send_cmd_to_all(CS_SETPOLLINTERVAL,(char *)&npoll_itvl, sizeof(npoll_itvl));
+  
+  return 0;
 }

@@ -9,6 +9,12 @@ using namespace FX;
 
 //#define DEBUG_CCLFOX 1
 
+extern FXGIFIcon *dbIcon01;
+extern FXGIFIcon *dbIcon0;
+extern FXGIFIcon *dbIcon1;
+extern FXGIFIcon *dbIcon2;
+extern FXGIFIcon *dbIcon3;
+
 char pwdstr[20];
 extern int activeEmpId;
 
@@ -38,14 +44,14 @@ EmployeesFrame::EmployeesFrame(FXComposite * parent)
   //FXHorizontalFrame *hframe0 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
   //filtertf = new FXTextField(hframe0,40,this,ID_FILTER,TEXTFIELD_NORMAL);
   FXHorizontalFrame *hframe1 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
-  addemployee = new FXButton(hframe1,_("New"),NULL,this,ID_ADDEMPLOYEE,
-			   FRAME_RAISED|FRAME_THICK);
+  addemployee = new FXButton(hframe1,_("New"),dbIcon1,this,ID_ADDEMPLOYEE,
+			   BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
   //applychanges = new FXButton(hframe1,_(""),NULL,this,
   //			      ID_APPLY,FRAME_RAISED|FRAME_THICK);
-  editbtn = new FXButton(hframe1,_("Edit"),NULL,this,
-			      ID_EDIT,FRAME_RAISED|FRAME_THICK);
-  delemployee = new FXButton(hframe1,_("Delete"),NULL,this,ID_DELEMPLOYEE,
-			   FRAME_RAISED|FRAME_THICK);
+  editbtn = new FXButton(hframe1,_("Edit"),dbIcon1,this, ID_EDIT,
+			   BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT);
+  delemployee = new FXButton(hframe1,_("Delete"),dbIcon1,this,ID_DELEMPLOYEE,
+			   BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT);
   FXVerticalFrame *employeesframe =
     new FXVerticalFrame(this,FRAME_SUNKEN|LAYOUT_FILL_X|LAYOUT_FILL_Y,
 			0,0,0,0,0,0,0,0);
@@ -345,10 +351,10 @@ EmployeesFrame::onEdit(FXObject*,FXSelector,void*)
 				    CHECKBUTTON_NORMAL|LAYOUT_LEFT);
   new FXHorizontalSeparator(vframe);
   FXHorizontalFrame *hframe = new FXHorizontalFrame(vframe,LAYOUT_FILL_X);
-  new FXButton(hframe,_("Accept"),NULL,&dlg,FXDialogBox::ID_ACCEPT,
-	       FRAME_RAISED|FRAME_THICK|LAYOUT_LEFT);
-  new FXButton(hframe,_("Cancel"),NULL,&dlg,FXDialogBox::ID_CANCEL,
-	       FRAME_RAISED|FRAME_THICK|LAYOUT_RIGHT);
+  new FXButton(hframe,_("Cancel"),dbIcon2,&dlg,FXDialogBox::ID_CANCEL,
+	       BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK|LAYOUT_LEFT);
+  new FXButton(hframe,_("Accept"),dbIcon2,&dlg,FXDialogBox::ID_ACCEPT,
+	       BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK|LAYOUT_RIGHT);
 
   unsigned long permval = (unsigned long)e.lvl;
   //temporary
@@ -477,8 +483,8 @@ EmployeesFrame::onSetUsrlvl(FXObject*,FXSelector,void*)
   FXFoldingList *tlist =
     new FXFoldingList(tlistframe,NULL,0,
 		      LAYOUT_FILL_X|LAYOUT_FILL_Y|FOLDINGLIST_SINGLESELECT);
-  new FXButton(vframe,_("Select"),NULL,&dlg,FXDialogBox::ID_ACCEPT,
-	       FRAME_RAISED|FRAME_THICK);
+  new FXButton(vframe,_("Select"),dbIcon2,&dlg,FXDialogBox::ID_ACCEPT,
+	       BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
   char *lvls[] = {"0\tAdmin", "1\tSupervisor", "2\tOperator"};
   
   tlist->appendHeader(_("ID"),NULL,40);
@@ -556,6 +562,7 @@ EmployeesFrame::addEmployee(int id)
 {
   FXFoldingItem *prnt = NULL;
   char *usr, *name, *pwd, *phone, *email;
+  const char *phonep, *emailp;
   unsigned lvl=0, hdate=0, superid=0, flags=0;
   char buf[256];
 
@@ -565,8 +572,10 @@ EmployeesFrame::addEmployee(int id)
 #ifdef DEBUG_CCLFOX
   printf("addEmployee(): %s:  Flags: %08X\n", usr, flags);
 #endif
+  phonep = (phone == NULL) ? "[NA]": phone;
+  emailp = (email == NULL) ? "[NA]": email;
   if (!(flags & EMPLOYEE_DELETED)){
-    snprintf(buf,256,"%s\t%s\t%s\t%s\t%08X",usr,name,phone,email, flags);
+    snprintf(buf,256,"%s\t%s\t%s\t%s\t%08X",usr,name,phonep,emailp, flags);
     employeeslist->appendItem(NULL, buf, NULL,NULL, (void *)id);
   }
   CCL_free(usr);
@@ -656,10 +665,10 @@ EmployeesFrame::onNewEmployee(FXObject*,FXSelector,void*)
 				    CHECKBUTTON_NORMAL|LAYOUT_LEFT);
   new FXHorizontalSeparator(vframe);
   FXHorizontalFrame *hframe = new FXHorizontalFrame(vframe,LAYOUT_FILL_X);
-  new FXButton(hframe,_("Accept"),NULL,&dlg,FXDialogBox::ID_ACCEPT,
-	       FRAME_RAISED|FRAME_THICK|LAYOUT_LEFT);
-  new FXButton(hframe,_("Cancel"),NULL,&dlg,FXDialogBox::ID_CANCEL,
-	       FRAME_RAISED|FRAME_THICK|LAYOUT_RIGHT);
+  new FXButton(hframe,_("Cancel"),dbIcon2,&dlg,FXDialogBox::ID_CANCEL,
+	       BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_LEFT);
+  new FXButton(hframe,_("Accept"),dbIcon2,&dlg,FXDialogBox::ID_ACCEPT,
+	       BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_RIGHT);
 
   if (dlg.execute() && e.usr.length() ) {
     long permval = 0L;

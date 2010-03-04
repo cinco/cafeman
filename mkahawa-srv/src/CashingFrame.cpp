@@ -10,6 +10,10 @@ using namespace FX;
 #include "CCLWin.h"
 #include "EmployeesFrame.h"
 
+extern FXGIFIcon *dbIcon1;
+extern FXGIFIcon *dbIcon2;
+extern FXGIFIcon *dbIcon3;
+
 static FXuint
 minusTax(FXuint price,double tax)
 {
@@ -110,8 +114,8 @@ CashingFrame::CashingFrame(FXComposite * parent)
     new FXHorizontalFrame(this,LAYOUT_FILL_X,0,0,0,0,4,4,0,0,5,0);
   new FXLabel(hframe1,_("Client:"));
   clientname = new FXLabel(hframe1,"");
-  editmember = new FXButton(hframe1,_("Edit"),NULL,this,ID_EDITMEMBER,
-			    LAYOUT_RIGHT|FRAME_RAISED|FRAME_THICK);
+  editmember = new FXButton(hframe1,_("Edit"),dbIcon1,this,ID_EDITMEMBER,
+			    BUTTON_TOOLBAR|LAYOUT_RIGHT|FRAME_RAISED|FRAME_THICK);
 
   FXHorizontalFrame *hframe2 =
     new FXHorizontalFrame(this,LAYOUT_FILL_X,0,0,0,0,4,4,0,0,5,0);
@@ -121,8 +125,8 @@ CashingFrame::CashingFrame(FXComposite * parent)
   timeprice->setCellWidth(10);
   timeprice->setTextColor(FXRGB(255,50,50));
   timeprice->setBackColor(FXRGB(0,0,0));
-  editprice = new FXButton(hframe2,_("Edit"),NULL,this,ID_EDITPRICE,
-			   LAYOUT_RIGHT|FRAME_RAISED|FRAME_THICK);
+  editprice = new FXButton(hframe2,_("Edit"),dbIcon1,this,ID_EDITPRICE,
+			   BUTTON_TOOLBAR|LAYOUT_RIGHT|FRAME_RAISED|FRAME_THICK);
   
   FXHorizontalFrame *hframe3 =
     new FXHorizontalFrame(this,LAYOUT_FILL_X,0,0,0,0,4,4,0,0,5,0);
@@ -178,14 +182,16 @@ CashingFrame::CashingFrame(FXComposite * parent)
   new FXHorizontalSeparator(this);
 
   FXHorizontalFrame *hframe6 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
-  okbutton = new FXButton(hframe6,_("Cash"),NULL,this,ID_CASH,
-			  FRAME_RAISED|FRAME_THICK);
-  cancelbutton = new FXButton(hframe6,_("Log as cancelled"),NULL,this,
-			      ID_CANCEL,FRAME_RAISED|FRAME_THICK);
-  cancelsalebutton = new FXButton(hframe6,_("Cancel sale"),NULL,this,
-				  ID_CANCELSALE,FRAME_RAISED|FRAME_THICK|LAYOUT_RIGHT);
+  okbutton = new FXButton(hframe6,_("Cash"),dbIcon1,this,ID_CASH,
+			  BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
+  cancelbutton = new FXButton(hframe6,_("Log Cancelled"),dbIcon3,this,ID_CANCEL,
+			      BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
+  cancelsalebutton = new FXButton(hframe6,_("Cancel Sale"),dbIcon3,this,ID_CANCELSALE,
+				  BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK|LAYOUT_RIGHT);
+  calcchangebutton = new FXButton(hframe6,_("Calc Change"),dbIcon3,this, ID_CALCCHANGE,
+				  BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK|LAYOUT_RIGHT);
 
-  FXHorizontalFrame *hframe7 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
+  //FXHorizontalFrame *hframe7 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
   //printticketcb = new FXCheckButton(hframe7,_("Print ticket"),this,
   //  				    ID_PRINTTICKETCHECK);
   //sendcodebutton = new FXButton(hframe7,_("Open cash register"),NULL,this,
@@ -193,14 +199,12 @@ CashingFrame::CashingFrame(FXComposite * parent)
   if (getApp()->reg().readIntEntry("CASHING","print",0))
     printticketcb->setCheck(TRUE);
 
-  new FXHorizontalSeparator(this);
+  /*  new FXHorizontalSeparator(this);
 
   FXHorizontalFrame *hframe8 = new FXHorizontalFrame(this,LAYOUT_FILL_X);
   //editticket = new FXButton(hframe8,_("Edit ticket format"),NULL,this,
   //			    ID_TICKETEDIT,FRAME_RAISED|FRAME_THICK);
-  calcchangebutton = new FXButton(hframe8,_("Calculate change"),NULL,this,
-				  ID_CALCCHANGE);
-
+  */
   products = NULL;
   clear();
 }
@@ -916,9 +920,9 @@ CashingFrame::onTicketEdit(FXObject*,FXSelector,void*)
   taxpercentsb->setRange(0.0,99.9);
   FXHorizontalFrame *hframe3 =
     new FXHorizontalFrame(vframe,LAYOUT_FILL_X|LAYOUT_FILL_Y);
-  new FXButton(hframe3,_("Accept"),NULL,&dlg,FXDialogBox::ID_ACCEPT,
+  new FXButton(hframe3,_("Accept"),dbIcon1,&dlg,FXDialogBox::ID_ACCEPT,
 	       FRAME_RAISED|FRAME_THICK);
-  new FXButton(hframe3,_("Cancel"),NULL,&dlg,FXDialogBox::ID_CANCEL,
+  new FXButton(hframe3,_("Cancel"),dbIcon1,&dlg,FXDialogBox::ID_CANCEL,
 	       FRAME_RAISED|FRAME_THICK);
 
   char *header = CCL_data_get_string(CCL_DATA_NONE,0,"ticket/header",NULL);

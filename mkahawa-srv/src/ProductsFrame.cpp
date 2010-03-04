@@ -9,9 +9,19 @@ using namespace std;
 #include "verifiers.h"
 #include "CCLWin.h"
 
+
+extern FXGIFIcon *dbIcon01;
+extern FXGIFIcon *dbIcon0;
+extern FXGIFIcon *dbIcon1;
+extern FXGIFIcon *dbIcon2;
+extern FXGIFIcon *dbIcon3;
+
+//extern FXGIFIcon *dbIcon4;
+//extern FXGIFIcon *dbIcon5;
+//extern FXGIFIcon *dbIcon6;
+
 static void printTicket(const char *description, unsigned int amount);
 static void openCashRegister();
-
 
 void
 ProductsFrame::noPermInfo()
@@ -92,19 +102,19 @@ ProductsFrame::ProductsFrame(FXComposite * parent)
 {
   ptoolbar = new FXToolBar(this,FRAME_RAISED|LAYOUT_TOP|LAYOUT_FILL_X);
 
-  newbtn = new FXButton(ptoolbar,_("New"),NULL,this,ID_NEWPRODUCT,
+  newbtn = new FXButton(ptoolbar,_("New"),dbIcon1,this,ID_NEWPRODUCT,
 	       BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT);
-  delbtn = new FXButton(ptoolbar,_("Delete"),NULL,this,ID_DELPRODUCT,
+  delbtn = new FXButton(ptoolbar,_("Delete"),dbIcon1,this,ID_DELPRODUCT,
 	       BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT);
-  editbtn = new FXButton(ptoolbar,_("Edit"),NULL,this,ID_EDITPRODUCT,
+  editbtn = new FXButton(ptoolbar,_("Edit"),dbIcon1,this,ID_EDITPRODUCT,
 	       BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT);
-  stockbtn = new FXButton(ptoolbar,_("Stock"),NULL,this,ID_SETSTOCK,
+  stockbtn = new FXButton(ptoolbar,_("Stock"),dbIcon1,this,ID_SETSTOCK,
 	       BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT);
   newsalebtn =
-    new FXButton(ptoolbar,_("Sell"),NULL,this,ID_NEWSALE,
+    new FXButton(ptoolbar,_("Sell"),dbIcon1,this,ID_NEWSALE,
 		 BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT);
   completesalebtn =
-    new FXButton(ptoolbar,_("Complete Sale"),NULL,this,ID_COMPLETESALE,
+    new FXButton(ptoolbar,_("Complete Sale"),dbIcon3,this,ID_COMPLETESALE,
 		 BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT);
   completesalebtn->disable();
 
@@ -325,10 +335,10 @@ ProductsFrame::onNewProduct(FXObject*,FXSelector,void*)
 				       FRAME_SUNKEN|FRAME_THICK);*/
   new FXHorizontalSeparator(vframe);
   FXHorizontalFrame *hframe = new FXHorizontalFrame(vframe,LAYOUT_FILL_X);
-  new FXButton(hframe,_("Accept"),NULL,&dlg,FXDialogBox::ID_ACCEPT,
-	       FRAME_RAISED|FRAME_THICK);
-  new FXButton(hframe,_("Cancel"),NULL,&dlg,FXDialogBox::ID_CANCEL,
-	       FRAME_RAISED|FRAME_THICK);
+  new FXButton(hframe,_("Cancel"),dbIcon1,&dlg,FXDialogBox::ID_CANCEL,
+	       BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
+  new FXButton(hframe,_("Accept"),dbIcon1,&dlg,FXDialogBox::ID_ACCEPT,
+	       BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
 
   if (dlg.execute() && category.length() && name.length() && price >= 0.0) {
     int id = CCL_product_new(category.text(),name.text(),(int)(price * 100));
@@ -377,10 +387,10 @@ ProductsFrame::onEditProduct(FXObject*,FXSelector,void*)
 					 FRAME_SUNKEN|FRAME_THICK);*/
     new FXHorizontalSeparator(vframe);
     FXHorizontalFrame *hframe = new FXHorizontalFrame(vframe,LAYOUT_FILL_X);
-    new FXButton(hframe,_("Accept"),NULL,&dlg,FXDialogBox::ID_ACCEPT,
-		 FRAME_RAISED|FRAME_THICK);
-    new FXButton(hframe,_("Cancel"),NULL,&dlg,FXDialogBox::ID_CANCEL,
-		 FRAME_RAISED|FRAME_THICK);
+    new FXButton(hframe,_("Cancel"),dbIcon1,&dlg,FXDialogBox::ID_CANCEL,
+		 BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
+    new FXButton(hframe,_("Accept"),dbIcon1,&dlg,FXDialogBox::ID_ACCEPT,
+		 BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
 
     if (dlg.execute() && price >= 0.0) {
       CCL_product_price_set(pid,(FXuint) (price * 100));
@@ -420,7 +430,7 @@ ProductsFrame::onSetStock(FXObject*,FXSelector,void*)
     int amount = 0;
 
     if (FXInputDialog::getInteger(amount,this,_("Adjust Stock"),
-				  _("Quantity to add:"))) {
+				  _("Quantity to add:"), NULL)) {
       double cash = 0.0;
       if (FXInputDialog::getReal(cash,this,_("Log Expense"),
 				 _("Enter the price (0 to not log):"),
