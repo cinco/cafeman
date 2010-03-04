@@ -60,6 +60,7 @@ struct _CCL
   GData		       *employees;
   gint			perminafter;
   gint                  incprice;
+  gint                  rndoff;
   Events_list		events;
   gint                  tid;
 };

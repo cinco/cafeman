@@ -40,8 +40,10 @@ enum
   CCL_DATA_LOGPRODUCT = -7,   /** The data is assigned to a logged product */
   CCL_DATA_LOGEXPENSE = -8,   /** The data is assigned to a logged expense */
   CCL_DATA_EMPLOYEE = -9,     /** The data is assigned to an employee */
-  CCL_DATA_USRLVL = -10       /** The data is assigned to a user level */
+  CCL_DATA_USRLVL = -10,       /** The data is assigned to a user level */
+  CCL_DATA_SETTINGS = -11     /** The data is assigned to settings */
 };
+
 
 /* Rules for searching the sessions log */
 #define CCL_SR_ID	  (1UL<<0) /** Search by entry id */
@@ -155,6 +157,21 @@ struct _CCL_log_product_entry /** Logged sold product entry */
 };
 typedef struct _CCL_log_product_entry CCL_log_product_entry;
 
+struct _CCL_ticket_entry /** ticket entry */
+{
+  int       id;
+  time_t    pdate;
+  time_t    stdate;
+  time_t    enddate;
+  unsigned  faceval;
+  unsigned  curval;
+  unsigned  credit;
+  int       tariff;
+  int       flags;
+  char      name[32];
+};
+typedef struct _CCL_ticket_entry CCL_ticket_entry;
+
 struct _CCL_log_expense_entry /** Logged expense entry */
 {
   const char description[128];
@@ -183,6 +200,8 @@ int	      CCL_SSL_init(const char * cafile, const char * certfile,
 int	      CCL_networking_init(unsigned short port, int * error);
 int	      CCL_networking_shutdown(void);
 int	      CCL_check_events(void);
+int           CCL_set_settings(void *pSettings);
+
 int	      CCL_product_new(const char * category, const char * name,
 			      unsigned price);
 void	      CCL_product_delete(int product);
@@ -293,7 +312,10 @@ int	      CCL_member_flags_get(int member);
 void	      CCL_member_flags_toggle(int member, int flags, int on);
 void	      CCL_member_credit_set(int member, int credit);
 int	      CCL_member_credit_get(int member);
-
+int           CCL_member_ticket_new(int member, char *sqlstr);
+int           CCL_member_ticket_del(int member, char *sqlstr);
+int           CCL_member_ticket_find(const char *tktstr);
+int           CCL_member_tickets_get(char *sqlstr, CCL_ticket_entry **te);
 /**********************************************************/
 
 int           CCL_employee_new(char *usr, char *name, char *pwd, char *phone, 

@@ -8,8 +8,6 @@
 */
 extern CCL *ccl;
 
-/* Static functions */
-static gboolean _CCL_member_store(gint member);
 
 /* Public interface */
 
@@ -52,6 +50,153 @@ CCL_member_new(const gchar * name, int emp)
 
   return id;
 }
+
+
+/* Static functions */
+static gboolean _CCL_member_store(gint member);
+
+/* Public interface */
+
+/**
+ * Create a new ticket
+ *
+ * @param 1 id [ not used here ]
+ * @param 2 sql string 
+ * @return id of inserted record , or error 
+ *
+ */
+
+gint
+CCL_member_ticket_new(int id, char *sqlstr)
+{
+  gchar *cmd = NULL;
+  gchar *errstr = NULL;
+
+  /*  if (-1 == id)  */
+    {
+      cmd = sqlite3_mprintf("%s",sqlstr);
+      sqlite3_exec(ccl->db, cmd, NULL, NULL, &errstr);
+      sqlite3_free(cmd);
+      id = sqlite3_last_insert_rowid(ccl->db);
+#ifdef DEBUG 
+      printf("CCL_member_ticket_new(): cmd = %s\nerrstr = %s\n", cmd, errstr);
+#endif 
+      sqlite3_free(errstr);
+    }  
+  return id;
+}
+
+/**
+ * delete a ticket 
+ *
+ * @param 1 id [ not used here ]
+ * @param 2 sql string 
+ * @return 0 
+ *
+ */
+gint
+CCL_member_ticket_del(int id, char *sqlstr)
+{
+  gchar *cmd = NULL;
+  gchar *errstr = NULL;
+
+  if (-1 == id)
+    {
+      cmd = sqlite3_mprintf("%s",sqlstr);
+      sqlite3_exec(ccl->db, cmd, NULL, NULL, &errstr);
+      sqlite3_free(cmd);
+#ifdef DEBUG
+      printf("CCL_member_ticket_del(): cmd = %s\nerrstr = %s\n", cmd, errstr);
+#endif
+      sqlite3_free(errstr);
+    }
+
+  return 0;
+}
+
+
+/**
+ * Find a ticket by name.
+ *
+ * @param   name The name of the member we are looking for.
+ * @return The ticket's id if found, -1 if not found.
+ */
+gint
+CCL_member_ticket_find(const gchar * name)
+{
+  gchar *cmd = NULL;
+  sqlite3_stmt *stmt = NULL;
+  gint id = -1;
+ 
+  cmd = sqlite3_mprintf("select id from tickets where name = %Q;", name);
+  sqlite3_prepare(ccl->db, cmd, -1, &stmt, NULL);
+  sqlite3_free(cmd);
+
+  if (sqlite3_step(stmt) == SQLITE_ROW)
+    id = sqlite3_column_int(stmt, 0);
+  
+  sqlite3_finalize(stmt);
+
+  return id;
+}
+
+
+/**
+ * query ticket info
+ *
+ * @param 1 sql string
+ * @param container for ticket data : this is allocated INSIDE the function
+ * @return Number of records if te is null, or the record in te
+ *
+ */
+
+gint
+CCL_member_tickets_get(char *sqlstr, CCL_ticket_entry **te)
+{
+  char    *cmd = NULL;
+  char   **argv = NULL;
+  int      nrow, ncol;
+  CCL_ticket_entry *entryarray = NULL;
+
+  cmd = sqlite3_mprintf("%s", sqlstr);
+ 
+  if (sqlite3_get_table(ccl->db, cmd, &argv, &nrow, &ncol, NULL) == SQLITE_OK
+      && argv && nrow > 0 && ncol)
+    {
+      int i;
+      
+      if (!te)	      /* If !se, return the number of found entries */
+	{
+	  sqlite3_free(cmd);
+	  sqlite3_free_table(argv);
+	  return nrow;
+	}
+      /* Otherwise, lets fill the array with found entries */
+      entryarray = g_new0(CCL_ticket_entry, nrow);
+      
+      for (i = 0; i < nrow; i++){
+	gint os = (i+1) * ncol; /* offset */
+	
+	sscanf(argv[os], "%d", &(entryarray[i].id));
+	sscanf(argv[os+1], "%s", entryarray[i].name);
+	sscanf(argv[os+2], "%ld", &(entryarray[i].pdate));
+	sscanf(argv[os+4], "%ld", &(entryarray[i].stdate));
+	sscanf(argv[os+5], "%ld", &(entryarray[i].enddate));
+	sscanf(argv[os+7], "%d", &(entryarray[i].faceval));
+	sscanf(argv[os+8], "%d", &(entryarray[i].credit));
+	sscanf(argv[os+9], "%d", &(entryarray[i].flags));
+      }
+    }
+  sqlite3_free(cmd);
+  sqlite3_free_table(argv);
+  *te = entryarray;
+#ifdef DEBUG
+  printf("CCL_member_tickets_get(): cmd = %s\nerrstr = %s\n", cmd, errstr);
+#endif
+  
+  return nrow;
+}
+
 
 /**
  * Gets the nth member on the list.

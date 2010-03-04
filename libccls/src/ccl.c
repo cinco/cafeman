@@ -237,6 +237,21 @@ CCL_networking_shutdown(void)
 }
 
 /**
+ * Make some internal settings
+ *
+ * @param  pointer to settings structure
+ * @return 1 if successful
+ */
+gint
+CCL_set_settings(void *pSettings)
+{
+  ccl->rndoff = (int)pSettings;
+
+  return 1;
+}
+
+
+/**
  * Sets after how many minutes start to calculate the price by minute.
  *
  * @param   mins The amount of minutes.
@@ -644,6 +659,8 @@ CCL_product_stock_get(gint product)
   return amount;
 }
 
+
+
 int do_cnxn_proc(void *arg)
 {
   gint client = (int) arg;
@@ -867,6 +884,7 @@ _init_db(sqlite3 * db)
   gboolean PRODUCTSLOG = FALSE;
   gboolean EXPENSESLOG = FALSE;
   gboolean EMPLOYEES = FALSE;
+  gboolean TICKETS = FALSE;
   int retval;
 
   sqlite3_prepare(db,
@@ -907,6 +925,9 @@ _init_db(sqlite3 * db)
       else if (!g_ascii_strcasecmp((gchar *) sqlite3_column_text(stmt, 0),
 				   "employees"))
 	EMPLOYEES = TRUE;
+      else if (!g_ascii_strcasecmp((gchar *) sqlite3_column_text(stmt, 0),
+				   "tickets"))
+	TICKETS = TRUE;
     }
   
   sqlite3_finalize(stmt);
@@ -972,7 +993,7 @@ _init_db(sqlite3 * db)
   if (!MEMBERS)
     sqlite3_exec(db,
 		 "create table members (\n"
-		 "    id integer primary key,\n"
+		 "    id integer primary key autoincrement,\n"
 		 "    name varchar(128) not null unique,\n"
 		 "    sdate integer not null,\n"
 		 "    tarif integer default 0 not null,\n"
@@ -981,6 +1002,21 @@ _init_db(sqlite3 * db)
 		 "    empid integer not null,\n"
 		 "    credit integer default 0,\n"
 		 "    flags integer default 0 not null);", NULL, NULL, NULL);
+
+  if (!TICKETS)
+    sqlite3_exec(db,
+		 "create table tickets (\n"
+		 "    id integer primary key,\n"
+		 "    name varchar(32) not null unique,\n"
+		 "    pdate integer not null,\n"
+		 "    tarif integer default 0 not null,\n"
+		 "    stdate integer not null,\n"
+		 "    expdate integer not null,\n"
+		 "    empid integer not null,\n"
+		 "    faceval integer default 0,\n"
+		 "    credit integer default 0,\n"
+		 "    flags integer default 0 not null);", NULL, NULL, NULL);
+
   if (!PRICES)
     sqlite3_exec(db,
 		 "create table prices (\n"
