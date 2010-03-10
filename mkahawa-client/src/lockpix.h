@@ -7,6 +7,16 @@ unsigned char *popup_gif;
 unsigned char *startpopup_gif;
 unsigned char *endpopup_gif;
 
+
+unsigned char *member_btn_gif;
+unsigned char *ticket_btn_gif;
+unsigned char *postpay_btn_gif;
+
+unsigned char *passwd_pad_gif;
+unsigned char *member_pad_gif;
+unsigned char *ticket_pad_gif;
+
 int init_img(char *libname, const char *version);
+
 
 #endif

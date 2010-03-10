@@ -26,6 +26,13 @@
 # define N_(String) (String)
 #endif
 
+#define OPMODE_POSTPAY   1
+#define OPMODE_TICKET    2
+#define OPMODE_MEMBER    4
+
+#define MEMBER_LOGIN_NAME 1
+#define MEMBER_LOGIN_PWD  2
+
 class CCLCFox : public FXObject
 {
 FXDECLARE(CCLCFox)
@@ -37,6 +44,7 @@ protected:
   time_t	    stime;
   int		    timeout;
   int               ack_assist;
+  unsigned int      poll_interval;
   UpdateInfo        cui;
 public:
   CCLCFox();
@@ -63,10 +71,12 @@ public:
   void rebootSystem();
   void turnOffMonitor();
   void setOwed(FXuint owed);
+  void setClientPollInterval(FXuint itvl);
   void setProducts(FXuint owed);
   void showMessage(void *message);
   void execCommand(FXuint cmd,const void *data,FXuint datasize);
   void unlockWithPass(int id,FXString password);
+  void unlockWithPass(FXString tktstr);
   void unlockWithPass(FXString login,FXString password);
   void reportPrinting(char *cupsLogLine, int lnLen);
   void exitProgram();
@@ -76,22 +86,32 @@ public:
   void askForHelp();
   long storeUpdateChunk(char *chunk, long len);
   long doUpdate();
-  long authUpdate(void *hdr, long len);
+  long authUpdate(void *hdr, unsigned long len);
   char *updata;
   long process_update_data();
+  void setOpMode(unsigned int opmode) { op_mode = opmode; }
+  unsigned long getOpMode() { return op_mode; };
+  void setLoginMode(unsigned int loginmode) { login_mode = loginmode; }
+  unsigned long getLoginMode() { return login_mode; }
+  void setMemberLoginState(unsigned int state) { mbr_login_state = state; }
+  unsigned long getMemberLoginState() { return mbr_login_state; }
 public:
   long onTimer(FXObject*,FXSelector,void*);
   long onCheckEvents(FXObject*,FXSelector,void*);
   long onPollPrinting(FXObject*, FXSelector, void*);
+
 public:
   enum {
     ID_TIMER = 0,ID_CHECKEVENTS,
     ID_LAST, ID_POLLPRINT
   };
-  int can_print_poll;
-  int cups_fd;
-  struct stat fst, tstat; 
-  char *cupslogfile;
+  int          can_print_poll;
+  int          cups_fd;
+  struct stat  fst, tstat; 
+  char        *cupslogfile;
+  unsigned int op_mode;
+  unsigned int login_mode;
+  unsigned int mbr_login_state;
 };
 #endif
 

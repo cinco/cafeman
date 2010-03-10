@@ -9,14 +9,28 @@ class Locker : public FXShell
 FXDECLARE(Locker)
 protected:
   FXGIFImage	*lockpix;
+  FXGIFImage	*imgMember;
+  FXGIFImage	*imgTicket;
+  FXGIFImage	*imgPostpay;
+
+  FXGIFImage	*imgTicketPad;
+  FXGIFImage	*imgMemberPad;
+  FXGIFImage	*imgPasswdPad;
+
   FXFont	*font;
   char		*ctext;
   FXString	 input;
   FXString	 mlogin;
   int		 mid;
   struct { int x,y,w,h; } box;
+  FXRectangle    tkt_box;
+  FXRectangle    mbr_box;
+  FXRectangle    pwd_box;
+  FXRectangle    inp_box;
+
   bool		 allowuserlogin;
   bool		 allowmemberlogin;
+  bool		 allowticketlogin;
 protected:
   Locker(){}
 public:
@@ -27,9 +41,13 @@ public:
 public:
   void allowUserLogin(bool allow);
   void allowMemberLogin(bool allow);
+  void allowTicketLogin(bool allow);
   void lock();
   void unlock();
   void drawPasswordBox(FXEvent* event);
+  void drawPostpayItems(FXEvent* ev);
+  void drawMemberItems(FXEvent* ev);
+  void drawTicketItems(FXEvent* ev);
   void clearPasswordBox();
 public:
   long onPaint(FXObject*,FXSelector,void* ptr);

@@ -28,6 +28,7 @@ Grabber *grabber;
 static char * server = NULL;
 static char * myname = NULL;
 static int port = 2999;
+static char * homedir = NULL;
 
 
 int check_time()
@@ -80,6 +81,8 @@ parse_args(int argc,char *argv[])
       withssl = FALSE;
     else if (!strcmp(argv[i],"-certpass") && ++i < argc)
       certpass = argv[i];
+    else if (!strcmp(argv[i],"-dir") && ++i < argc)
+      homedir = argv[i];
     else {
       fxmessage(_("[E]Invalid option %s\n"),argv[i]);
       return FALSE;
@@ -108,12 +111,27 @@ parse_args(int argc,char *argv[])
 int
 main(int argc,char *argv[])
 {
+  if (!parse_args(argc,argv)) {
+    show_help(argv[0]);
+    return 1;
+  }
+
+  FXApp app("mkahawa","mkahawa Cyber Timer");
+
+  if (!homedir)
 #ifndef WIN32
-  FXSystem::setCurrentDirectory(FXSystem::getHomeDirectory() + "/.mkahawa/");
+    FXSystem::setCurrentDirectory(FXSystem::getHomeDirectory() + "/.mkahawa/");
 #else
-  if (FXFile::isAbsolute(argv[0]))
+  if (FXFile::isAbsolute(argv[0])){
     FXFile::setCurrentDirectory(FXFile::directory(argv[0]));
+  }
 #endif
+  else{
+    FXString dirname = FXString(homedir) + "/.mkahawa-cli";
+    if (!FXStat::exists(dirname))
+      FXDir::create(dirname);
+    FXSystem::setCurrentDirectory(dirname);
+  }    
   // Gettext
 #ifdef HAVE_GETTEXT
   setlocale(LC_MESSAGES,"");
@@ -123,13 +141,6 @@ main(int argc,char *argv[])
 # endif
 #endif
   init_img("/usr/local/lib/libmkwimg.so","1.0");
-
-  if (!parse_args(argc,argv)) {
-    show_help(argv[0]);
-    return 1;
-  }
-
-  FXApp app("mkahawa","mkahawa Cyber Timer");
 
   app.init(argc,argv);
   clientwin = new ClientWin(&app);
