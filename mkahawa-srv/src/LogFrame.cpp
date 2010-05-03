@@ -954,7 +954,7 @@ LogFrame::onSaveReport(FXObject*,FXSelector,void*)
       filename += ".rpt";
     if (!FXStat::exists(filename)
 	|| FXMessageBox::question(this,MBOX_YES_NO,_("Filename Exists"),
-				  _("File '%s' alreadt exists, overwrite?"),
+				  _("File '%s' alreadt exists. Overwrite?"),
 				  filename.text()) == MBOX_CLICKED_YES) {
       if (saveReport(filename.text())) {
 	FXMessageBox::information(this,MBOX_OK,_("Save Report"),

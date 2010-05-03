@@ -5,7 +5,6 @@ src/LogFrame.cpp
 src/MembersFrame.cpp
 src/MSGWin.cpp
 src/NotpaidFrame.cpp
-src/PrePaidFrame.cpp
 src/ProductsFrame.cpp
 src/ReportFrame.cpp
 src/TarifFrame.cpp

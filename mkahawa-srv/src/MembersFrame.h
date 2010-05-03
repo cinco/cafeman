@@ -48,7 +48,7 @@ public:
   long onResetPass(FXObject*,FXSelector,void*);
   long onAddCredit(FXObject*,FXSelector,void*);
   long onSubCredit(FXObject*,FXSelector,void*);
-  long onTickets(FXObject*,FXSelector,void*);
+  //  long onTickets(FXObject*,FXSelector,void*);
 public:
   enum {
     ID_ADDMEMBER = FXVerticalFrame::ID_LAST, ID_DELMEMBER, ID_APPLY,

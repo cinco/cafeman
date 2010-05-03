@@ -23,7 +23,7 @@ FXDEFMAP(MembersFrame) MembersFrameMap[] =
   FXMAPFUNC(SEL_COMMAND,MembersFrame::ID_ADDCREDIT,MembersFrame::onAddCredit),
   FXMAPFUNC(SEL_COMMAND,MembersFrame::ID_REFUNDCREDIT,MembersFrame::onSubCredit),
   FXMAPFUNC(SEL_COMMAND,MembersFrame::ID_RESETPASS,MembersFrame::onResetPass),
-  FXMAPFUNC(SEL_COMMAND,MembersFrame::ID_TICKETS,MembersFrame::onTickets),
+  //  FXMAPFUNC(SEL_COMMAND,MembersFrame::ID_TICKETS,MembersFrame::onTickets),
   FXMAPFUNC(SEL_CHANGED,MembersFrame::ID_FILTER,MembersFrame::onFilter),
   FXMAPFUNC(SEL_SELECTED,MembersFrame::ID_MEMBERSLIST,MembersFrame::onMemberSelect)
 };
@@ -60,8 +60,8 @@ MembersFrame::MembersFrame(FXComposite * parent)
 			   BUTTON_TOOLBAR|FRAME_RAISED|FRAME_LINE);
   applychanges = new FXButton(hframe1,_("Save"),dbIcon1,this,ID_APPLY,
 			   BUTTON_TOOLBAR|FRAME_RAISED|FRAME_LINE);
-  btnTickets = new FXButton(hframe1,_("Tickets"),dbIcon1,this,ID_TICKETS,
-			   BUTTON_TOOLBAR|FRAME_RAISED|FRAME_LINE|LAYOUT_RIGHT);
+  //  btnTickets = new FXButton(hframe1,_("Tickets"),dbIcon1,this,ID_TICKETS,
+  //		   BUTTON_TOOLBAR|FRAME_RAISED|FRAME_LINE|LAYOUT_RIGHT);
   new FXHorizontalSeparator(this);
   new FXLabel(this,_("Member Details"),NULL,LAYOUT_CENTER_X);
   new FXHorizontalSeparator(this);
@@ -112,7 +112,7 @@ MembersFrame::setPerms(long perm)
     addmember->disable();
     delmember->disable();
     applychanges->disable();
-    btnTickets->disable();
+    //btnTickets->disable();
     settarif->disable();
     resetpass->disable();
     addcredit->disable();
@@ -122,7 +122,7 @@ MembersFrame::setPerms(long perm)
     addmember->enable();
     delmember->enable();
     applychanges->enable();
-    btnTickets->enable();
+    //btnTickets->enable();
     settarif->enable();
     resetpass->enable();
     addcredit->enable();
@@ -265,7 +265,7 @@ MembersFrame::onApplyChanges(FXObject*,FXSelector,void*)
   return 1;
 }
 
-#include "TicketsBox.h"
+/*#include "TicketsBox.h"
 
 long
 MembersFrame::onTickets(FXObject*,FXSelector,void*)
@@ -280,6 +280,7 @@ MembersFrame::onTickets(FXObject*,FXSelector,void*)
   return 1;
 }
 
+*/
 
 long
 MembersFrame::onMemberSelect(FXObject*,FXSelector,void*)

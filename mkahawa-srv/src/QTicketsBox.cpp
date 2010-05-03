@@ -19,11 +19,11 @@ extern FXGIFIcon *dbIcon2;
 extern FXGIFIcon *dbIcon3;
 
 
-extern void formatTicket(FXString &tickettext, char *tktStr, CCL_ticket_entry &te);
-extern int formatTicketStr(char *retStr, char *tktStr, int bsize);
-extern void printString(FXString &tickettext);
+extern int      formatTicketStr(char *retStr, char *tktStr, int bsize);
+extern void     formatTicket(FXString &tickettext, char *tktStr, CCL_ticket_entry &te);
+extern FXString outputToHTML(FXString &tickettext);
 
-#define DEBUG
+//#define DEBUG
 
 FXDEFMAP(QTicketsBox) QTicketsBoxMap[] =
 {
@@ -31,13 +31,14 @@ FXDEFMAP(QTicketsBox) QTicketsBoxMap[] =
   FXMAPFUNC(SEL_COMMAND,QTicketsBox::ID_DELETE,QTicketsBox::onDelete),
   FXMAPFUNC(SEL_COMMAND,QTicketsBox::ID_CLEAR,QTicketsBox::onClear),
   FXMAPFUNC(SEL_COMMAND,QTicketsBox::ID_PRINT,QTicketsBox::onPrint),
-  FXMAPFUNC(SEL_COMMAND,QTicketsBox::ID_EXIT,QTicketsBox::onExit),
+  //  FXMAPFUNC(SEL_COMMAND,QTicketsBox::ID_EXIT,QTicketsBox::onExit),
+  FXMAPFUNC(SEL_COMMAND,QTicketsBox::ID_GENERATE,QTicketsBox::onGenerate),
   FXMAPFUNCS(SEL_COMMAND, QTicketsBox::ID_RADIO1,QTicketsBox::ID_RADIO3,     QTicketsBox::onCmdRadio),
   FXMAPFUNCS(SEL_UPDATE,  QTicketsBox::ID_RADIO1,QTicketsBox::ID_RADIO3,     QTicketsBox::onUpdRadio),
   FXMAPFUNC(SEL_SELECTED,QTicketsBox::ID_TICKETSLIST,QTicketsBox::onTicketsList)
 };
 
-FXIMPLEMENT(QTicketsBox,FXDialogBox,QTicketsBoxMap,
+FXIMPLEMENT(QTicketsBox,FXVerticalFrame,QTicketsBoxMap,
 	    ARRAYNUMBER(QTicketsBoxMap))
 
 QTicketsBox::~QTicketsBox()
@@ -51,11 +52,14 @@ QTicketsBox::create()
   //#ifdef DEBUG
   //printf("QTicketsBox::create(): create QTicketsBox\n");
   //#endif
-  FXDialogBox::create();
+  FXVerticalFrame::create();
 }
 
 QTicketsBox::QTicketsBox(FXComposite * parent)
-  :FXDialogBox(parent,_("Query and Purge Expired Tickets"))
+  //  :FXVerticalFrame(parent,_("Query and Purge Expired Tickets"))
+ :FXVerticalFrame(parent,LAYOUT_FILL_X|LAYOUT_FILL_Y|FRAME_SUNKEN,
+		0,0,0,0,0,0,0,0,0,0)
+  // :FXVerticalFrame(parent,_("Query and Purge Expired Tickets"))
 {
   FXVerticalFrame *vf0 =
     new FXVerticalFrame(this,FRAME_SUNKEN|LAYOUT_FILL_X|LAYOUT_FILL_Y,
@@ -68,6 +72,30 @@ QTicketsBox::QTicketsBox(FXComposite * parent)
   FXVerticalFrame *vf1 =
     new FXVerticalFrame(vf0,FRAME_SUNKEN|LAYOUT_FILL_X|LAYOUT_FILL_Y,
 			0,0,0,0,0,0,0,0);
+
+  //Tickets List Vertical Field
+  FXVerticalFrame *vf2 =
+    new FXVerticalFrame(vf1,FRAME_SUNKEN|LAYOUT_FILL_X|LAYOUT_FILL_Y,
+			0,0,380,200,0,0,0,0);
+  new FXLabel(vf2,_("Tickets List"));
+  new FXHorizontalSeparator(vf2);
+  lstTickets = new FXFoldingList(vf2,this,ID_TICKETSLIST,
+				 FOLDINGLIST_SINGLESELECT|LAYOUT_FILL_X|LAYOUT_FILL_Y,
+				 0,0,370,200);
+  lstTickets->appendHeader(_(""),NULL,30);
+  lstTickets->appendHeader(_("Ticket"),NULL,100);
+  lstTickets->appendHeader(_("Value"),NULL,50);
+  lstTickets->appendHeader(_("Current"),NULL,50);
+  lstTickets->appendHeader(_("Printed"),NULL,60);
+  lstTickets->appendHeader(_("Expiry"),NULL,60);
+  //End of Horizontal Frame 2 & GUI
+  new FXHorizontalSeparator(this);
+  
+
+
+
+
+
   //Labels & TextFields  field
   //Radio Buttons
   tktType = 0;
@@ -118,36 +146,19 @@ QTicketsBox::QTicketsBox(FXComposite * parent)
   new FXHorizontalSeparator(this);
   //Start of Horizontal Frame 2 with buttons
   FXHorizontalFrame *hf2 = new FXHorizontalFrame(vf0,LAYOUT_FILL_X);
-  btnQuery = new FXButton(hf2,_("Query"),dbIcon1,this,ID_QUERY,
+  btnQuery = new FXButton(hf2,_("Refresh"),dbIcon1,this,ID_QUERY,
 			  BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
   btnClear = new FXButton(hf2,_("Clear"),dbIcon1,this,ID_CLEAR,
 			   BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
   btnDelete = new FXButton(hf2,_("Delete"),dbIcon1,this,ID_DELETE,
-			   BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
-  btnExit = new FXButton(hf2,_("Exit"),dbIcon1,this,FXDialogBox::ID_ACCEPT,
-			 BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK|LAYOUT_RIGHT);
+			   BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK|LAYOUT_RIGHT);
   btnPrint = new FXButton(hf2,_("Print"),dbIcon1,this,ID_PRINT,
+			  BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK|LAYOUT_RIGHT);
+  btnGenerate = new FXButton(hf2,_("Generate"),dbIcon2,this,ID_GENERATE,
 			  BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK|LAYOUT_RIGHT);
   //End of vertical Frame 1
   new FXHorizontalSeparator(this);
-  //Tickets List Vertical Field
-  FXVerticalFrame *vf2 =
-    new FXVerticalFrame(vf1,FRAME_SUNKEN|LAYOUT_FILL_X|LAYOUT_FILL_Y,
-			0,0,380,200,0,0,0,0);
-  new FXLabel(vf2,_("Tickets List"));
-  new FXHorizontalSeparator(vf2);
-  lstTickets = new FXFoldingList(vf2,this,ID_TICKETSLIST,
-				 FOLDINGLIST_SINGLESELECT|LAYOUT_FILL_X|LAYOUT_FILL_Y,
-				 0,0,370,200);
-  lstTickets->appendHeader(_("No"),NULL,30);
-  lstTickets->appendHeader(_("Ticket"),NULL,100);
-  lstTickets->appendHeader(_("Value"),NULL,50);
-  lstTickets->appendHeader(_("Current"),NULL,50);
-  lstTickets->appendHeader(_("Printed"),NULL,60);
-  lstTickets->appendHeader(_("Expiry"),NULL,60);
-  //End of Horizontal Frame 2 & GUI
-  new FXHorizontalSeparator(this);
-  
+
   setPerms(0);
   //setPrevious();
   setDefaults();
@@ -173,24 +184,29 @@ long QTicketsBox::onUpdRadio(FXObject* sender,FXSelector sel,void*){
 void 
 QTicketsBox::setPerms(long perm)
 {
-  if (!isPermitted(PERMQTKT)){
+  if (!isPermitted(PERMTKTQRY)){
     btnQuery->disable();
     btnClear->disable();
-    btnDelete->disable();
-    btnExit->disable();
   }
   else{
     btnQuery->enable();
     btnClear->enable();
-    btnDelete->enable();
-    btnExit->enable();
   }
 
-  if (!isPermitted(PERMQTKT)){
-    
+  if (!isPermitted(PERMTKTGEN)){
+    btnGenerate->disable();
+    btnDelete->disable();
   }
   else{
-    
+    btnGenerate->enable();    
+    btnDelete->enable();
+  }
+
+  if (!isPermitted(PERMTKTPRN)){
+    btnPrint->disable();
+  }
+  else{
+    btnPrint->enable();
   }
 }
 
@@ -248,17 +264,46 @@ QTicketsBox::clearFields()
 
 }
 
+#ifdef WIN32
+//#include "strptime.h"
+char * strptime(const char *buf, const char *fmt, struct tm *tm);
+#endif
+
+
+inline time_t 
+date2time_t(char *datestr)
+{
+  struct tm res;
+
+#ifdef DEBUG
+
+#endif  
+  memset(&res, 0, sizeof(struct tm));
+  strptime(datestr, "%d/%m/%y", &res);
+#ifdef DEBUG
+  printf("date2time_t(): %s ->  %d/%d/%d \n", datestr, res.tm_year, res.tm_mon, res.tm_mday );
+#endif  
+  return mktime(&res);
+}
+
+inline void
+time_t2date(time_t t, const char *datestr)
+{
+  
+
+  return;
+}
 int  
 QTicketsBox::getInputVals(qticket_input_t *qtkt)
 {
   struct tm res;
   
-  memset(&res, 0, sizeof(struct tm));
-  strptime((char *)tfPrnDate1->getText().text(), "%d/%m/%y", &res);
-  qtkt->prnDate1 = mktime(&res);
-  memset(&res, 0, sizeof(struct tm));
-  strptime((char *)tfPrnDate2->getText().text(), "%d/%m/%y", &res);
-  qtkt->prnDate2 = mktime(&res);
+  //  memset(&res, 0, sizeof(struct tm));
+  //  strptime((char *)tfPrnDate1->getText().text(), "%d/%m/%y", &res);
+  qtkt->prnDate1 = date2time_t((char *)tfPrnDate1->getText().text()); //mktime(&res);
+  //memset(&res, 0, sizeof(struct tm));
+  //strptime((char *)tfPrnDate2->getText().text(), "%d/%m/%y", &res);
+  qtkt->prnDate2 = date2time_t((char *)tfPrnDate2->getText().text()); //mktime(&res);
 #ifdef DEBUG
   printf("Print Date: %ld - %ld = %ld\n", qtkt->prnDate2, qtkt->prnDate1, qtkt->prnDate2 - qtkt->prnDate1);
 #endif
@@ -303,7 +348,8 @@ QTicketsBox::create_query(qticket_input_t *qtkt, qticket_qry_t *qry)
 
   buf = qry->qryStr;
   sprintf(buf, "select * from tickets ");
-  bzero(b,512);
+  //bzero(b,512);
+  memset(b, 0, 512);
   //face value
   if (qtkt->qryType & QFACEVAL){
     if (qtkt->faceVal1== qtkt->faceVal2){
@@ -404,6 +450,9 @@ QTicketsBox::exec_query(qticket_qry_t *qry)
     lstTickets->appendItem(NULL,buf,NULL,NULL,(void *)te[i].id);
   }
   CCL_free(te);
+#ifdef DEBUG
+  printf("QTicketsBox::exec_query(): Query well executed.\n", qry->qryStr);
+#endif 
   return 0;
 }
 
@@ -422,8 +471,10 @@ QTicketsBox::onQuery(FXObject*,FXSelector,void*)
   qticket_input_t tkt;
   qticket_qry_t   qry;
 
-  bzero((void *)&tkt, sizeof(tkt));
-  bzero((void *)&qry, sizeof(qry));
+  //bzero((void *)&tkt, sizeof(tkt));
+  memset((void *)&tkt, 0, sizeof(tkt));
+  //bzero((void *)&qry, sizeof(qry));
+  memset((void *)&qry, 0, sizeof(qry));
   getInputVals(&tkt);
   create_query(&tkt, &qry);
   exec_query(&qry);
@@ -449,50 +500,119 @@ QTicketsBox::onTicketsList(FXObject*,FXSelector,void*)
 long 
 QTicketsBox::onPrint(FXObject*,FXSelector,void*)
 {
-  char buf[32], num[32], pdate[15], expdate[15];
-  int  faceval, nbuf;
+  if (!printTickets()){
+    char *msg = "Nothing to print. Generate First";
+    FXMessageBox::information(getRoot(), MBOX_OK,_("Ticket Printing"), (char *)msg);
+  }
+  return 0;
+}
 
+void formatTicket_(FXString &tickettext, char *tktStr, CCL_ticket_entry &te)
+{
+  char buf[64];
   char misc[64];
-  struct tm tm;
+  struct tm tm, *rtm;
   time_t t = time(NULL);
-  FXString tickettext = "";
+
+  tickettext += "<table><tr><td>";
+  tickettext += _("Code:  ");
+  formatTicketStr(misc, te.name, 3);
+  tickettext += misc;
+  tickettext += "</td></tr><tr><td>";
+  tickettext += _("Value/Units:   ");
+  snprintf(buf, sizeof(buf), "%.2f", te.faceval);
+  tickettext += buf;
+  tickettext += "</td></tr><tr><td>";
+  //tickettext += "\n";
+  tickettext += _("Valid From: ");
+  rtm = localtime(&te.stdate);
+  tm = *rtm;
+  strftime(buf,sizeof(buf)/sizeof(char),"%d/%m/%Y",&tm);
+  tickettext += buf;
+  tickettext += _(" to ");
+  rtm = localtime(&te.enddate);
+  tm = *rtm;
+  strftime(buf,sizeof(buf)/sizeof(char),"%d/%m/%Y",&tm);
+  tickettext += buf;
+  tickettext += "</td></tr><tr><td>";
+  tickettext += _("Tariff/Notes: ");
+  tickettext += "[ ";
+  char *tName = CCL_tarif_name_get(te.tariff);
+  tickettext += tName;
+  CCL_free(tName);
+  tickettext += _(" ] ");
+  tickettext += tktStr;
+  tickettext += "\n";
+  tickettext += _("Printed by ");
+  tName = (char *)CCL_employee_name_get(e_inf.empID);
+  tickettext += tName;
+  CCL_free(tName);
+  tickettext += _(" on ");
+  //localtime_r(&t, &tm);
+  rtm = localtime(&t);
+  tm = *rtm;
+  strftime(buf,sizeof(buf)/sizeof(char),"%d/%m/%Y",&tm);
+  tickettext += buf;
+  tickettext += "</td></tr></table>";
+}
+
+
+#define COLS 3
+
+long 
+QTicketsBox::printTickets()
+{
+  char              buf[32], num[32], stdate[15], expdate[15];
+  float             faceval, curval;
+  CCL_ticket_entry  te;
+  char              misc[64];
+  struct tm         tm, *rtm;
+  time_t            t = time(NULL);
+  char             *notes = "";
+  int               retval = 1;
 
   if (lstTickets->getNumItems()>0){
-    //printTickets();
-    FXFoldingItem *lastItem = lstTickets->getLastItem();
+    FXFoldingItem  *lastItem = lstTickets->getLastItem();
+    FXString        tickettext = "<html><head><title>Mkahawa Tickets</title></head>\n";
+    int             counter = 0;
+
+    tickettext += "<body>\n";
+    tickettext += "<table border=1 cellpadding=2 cellspacing=1 frame=void>\n";
     for (FXFoldingItem *tktItem = lstTickets->getFirstItem(); ; tktItem = tktItem->getNext()){
-      sscanf(tktItem->getText().text(), "%s%s%d%d%s%s", buf,num,&faceval,&nbuf, pdate,expdate); 
-      tickettext += _("Code:  ");
-      formatTicketStr(misc, num, 3);
-      tickettext += misc;
-      tickettext += "\n";
-      tickettext += _("Value/Units:   ");
-      snprintf(buf, sizeof(buf), "%.2f", faceval);
-      tickettext += buf;
-      tickettext += "\n";
-      tickettext += _("Valid From: ");
-      tickettext += pdate;
-      tickettext += _(" to ");
-      tickettext += expdate;
-      tickettext += "\n";
-      tickettext += _("Printed by ");
-      char *tName = (char *)CCL_employee_name_get(e_inf.empID);
-      tickettext += tName;
-      tickettext += _(" on ");
-      localtime_r(&t, &tm);
-      strftime(buf,sizeof(buf)/sizeof(char),"%d/%m/%Y",&tm);
-      tickettext += buf;
-      tickettext += "\n\n\n";
-      
-      if (lastItem ==  tktItem)
+      if (!(counter % COLS)){ //break up every 4 cells
+	tickettext += "<tr>";
+      }
+      tickettext += "\n <td>";
+      sscanf(tktItem->getText().text(), "%s\t%s\t%f\t%f\t%s\t%s", 
+	     buf,te.name,&faceval,&curval,stdate,expdate); 
+#ifdef DEBUG
+      printf("QTicketsBox::printTickets(): %s=%s=%s\n", tktItem->getText().text(),
+	     stdate, expdate);
+#endif      
+      te.stdate = date2time_t(stdate);
+      te.enddate = date2time_t(expdate);
+      te.faceval = faceval * 100;
+      formatTicket(tickettext, notes, te);
+      tickettext += "</td>";
+      if (lastItem ==  tktItem){
+	tickettext += "</tr>\n";
 	break;
+      }
+      if ((counter % COLS) == COLS-1){
+	tickettext += "</tr>\n";
+      }
+      counter++;
     }
-    printString(tickettext);
-    FXString msg(_("Tickets have been sent to Default Printer"));
-    FXMessageBox::information(getRoot(),MBOX_OK,_("Ticket Printing"), msg.text());
+    tickettext += "</table>";
+    //printString(tickettext);
+    FXString fname = outputToHTML(tickettext);
+    FXString msg(_("Tickets have been saved in "));
+    msg += fname;
+    msg += "\n Open the file with any browser and print.";
+    FXMessageBox::information(this,MBOX_OK,_("Ticket Printing"), msg.text());
   }
 
-  return 0;
+  return retval;
 }
 
 long
@@ -503,12 +623,27 @@ QTicketsBox::onClear(FXObject*,FXSelector,void*)
   return 0;
 }
 
+/*
 long
 QTicketsBox::onExit(FXObject*,FXSelector,void*)
 {
 
-  //FXDialogBox::exit();
+  //FXVerticalFrame::exit();
   return 0;
+  }*/
+
+long
+QTicketsBox::onGenerate(FXObject*,FXSelector,void*)
+{
+  
+  TicketsBox  tBox(this);
+
+#ifdef DEBUG
+  printf("onTickets(): tickets button was pressed\n");
+#endif
+  tBox.execute(PLACEMENT_SCREEN);
+
+  return 1;  
 }
 
 long
@@ -526,12 +661,11 @@ QTicketsBox::onDelete(FXObject*,FXSelector,void*)
       id = (int) tktItem->getData();
       if (id >0 ){
 	CCL_member_flags_toggle(id,MEMBER_DELETED,TRUE);
-	//sprintf(buf, "delete from tickets where name = '%s'", tktStr);
 	sprintf(buf, "delete from tickets where id = %d", id);
 #ifdef DEBUG
 	printf("QTicketsBox::onDelete(): %s\n", buf);
 #endif
-	CCL_member_ticket_del(id, buf);
+	CCL_member_ticket_del(-1, buf);
 #ifdef DEBUG
 	printf("QTicketsBox::onDelete(): %s\n", buf);
 #endif

@@ -18,8 +18,8 @@ typedef struct
 
 #define MAXCHUNKSIZE 2048
 struct CHUNK{
-  uint pos;
-  uint blen;
+  unsigned int pos;
+  unsigned int blen;
   char buf[MAXCHUNKSIZE];
 };
 

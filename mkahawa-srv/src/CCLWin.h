@@ -54,7 +54,7 @@ protected:
 
   FXIconList	*clientslist;
   FXFoldingList	*clientslist2;
-  FXGIFIcon	*bpcicons[4];
+  FXGIFIcon	*bpcicons[5];
   FXGIFIcon	*disconicon;
   // Client Info
   FXFont	*i_fonthandle;
@@ -121,8 +121,8 @@ public:
   long updateClient(int client);
   long updateAllClients();
   long getUpdateFileName(char *fname, int *buf);
-  uint getClientIndex(int client);
-  uint getPageCount(char *cupstr, int *client);
+  unsigned int getClientIndex(int client);
+  unsigned int getPageCount(char *cupstr, int *client);
   void updateSummaryInfo();
   void getClientInfoStr(int client, char *clbuf, int len);
   int  dispMessage(char * message);

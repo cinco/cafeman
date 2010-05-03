@@ -13,6 +13,11 @@ using namespace std;
 #include "NotpaidFrame.h"
 #include "LogFrame.h"
 #include "ReportFrame.h"
+//these were originally dialog boxes
+#include "QTicketsBox.h"
+#include "SettingsBox.h"
+
+
 #include "CCLWin.h"
 
 #include <langinfo.h>
@@ -28,6 +33,9 @@ LogFrame       *logframe;
 MembersFrame   *membersframe;
 EmployeesFrame *employeesframe;
 ReportFrame    *reportframe;
+QTicketsBox    *ticketsframe;
+SettingsBox    *settingsframe;
+
 
 EmpInfo e_inf;
 
@@ -117,6 +125,10 @@ main(int argc,char *argv[])
   if (!FXStat::exists(FXSystem::getHomeDirectory() + "/.mkahawa/"))
     FXDir::create(FXSystem::getHomeDirectory() + "/.mkahawa/", 0755);
   FXSystem::setCurrentDirectory(FXSystem::getHomeDirectory() + "/.mkahawa/");
+#else
+  if (!FXStat::exists(FXSystem::getHomeDirectory() + "\\.mkahawa\\"))
+    FXDir::create(FXSystem::getHomeDirectory() + "\\.mkahawa\\", 0755);
+  FXSystem::setCurrentDirectory(FXSystem::getHomeDirectory() + "\\.mkahawa\\");
 #endif
   char *plocale = NULL;
   // Gettext

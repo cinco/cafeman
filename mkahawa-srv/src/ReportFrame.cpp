@@ -728,7 +728,7 @@ ReportFrame::saveReport(const char *filename)
   FILE *out = fopen(filename,"w");
 
   if (out) {
-    char *buf = "\n\nPowered by Unwire Technologies..";
+    char *buf = "\n\nPowered by Mkahawa.Net";
 
     fwrite(output.text(),sizeof(char),output.length(),out);
     fwrite(buf,sizeof(char),strlen(buf),out);
@@ -958,7 +958,7 @@ ReportFrame::onSaveReport(FXObject*,FXSelector,void*)
       filename += ".rpt.html";
     if (!FXStat::exists(filename)
 	|| FXMessageBox::question(this,MBOX_YES_NO,_("Filename Exists"),
-				  _("File '%s' already exists, overwrite?"),
+				  _("File '%s' already exists. Overwrite?"),
 				  filename.text()) == MBOX_CLICKED_YES) {
       if (saveReport(filename.text())) {
 	FXMessageBox::information(this,MBOX_OK,_("Save Report"),

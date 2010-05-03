@@ -20,7 +20,8 @@ protected:
   FXButton	 *btnPrint;
   FXButton	 *btnClear;
   FXButton	 *btnTariff;
-  FXButton	 *btnEdit;
+  FXButton	 *btnSave;
+  //  FXButton	 *btnEdit;
   FXButton	 *btnExit;
   FXFoldingList  *lstTickets;
   FXTextField	 *tfStartDate;
@@ -61,15 +62,16 @@ public:
 public:
   long onGenerate(FXObject*,FXSelector,void*);
   long onPrint(FXObject*,FXSelector,void*);
+  long onSave(FXObject*,FXSelector,void*);
   long onClear(FXObject*,FXSelector,void*);
   long onExit(FXObject*,FXSelector,void*);
-  long onEdit(FXObject*,FXSelector,void*);
+  //long onEdit(FXObject*,FXSelector,void*);
   long onSetTarif(FXObject*,FXSelector,void*);
   long onTicketsList(FXObject*,FXSelector,void*);
 public:
   enum {
-    ID_GENERATE = FXDialogBox::ID_LAST, ID_PRINT, ID_CLEAR,
-    ID_SETTARIFF, ID_TKTEDIT, ID_EXIT, ID_TICKETSLIST, ID_LAST
+    ID_GENERATE = FXDialogBox::ID_LAST, ID_PRINT, ID_CLEAR, //ID_TKTEDIT
+    ID_SAVE, ID_SETTARIFF, ID_EXIT, ID_TICKETSLIST, ID_LAST
   };
 };
 

@@ -94,7 +94,9 @@ CyberSettings::getRoundOff()
 char *  
 CyberSettings::getCurrency()
 {
-  strndup( currency, 3);
+	
+  //strndup(currency, 3);
+	strdup(currency);
 }
 long
 CyberSettings::getDefaultTariff()
@@ -171,6 +173,7 @@ SettingsBox::SettingsBox(FXComposite * parent)
   rbtnRnd01 = new FXRadioButton(hfvf12,_(".01"), &rtgtRndOff, FXDataTarget::ID_OPTION+2);
   rbtnRnd05 = new FXRadioButton(hfvf12,_(".05"), &rtgtRndOff, FXDataTarget::ID_OPTION+3);
   rbtnRnd10 = new FXRadioButton(hfvf12,_(".10"), &rtgtRndOff, FXDataTarget::ID_OPTION+4);
+  rbtnRnd25 = new FXRadioButton(hfvf12,_(".25"), &rtgtRndOff, FXDataTarget::ID_OPTION+6);
   rbtnRnd50 = new FXRadioButton(hfvf12,_(".50"), &rtgtRndOff, FXDataTarget::ID_OPTION+5);
   //vertical Frame 1
   new FXHorizontalSeparator(vf1);
@@ -327,12 +330,14 @@ SettingsBox::dispInputVals(CyberSettings *st)
   rbtnRnd01->setCheck(FALSE);
   rbtnRnd05->setCheck(FALSE);
   rbtnRnd10->setCheck(FALSE);
+  rbtnRnd25->setCheck(FALSE);
   rbtnRnd50->setCheck(FALSE);
   switch(st->round_off){
   case RND_00: rbtnRnd00->setCheck(TRUE,TRUE); break;
   case RND_01: rbtnRnd01->setCheck(TRUE,TRUE); break;
   case RND_05: rbtnRnd05->setCheck(TRUE,TRUE); break;
   case RND_10: rbtnRnd10->setCheck(TRUE,TRUE); break;
+  case RND_25: rbtnRnd25->setCheck(TRUE,TRUE); break;
   case RND_50: rbtnRnd50->setCheck(TRUE,TRUE); break;
   }
 }
@@ -357,6 +362,8 @@ SettingsBox::getInputVals(CyberSettings *st)
     st->round_off = RND_05;
   else if (rbtnRnd10->getCheck())
     st->round_off = RND_10;
+  else if (rbtnRnd25->getCheck())
+    st->round_off = RND_25;
   else if (rbtnRnd50->getCheck())
     st->round_off = RND_50;
   //tariff

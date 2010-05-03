@@ -1,7 +1,12 @@
 #include <ccls.h>
 #include <fox-1.6/fx.h>
 #include <unistd.h>
-#include <pthread.h>
+#ifdef WIN32
+#  include <windows.h>
+#  include <winuser.h>
+#else
+#  include <pthread.h>
+#endif
 
 using namespace FX;
 using namespace std;
@@ -17,6 +22,9 @@ using namespace std;
 #include "ReportFrame.h"
 
 #include "SettingsBox.h"
+#include "QTicketsBox.h"
+
+
 #include "CCLIconItem.h"
 #include "MSGWin.h"
 #include "CCLWin.h"
@@ -41,7 +49,8 @@ FXGIFIcon *dbIcon3;
 //#define DEBUG_UPD 
 //#define DEBUG_TICKET
 //#define DEBUG_CREDIT
-//#define DEBUG_PRINT 1
+//#define DEBUG_PRINT
+#define DEBUG_WARN
 //#define  DEBUG_CALLBACK
 //#define DEBUG_SETTINGS
 
@@ -60,15 +69,27 @@ extern LogFrame           *logframe;
 extern MembersFrame       *membersframe;
 extern EmployeesFrame     *employeesframe;
 extern ReportFrame        *reportframe;
+
+extern QTicketsBox        *ticketsframe;
+extern SettingsBox        *settingsframe;
+
 CyberSettings             *cyber_settings = NULL;
 
-//extern FXApp              app;
 
-pthread_t    updth, msgth;
-int          print_job[256];
-int          job_pages[256];
-int          warn_lvl[256];
-FXuint       prev_price[256];
+
+#ifdef WIN32
+	DWORD    updth, msgth;
+#else
+	pthread_t    updth, msgth;
+#endif		
+
+#define MAX_CLIENTS  256
+
+
+int          print_job[MAX_CLIENTS];
+int          job_pages[MAX_CLIENTS];
+int          warn_lvl[MAX_CLIENTS];
+FXuint       prev_price[MAX_CLIENTS];
 char        *cybername = "Mkahawa Cyber Manager";
 
 FXDEFMAP(CCLWin) CCLWinMap[] =
@@ -114,7 +135,6 @@ FXDEFMAP(CCLWin) CCLWinMap[] =
   FXMAPFUNC(SEL_COMMAND,CCLWin::ID_20MIN,CCLWin::onCommand),
   FXMAPFUNC(SEL_COMMAND,CCLWin::ID_30MIN,CCLWin::onCommand), 
   FXMAPFUNC(SEL_COMMAND,CCLWin::ID_60MIN,CCLWin::onCommand),
- //  FXMAPFUNC(SEL_KEYPRESS,0,CCLWin::onKeyPress),
   FXMAPFUNC(SEL_TIMEOUT,CCLWin::ID_TIMERTICK,CCLWin::onTimerTick)
 };
 
@@ -166,7 +186,7 @@ CCLWin::CCLWin(FXApp * app)
   miniicon = new FXGIFIcon(getApp(),icon16_gif);
   setIcon(bigicon);
   setMiniIcon(miniicon);
-  //
+  //Font
   FXFont  *font =new FXFont(app,"fixed,105,,,,iso10646-1");
   new FXToolTip(app,0);
   //
@@ -183,17 +203,12 @@ CCLWin::CCLWin(FXApp * app)
 					    LAYOUT_FILL_X|LAYOUT_FILL_Y,
 					    0,0,0,0,0,0,0,0);
   clientshutter = litem1;
-  //(litem1->getButton())->setFont(s_fonthandle);
-
   FXShutterItem *litem2 = new FXShutterItem(lshutter,_("Log"),NULL,
 					    LAYOUT_FILL_X|LAYOUT_FILL_Y,
 					    0,0,0,0,0,0,0,0);
-  //(litem2->getButton())->setFont(s_fonthandle);
-  //delete s_fonthandle;
   FXShutterItem *litem3 = new FXShutterItem(lshutter,_("Report"),NULL,
 					    LAYOUT_FILL_X|LAYOUT_FILL_Y,
 					    0,0,0,0,0,0,0,0);
-
   /********* Clients area**********/
   FXVerticalFrame *vframe =
     new FXVerticalFrame(litem1->getContent(),FRAME_SUNKEN|LAYOUT_FILL_X|
@@ -213,8 +228,7 @@ CCLWin::CCLWin(FXApp * app)
   delicon =    new FXGIFIcon(getApp(),delbtn_gif);
   newicon =    new FXGIFIcon(getApp(),newbtn_gif);
   csicon =    new FXGIFIcon(getApp(),cyber_settings_gif);
-  //updicon =    new FXGIFIcon(getApp(),updbtn);
-
+  //the buttons
   playbutton =
     new FXButton(ctoolbar,_("\tStart a Session"),playicon,this,ID_START,
 		 BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_TOP|LAYOUT_LEFT,
@@ -263,25 +277,16 @@ CCLWin::CCLWin(FXApp * app)
   FXSplitter *hsplitter =
     new FXSplitter(vframe,FRAME_RAISED|SPLITTER_VERTICAL|LAYOUT_FILL_X|
 		   LAYOUT_FILL_Y|SPLITTER_REVERSED,0,0,0,0);
-
-
   //Different list views
   FXShutter *lshutter1 =
-    //new FXShutter(hsplitter,NULL,0,LAYOUT_FILL_X|LAYOUT_FILL_Y,
     new FXShutter(hsplitter,this, ID_SHUTTER,LAYOUT_FILL_X|LAYOUT_FILL_Y,
 		  0,0,0,0,0,0,0,0,0,0);
-
   FXShutterItem *lvitem1 = new FXShutterItem(lshutter1,_("Client Icons"),NULL,
 					    LAYOUT_FILL_X|LAYOUT_FILL_Y,
 					    0,0,0,0,0,0,0,0);
   FXShutterItem *lvitem2 = new FXShutterItem(lshutter1,_("Client Details"),NULL,
 					    LAYOUT_FILL_X|LAYOUT_FILL_Y,
 					    0,0,0,0,0,0,0,0);
-
-  // vsplitter1 = new FXSplitter(hsplitter,FRAME_RAISED|LAYOUT_FILL_X|LAYOUT_FILL_Y|
-  //			     SPLITTER_REVERSED,0,0,0,0);
-
-  //clientslist = new FXIconList(hsplitter,this,ID_CLIENTSLIST,
   clientslist = new FXIconList(lvitem1->getContent(),this,ID_CLIENTSLIST,
 			       LAYOUT_FILL_X|LAYOUT_FILL_Y|FRAME_SUNKEN|
 			       ICONLIST_AUTOSIZE|ICONLIST_BIG_ICONS|
@@ -291,11 +296,9 @@ CCLWin::CCLWin(FXApp * app)
   bpcicons[CCL_ACTIVE] = new FXGIFIcon(getApp(),pc01_gif);
   bpcicons[CCL_PAUSED] = new FXGIFIcon(getApp(),pc02_gif);
   bpcicons[3] = new FXGIFIcon(getApp(),pc03_gif);
+  bpcicons[4] = new FXGIFIcon(getApp(),updIcon_gif);
   disconicon = new FXGIFIcon(getApp(),pc04s_gif);
   clientslist->appendHeader(_("Name"),NULL,100);
-
-
-  //  clientslist2 = new FXFoldingList(hsplitter,this,ID_CLIENTSLIST2,
   clientslist2 = new FXFoldingList(lvitem2->getContent(),this,ID_CLIENTSLIST2,
 			       LAYOUT_FILL_X|LAYOUT_FILL_Y|FRAME_SUNKEN|
 			       FOLDINGLIST_SHOWS_LINES|
@@ -367,7 +370,7 @@ CCLWin::CCLWin(FXApp * app)
   FXLabel *labelhandle;
   FXVerticalFrame *ivframe;
 
-  i_fonthandle = new FXFont(getApp(),"arial",13,FXFont::Bold);
+  FXFont *i_fonthandle = new FXFont(getApp(),"arial",13,FXFont::Bold);
   ivframe = new FXVerticalFrame(infoframe,0,0,0,0,0,0,0,0,0,0,0);
   labelhandle = new FXLabel(ivframe,_("Time:"));
 //  labelhandle->setFont(i_fonthandle);
@@ -458,9 +461,13 @@ CCLWin::CCLWin(FXApp * app)
 		      0,0,0,0,0,0,0,0);
   tarifframe = new TarifFrame(ritem3->getContent());
   FXShutterItem *ritem4 =
-    new FXShutterItem(rshutter,_("Members / Tickets"),NULL,LAYOUT_FILL_X|LAYOUT_FILL_Y,
+    new FXShutterItem(rshutter,_("Members"),NULL,LAYOUT_FILL_X|LAYOUT_FILL_Y,
 		      0,0,0,0,0,0,0,0);
   membersframe = new MembersFrame(ritem4->getContent());
+  FXShutterItem *ritem6 =
+    new FXShutterItem(rshutter,_("Tickets"),NULL,LAYOUT_FILL_X|LAYOUT_FILL_Y,
+		      0,0,0,0,0,0,0,0);
+  ticketsframe = new QTicketsBox(ritem6->getContent());
   
   FXShutterItem *ritem5 =
     new FXShutterItem(rshutter,_("Staff"),NULL,LAYOUT_FILL_X|LAYOUT_FILL_Y,
@@ -478,9 +485,10 @@ CCLWin::CCLWin(FXApp * app)
   getApp()->addTimeout(this,ID_CHECKEVENTS,100);
   loginstat = 0;
   //init printing and warning structures
-  for (int i=0; i<256; i++){
+  for (int i=0; i<MAX_CLIENTS; i++){
     print_job[i]=0;
-    warn_lvl[i]=0;
+    //warn_lvl[i]=;
+    warn_lvl[i]=2;  //default to 2 minute warning
     job_pages[i]=0;
     prev_price[i]=0;
   }
@@ -520,8 +528,7 @@ CCLWin::~CCLWin()
   */
   for (int i = 0; i < 4; i++)
     delete bpcicons[i];
-
-  delete i_fonthandle;
+  //delete i_fonthandle;
 }
 
 void
@@ -533,6 +540,7 @@ CCLWin::create()
   bpcicons[CCL_ACTIVE]->create();
   bpcicons[CCL_PAUSED]->create();
   bpcicons[3]->create();
+  bpcicons[4]->create();
   disconicon->create();
   clientslist->sortItems();
   clientslist2->sortItems();
@@ -881,7 +889,7 @@ print_print_info(PrintInfo *pi)
 	 pi->dt, pi->pgnr, pi->cps, pi->dash, pi->bill);
 }
 
-uint
+unsigned int
 CCLWin::getClientIndex(int client)
 {
   int num = clientslist->getNumItems();
@@ -917,7 +925,7 @@ getIPFromStr(char *ipstr)
   return value:  The number of pages
                 *client is the client number
 */
-uint 
+unsigned int 
 CCLWin::getPageCount(char *cupstr, int *lclient)
 {
   struct PrintInfo pi;
@@ -960,7 +968,7 @@ CCLWin::getPageCount(char *cupstr, int *lclient)
   if (idx == num){ //did not find any - so it is a side printout
     *lclient = 0;
   }
-  clidx = *lclient % 256; //mainwin->getClientIndex(client);
+  clidx = *lclient % MAX_CLIENTS; //mainwin->getClientIndex(client);
   n = atoi(pi.cps);
 #ifdef DEBUG 
   printf("getPageCount(): Total Counted Pages: %d\n", n);
@@ -969,19 +977,40 @@ CCLWin::getPageCount(char *cupstr, int *lclient)
   return n;
 }
 
+int
+getWarnLevel(int wval)
+{
+  int i; 
+  int w_lvls[6] = {1,2,5,10,15,20};
+  wval = (wval / 60);
+ 
+  for (i=0; i<0; i++){
+    if (wval >= w_lvls[i])
+      return w_lvls[i];
+  } 
+  return 0;
+}
+
 bool
-CheckWarnClient(int client, int mins, int warning)
+CheckWarnClient(int client, int secs, int cash)
 {
   bool retval = FALSE;
-  /*if (mins==warning && warn_lvl[client]!=warning){
-    //send warning
-    char cmsg[64];
-    sprintf(cmsg,"You have %d minutes to go.", mins);
-    CCL_client_send_cmd(client, CS_CHATSERVER, cmsg, strlen(cmsg));
-    //adjust warning level
-    warn_lvl[client] = warning;
+  char cmsg[64];
+  int w_lvl = getWarnLevel(secs);
+ 
+  if (w_lvl && (warn_lvl[client] != w_lvl)){
+    //new warning
+    sprintf(cmsg,"You have less than %d minutes to go!", w_lvl);
+    CCL_client_send_cmd(client, CS_DISPLAYMESSAGE, cmsg, strlen(cmsg));
+    warn_lvl[client] = w_lvl;
     retval = TRUE;
-  }*/
+#ifdef DEBUG_WARN
+    printf("CheckWarnClient(): Warning Changed Level: %d\n", w_lvl);
+#endif
+  }  
+#ifdef DEBUG_WARN
+  printf("CheckWarnClient(): Warning Level: %d", w_lvl);
+#endif
   return retval;
 }
 
@@ -1033,6 +1062,8 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
 
   if ( (!cmd) || (cmd>CC_MAXCMDNR)) return; //disregard stray commands
 
+  //CheckWarnClient(client, timeout, owed);
+
   if (member != 0){   /* MEMBER & TICKET */
     credit = CCL_member_credit_get(member);
     owed_val = credit - owed;
@@ -1048,9 +1079,7 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
       nowed = CCL_htonl(owed_val);
       if (hourrate>0)
 	  owed_mins = owed_val / (hourrate/60);
-      CheckWarnClient(client, owed_mins, WARNTENMINUTE);
-      CheckWarnClient(client, owed_mins, WARNFIVEMINUTE);
-      CheckWarnClient(client, owed_mins, WARNONEMINUTE);
+      //CheckWarnClient(client, owed_mins, owed_val);
     }
     else{       //used up the time so stop the station
       CCL_client_stop(client); //only stops counting and resets flags
@@ -1121,7 +1150,7 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
       //} else
       if (confirmLogin(client)){
 	if (CCL_client_status_get(client)!=CCL_PAUSED) 
-	  job_pages[client % 256] = 0;
+	  job_pages[client % MAX_CLIENTS] = 0;
 	CCL_client_start(client);
 	CCL_client_flags_toggle(client,USERSTOP,FALSE);
 	updateClientStatus(client);
@@ -1169,7 +1198,7 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
 		notpaidframe->readNotPaid();
 	      } else{
 		if (CCL_client_status_get(client)!=CCL_PAUSED) 
-		  job_pages[client % 256] = 0; //initialize the job_pages
+		  job_pages[client % MAX_CLIENTS] = 0; //initialize the job_pages
 		CCL_client_start(client);
 	      }
 	      CCL_client_member_set(client,memberid);
@@ -1204,7 +1233,8 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
 	  char *cp, *c, tktstr[33];
 	  int memberid, i;
 	  //remove non-alphanumeric characters
-	  bzero(tktstr, 32);
+	  //bzero(tktstr, 32);
+	  memset(tktstr,0,32);
 	  cp = (char *)tktstr;
 	  c = (char*)data;
 	  //for (i=0; i<32 && *c; i++, c++){
@@ -1236,7 +1266,7 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
 		  notpaidframe->readNotPaid();
 		} else{
 		  if (CCL_client_status_get(client)!=CCL_PAUSED) 
-		    job_pages[client % 256] = 0; //initialize the job_pages
+		    job_pages[client % MAX_CLIENTS] = 0; //initialize the job_pages
 		  CCL_client_start(client);
 		}
 		CCL_client_member_set(client,memberid);
@@ -1271,12 +1301,12 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
       char prnname[256];
       char *cp, *buf;
 
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
       printf("User Printing: [%s]\n%s\n", CCL_client_name_get(client), 
 	     (char *)data);
 #endif
-      if (strncmp(CCL_client_name_get(client), "PrintServer", 11)){
-#ifdef DEBUG
+      if (strncasecmp(CCL_client_name_get(client), "PrintServer", 11)){
+#ifdef DEBUG_PRINT
 	printf("Only counts from PrintServer\n");
 #endif
 	break; //Only honor PrintServer printing
@@ -1289,7 +1319,8 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
 	int lnlen; 
 
 	np = NULL;
-	np = index(cp, '\n');
+	//np = index(cp, '\n');
+	np = strchr(cp, '\n');
 	lnlen = (np!=NULL)?(np-cp): (buf+size-cp); //line length
 #ifdef DEBUG
 	printf("[Line Length= %02d] [Buffer= %03d]\n", lnlen, size);
@@ -1303,6 +1334,13 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
 	  sscanf(cp, "%s", prnname);
 	  //search for the printer product id in the database
 	  CCL_product_id_get(prnname, &pid);
+	  if (!pid){
+#ifdef DEBUG_PRINT
+	    printf("onEventCallBack(): Printing Product ID was not found\n");
+#endif
+	    //create a new printer product
+	    pid = CCL_product_new("Printing", prnname, 0);
+	  }
 	  if (pgcnt && pid>0 && !(CCL_product_flags_get(pid) & CCL_DELETEDPRODUCT) ){  
 	    //the printer exists, so make the sale
 	    // first, handle a case where the user has stopped the session
@@ -1337,19 +1375,22 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
 	      productsframe->updateClientProducts(pclient);
 	    }
 	    //productsframe->updateSaleProducts();
-#ifdef DEBUG
+#ifdef DEBUG_PRINT
 	    printf("onEventCallBack(): Client: %s :- Printing [%s]: %d Pages\n", 
 		   CCL_client_name_get(pclient), prnname, pgcnt);
 #endif
 	  }
-#ifdef DEBUG
 	  else if (pid > 0){
+#ifdef DEBUG_PRINT
 	    printf("onEventCallBack(): Printing not added\n");
+#endif
 	  }
 	  else{
+	    //add this 
+#ifdef DEBUG_PRINT
 	    printf("onEventCallBack(): Printing Product ID was not found\n");
-	  }
 #endif
+	  }
 	}
 	cp=cp+lnlen+1;
       }
@@ -1407,7 +1448,12 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
 	mainwin->curUpdClient = client;
 	//start sending the data
 	//mainwin->sendUpdateChunk(client, 0);
-	pthread_create(&updth, NULL, (void *(*)(void *))sendUpdateChunks, (void *)client);
+#ifdef WIN32		
+	CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)&sendUpdateChunks, (LPVOID)client, 0, &updth);
+#else
+	pthread_create(&updth, NULL, (void *(*)(void *))sendUpdateChunks, (void *)client);		
+#endif
+	//pthread_create(&updth, NULL, (void *(*)(void *))sendUpdateChunks, (void *)client);
       }
       break;
     case CC_UPDATEDATA:
@@ -1851,7 +1897,7 @@ CCLWin::setAllClientPass()
 bool
 isPrintServerClient(int client)
 {
-  return (!strncasecmp(CCL_client_name_get(client), "PrintServer", 9));
+  return (!strncasecmp(CCL_client_name_get(client), "PrintServer", 11));
 }
 
 long
@@ -1879,7 +1925,7 @@ CCLWin::onCommand(FXObject*,FXSelector sel,void*)
 	CCL_client_send_cmd(client,CS_START,NULL,0);
 	CCL_client_send_cmd(client,CS_UNLOCKSCREEN,NULL,0);
 	if (CCL_client_status_get(client)!=CCL_PAUSED) 
-	  job_pages[client % 256] = 0;
+	  job_pages[client % MAX_CLIENTS] = 0;
 	break;
       case ID_PAUSE:
 	if (isPrintServerClient(client)) break;
@@ -1980,6 +2026,7 @@ CCLWin::onCommand(FXObject*,FXSelector sel,void*)
 	  char    inqstr[100];
 	  int     was_inactive = 0;
 
+	  if (isPrintServerClient(client)) break;
 	  switch (FXSELID(sel)) {
 	  case ID_10MIN: sesstime = 10; break;
 	  case ID_20MIN: sesstime = 20; break;
@@ -2605,6 +2652,8 @@ CCLWin::updateClientIcon(int client)
     clientslist->setItemBigIcon(idx,bpcicons[3]);
   else if (CCL_client_flags_get(client) & USERSTOP)
     clientslist->setItemBigIcon(idx,bpcicons[3]);
+  else if (client == curUpdClient)
+    clientslist->setItemBigIcon(idx,bpcicons[4]);
   else
     clientslist->setItemBigIcon(idx,bpcicons[CCL_client_status_get(client)]);
 }
@@ -2670,7 +2719,7 @@ CCLWin::getEmployeeID()
 FXbool
 CCLWin::employeeLogin(FXObject*,FXSelector,void*)
 {
-  FXDialogBox dialog(getRoot(),_("Staff Login"));
+  FXDialogBox dialog(this,_("Staff Login"));
   FXLabel lbl1(&dialog,_("User Name:"));
   FXTextField usrname(&dialog,20,NULL,0,TEXTFIELD_NORMAL |FRAME_SUNKEN);
   FXLabel lbl2(&dialog,_("Password:"));
@@ -2702,9 +2751,7 @@ CCLWin::employeeLogin(FXObject*,FXSelector,void*)
 	retval = TRUE;
 	loginstat = 1;
 	setPerms(e_inf.lvl);
-	/****/
 	btn = clientshutter->getButton();
-	//sprintf(buf, "Client - %s", usrname.getText().text()); 
 	sprintf(buf, "Client - %s", CCL_employee_name_get(e_inf.empID));
 	btn->setText(buf);
       }
@@ -2733,7 +2780,6 @@ CCLWin::employeeLogout(FXObject*,FXSelector,void*)
     e_inf.lvl = 0;
     setPerms(e_inf.lvl);
   }
-  //loginbutton->setText(_("Employee\nLogin"));
   return;
 }
 
@@ -2744,6 +2790,8 @@ CCLWin::setPerms(unsigned long perm)
   cashingframe->setPerms(perm);
   tarifframe->setPerms(perm);
   logframe->setPerms(perm);
+  ticketsframe->setPerms(perm);
+
   if(!(perm & PERMTARIFEDIT)) tarifframe->disable();
   membersframe->setPerms(perm);
   if(!(perm & PERMMBREDIT)) membersframe->disable();
@@ -2766,8 +2814,6 @@ CCLWin::onMsgClient(FXObject*, FXSelector, void*)
   if (FXInputDialog::getString(result,this,_("Message to Client"), 
 			       _("Message:")) && result.length()) {
     char *cmsg = fxstrdup(result.text());
-
-    //CCL_client_send_cmd(client, CS_CHATSERVER, cmsg, strlen(cmsg));
     CCL_client_send_cmd(client, CS_DISPLAYMESSAGE, cmsg, strlen(cmsg));
     FXFREE(&cmsg);
   }
@@ -2817,7 +2863,7 @@ CCLWin::clientHelpIsUp(int client)
 long
 CCLWin::onAlertClient(FXObject*, FXSelector, void*)
 {
-  char     *cmsg; 
+  char      cmsg[256]; 
   FXString  result;
   int       current = clientslist->getCurrentItem();
 
@@ -2825,9 +2871,8 @@ CCLWin::onAlertClient(FXObject*, FXSelector, void*)
   int client = (int)(clientslist->getItemData(current));
   if (FXInputDialog::getString(result,this,_("Message to Client"), 
 			       _("Message:")) && result.length()) {
-    char *cmsg = fxstrdup(result.text());
+    strncpy(cmsg, result.text(), 256);
     CCL_client_send_cmd(client, CS_ALERTCLIENT, cmsg, strlen(cmsg));
-    FXFREE(&cmsg);
   }
   return 1;
 }

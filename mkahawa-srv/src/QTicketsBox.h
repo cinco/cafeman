@@ -27,7 +27,7 @@ typedef struct{
 } qticket_qry_t;
   
 
-class QTicketsBox : public FXDialogBox
+class QTicketsBox : public FXVerticalFrame
 {
 FXDECLARE(QTicketsBox)
 protected:
@@ -35,7 +35,8 @@ protected:
   FXButton	 *btnClear;
   FXButton	 *btnDelete;
   FXButton	 *btnPrint;
-  FXButton	 *btnExit;
+  //  FXButton	 *btnExit;
+  FXButton	 *btnGenerate;
   FXFoldingList  *lstTickets;
 
   FXTextField	 *tfFaceVal1;
@@ -74,6 +75,7 @@ public:
   void setPerms(long perm);
   void queryTickets();
   void deleteTickets();
+  long printTickets();
   int  getInputVals(qticket_input_t *qtkt);
   int create_query(qticket_input_t *qtkt, qticket_qry_t *qry);
   int exec_query(qticket_qry_t *qry);
@@ -83,15 +85,16 @@ public:
   long onClear(FXObject*,FXSelector,void*);
   long onPrint(FXObject*,FXSelector,void*);
   long onDelete(FXObject*,FXSelector,void*);
-  long onExit(FXObject*,FXSelector,void*);
+  long onGenerate(FXObject*,FXSelector,void*);
+  //  long onExit(FXObject*,FXSelector,void*);
   long onCmdRadio(FXObject*,FXSelector,void*);
   long onUpdRadio(FXObject*,FXSelector,void*);
 
   long onTicketsList(FXObject*,FXSelector,void*);
 public:
   enum {
-    ID_QUERY = FXDialogBox::ID_LAST, ID_DELETE, ID_CLEAR,
-    ID_EXIT, ID_TICKETSLIST, ID_PRINT,
+    ID_QUERY = FXVerticalFrame::ID_LAST, ID_DELETE, ID_CLEAR,
+    ID_GENERATE, ID_TICKETSLIST, ID_PRINT,//ID_EXIT,
     ID_RADIO1,
     ID_RADIO2,
     ID_RADIO3,

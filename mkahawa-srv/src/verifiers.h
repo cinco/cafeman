@@ -23,9 +23,9 @@
 //Employee Permissions
 #define PERMEMPEDIT        (1<<25)
 //Tickets Permissions
-#define PERMTKTEDIT        (1<<26)
-#define PERMTKTALLOC       (1<<27)
-#define PERMQTKT           (1<<28)
+#define PERMTKTPRN        (1<<26)
+#define PERMTKTGEN         (1<<27)
+#define PERMTKTQRY           (1<<28)
 
 //Settings Permissions
 #define PERMSETTINGS      (1<<29)

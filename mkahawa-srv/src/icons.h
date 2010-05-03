@@ -27,6 +27,9 @@ extern const unsigned char pc03_gif[];
 /* created by reswrap from file pc04s.gif */
 extern const unsigned char pc04s_gif[];
 
+/* created by reswrap from file .gif */
+extern const unsigned char updIcon_gif[];
+
 /* created by reswrap from file play.gif */
 extern const unsigned char play_gif[];
 

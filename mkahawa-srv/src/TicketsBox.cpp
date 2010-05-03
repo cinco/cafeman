@@ -1,16 +1,21 @@
 #include <ccls.h>
 #include <fox-1.6/fx.h>
 #include <fox-1.6/FXRex.h>
-#include <sys/time.h>
 
+#ifdef WIN32
+#include <time.h>
+#include <windows.h>
+#else
+#include <sys/time.h>
+#endif 
 using namespace FX;
 
 #include "cclfox.h"
 #include "verifiers.h"
 #include "MembersFrame.h" 
 #include "EmployeesFrame.h"
-#include "QTicketsBox.h"
 #include "TicketsBox.h"
+
 
 //#define DEBUG
 extern FXGIFIcon *dbIcon01;
@@ -19,16 +24,17 @@ extern FXGIFIcon *dbIcon1;
 extern FXGIFIcon *dbIcon2;
 extern FXGIFIcon *dbIcon3;
 
-void formatTicket(FXString &tickettext, char *tktStr, CCL_ticket_entry &te);
-int formatTicketStr(char *retStr, char *tktStr, int bsize);
-void printString(FXString &tickettext);
+int        formatTicketStr(char *retStr, char *tktStr, int bsize);
+void       formatTicket(FXString &tickettext, char *tktStr, CCL_ticket_entry &te);
+FXString   outputToHTML(FXString &tickettext);
 
 FXDEFMAP(TicketsBox) TicketsBoxMap[] =
 {
   FXMAPFUNC(SEL_COMMAND,TicketsBox::ID_GENERATE,TicketsBox::onGenerate),
   FXMAPFUNC(SEL_COMMAND,TicketsBox::ID_PRINT,TicketsBox::onPrint),
+  FXMAPFUNC(SEL_COMMAND,TicketsBox::ID_SAVE,TicketsBox::onSave),
   FXMAPFUNC(SEL_COMMAND,TicketsBox::ID_CLEAR,TicketsBox::onClear),
-  FXMAPFUNC(SEL_COMMAND,TicketsBox::ID_TKTEDIT,TicketsBox::onEdit),
+  //  FXMAPFUNC(SEL_COMMAND,TicketsBox::ID_TKTEDIT,TicketsBox::onEdit),
   FXMAPFUNC(SEL_COMMAND,TicketsBox::ID_SETTARIFF,TicketsBox::onSetTarif),
   FXMAPFUNC(SEL_COMMAND,TicketsBox::ID_EXIT,TicketsBox::onExit),
   FXMAPFUNC(SEL_SELECTED,TicketsBox::ID_TICKETSLIST,TicketsBox::onTicketsList)
@@ -91,6 +97,7 @@ TicketsBox::TicketsBox(FXComposite * parent)
   FXHorizontalFrame *hfvf15 = new FXHorizontalFrame(vf1,LAYOUT_FILL_X);
   new FXLabel(hfvf15,_("Tariff: "));
   lblTariff = new FXLabel(hfvf15, "");
+  lblTariff->setBackColor(FXRGB(0xdc,0xe8,0xf6));
   btnTariff = new FXButton(hfvf15, _("Change"),dbIcon1,this,ID_SETTARIFF,
 			   BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
   //Number of tickets
@@ -126,14 +133,16 @@ TicketsBox::TicketsBox(FXComposite * parent)
   FXHorizontalFrame *hf2 = new FXHorizontalFrame(vf0,LAYOUT_FILL_X);
   btnGenerate = new FXButton(hf2,_("Generate"),dbIcon2,this,ID_GENERATE,
 			   BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
-  btnPrint = new FXButton(hf2,_("Print"),dbIcon1,this,ID_PRINT,
+  //  btnPrint = new FXButton(hf2,_("Print"),dbIcon1,this,ID_PRINT,
+  //			   BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
+  btnSave = new FXButton(hf2,_("Save"),dbIcon1,this,ID_SAVE,
 			   BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
   btnClear = new FXButton(hf2,_("Clear"),dbIcon1,this,ID_CLEAR,
 			  BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK);
   btnExit = new FXButton(hf2,_("Exit"),dbIcon1,this,FXDialogBox::ID_ACCEPT,
 	       BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK|LAYOUT_RIGHT);
-  btnEdit = new FXButton(hf2,_("Query"),dbIcon1,this,ID_TKTEDIT,
-	       BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK|LAYOUT_RIGHT);
+  //  btnEdit = new FXButton(hf2,_("Query"),dbIcon1,this,ID_TKTEDIT,
+  //              BUTTON_TOOLBAR|FRAME_RAISED|FRAME_THICK|LAYOUT_RIGHT);
   setPerms(0);
   setDefaults();
   listsavedflag = TRUE;
@@ -143,24 +152,24 @@ TicketsBox::TicketsBox(FXComposite * parent)
 void 
 TicketsBox::setPerms(long perm)
 {
-  if (!isPermitted(PERMTKTEDIT)){
+  if (!isPermitted(PERMTKTGEN)){
     btnTariff->disable();
     btnGenerate->disable();
-    btnPrint->disable();
+    //btnPrint->disable();
     btnClear->disable();
-    btnEdit->disable();
+    //btnEdit->disable();
     btnExit->disable();
   }
   else{
     btnTariff->enable();
     btnGenerate->enable();
-    btnPrint->enable();
+    //btnPrint->enable();
     btnClear->enable();
-    btnEdit->enable();
+    //btnEdit->enable();
     btnExit->enable();
   }
 
-  if (!isPermitted(PERMTKTALLOC)){
+  if (!isPermitted(PERMTKTQRY)){
     
   }
   else{
@@ -240,20 +249,20 @@ char assign_rand_value(int num)
 int get_ticket_str(int length, char *rand_id)
 {
   int i, num=0;
-  struct timeval t;
   int rndval;
 
   if( length>0) 
   { 
-    bzero(rand_id, 20);
-    for(i=1;i<length;i++){
-      gettimeofday(&t, NULL);
-      srand( (double)t.tv_usec + num);
+    //bzero(rand_id, 20);
+    memset(rand_id, 0, 20);
+	
+	for(i=1;i<length;i++){
+
       rndval = rand();
       num = (((double)rndval * 36 )/ RAND_MAX) + 1;
       rand_id[i] = assign_rand_value( num);
       if (rand_id[i] == '0' || rand_id[i] == 'O')
-	i--;
+		i--;
     }
   }
 #ifdef DEBUG
@@ -274,6 +283,16 @@ TicketsBox::generateTickets(int nr, int dgtNr)
 {
   int i; 
   char ticketStr[50], buf[128];
+  struct timeval t;
+
+#ifndef WIN32
+      gettimeofday(&t, NULL);
+      srand( (double)t.tv_usec);
+#else
+      FILETIME ft;
+	  GetSystemTimeAsFileTime(&ft);
+	  srand(ft.dwLowDateTime);
+#endif
 
   lstTickets->clearItems();
   for (i=0; i<nr; i++){
@@ -307,44 +326,57 @@ void formatTicket(FXString &tickettext, char *tktStr, CCL_ticket_entry &te)
 {
   char buf[64];
   char misc[64];
-  struct tm tm;
+  struct tm tm, *rtm;
   time_t t = time(NULL);
 
-  tickettext += _("Code:  ");
+  tickettext += "<td>";
+  tickettext += "<table><tr><td>";
+  tickettext += _("Code:  <b>");
   formatTicketStr(misc, te.name, 3);
   tickettext += misc;
-  tickettext += "\n";
-  tickettext += _("Value/Units:   ");
+  tickettext += _("</b> [Units: <b>");
   snprintf(buf, sizeof(buf), "%.2f", te.faceval/100.0);
   tickettext += buf;
-  tickettext += "\n";
-  tickettext += _("Valid From: ");
-  localtime_r(&te.stdate, &tm);
+  tickettext += "]</b></td></tr><tr><td>";
+  //  tickettext += "</td></tr><tr><td>";
+  tickettext += _("Valid Period: ");
+  tickettext += "</td></tr><tr halign=\"right\"><td>";
+  tickettext += _("    From: <b>");
+  //localtime_r(&te.stdate, &tm);
+  rtm = localtime(&te.stdate);
+  tm = *rtm;
   strftime(buf,sizeof(buf)/sizeof(char),"%d/%m/%Y",&tm);
   tickettext += buf;
-  tickettext += _(" to ");
-  localtime_r(&te.enddate, &tm);
+  tickettext += _("</b> to <b>");
+  //localtime_r(&te.enddate, &tm);
+  rtm = localtime(&te.enddate);
+  tm = *rtm;
   strftime(buf,sizeof(buf)/sizeof(char),"%d/%m/%Y",&tm);
   tickettext += buf;
-  tickettext += "\n";
-  tickettext += _("Tariff/Notes: ");
-  tickettext += "[ ";
-  char *tName = CCL_tarif_name_get(te.tariff);
-  tickettext += tName;
-  CCL_free(tName);
-  tickettext += _(" ] ");
-  tickettext += tktStr;
-  tickettext += "\n";
-  tickettext += _("Printed by ");
+  //  tickettext += "</td></tr><tr><td>";
+  //  tickettext += _("Tariff/Notes: ");
+  //  tickettext += "[ ";
+  //  char *tName = CCL_tarif_name_get(te.tariff);
+  //  tickettext += tName;
+  //  CCL_free(tName);
+  //  tickettext += _(" ] ");
+  //  tickettext += tktStr;
+  tickettext += "</b></td></tr><tr><td>";
+  tickettext += _("Printed: ");
   // tName = CCL_emp_name_get(empId);
-  tName = (char *)CCL_employee_name_get(e_inf.empID);
-  tickettext += tName;
   //CCL_free(tName);
-  tickettext += _(" on ");
-  localtime_r(&t, &tm);
+  //localtime_r(&t, &tm);
+  rtm = localtime(&t);
+  tm = *rtm;
   strftime(buf,sizeof(buf)/sizeof(char),"%d/%m/%Y",&tm);
   tickettext += buf;
-  tickettext += "\n\n\n";
+
+  tickettext += _("[");
+  char *tName = (char *)CCL_employee_name_get(e_inf.empID);
+  tickettext += tName;
+  tickettext += _("]");
+
+  tickettext += "</td></tr></table>";
 }
 
 int tkt2te(CCL_ticket_entry &te, ticket_input_t &tkt)
@@ -354,60 +386,82 @@ int tkt2te(CCL_ticket_entry &te, ticket_input_t &tkt)
   te.faceval = tkt.faceVal;
 }
 
-
-void printString(FXString &tickettext)
+FXString
+outputToHTML(FXString &tickettext)
 {
 #ifdef DEBUG
   printf("%s\n", tickettext.text());
 #endif
-  tickettext += "\f";
+  FXString filename = FXPath::unique("_ticket.html");
 #ifdef WIN32
-  FILE *p = fopen("PRN","w");
-  fwrite(tickettext.text(),sizeof(char),tickettext.length(),p);
-  fclose(p);
+  FXString command = "firefox.exe ";
 #else
-  FXString command = "lpr -r ";
-  FXString filename = FXPath::unique("__ticket.txt");
+  FXString command = "/usr/bin/firefox ";
+#endif
   FILE *p = fopen(filename.text(),"w");
-  
-  command += filename;
   fwrite(tickettext.text(),sizeof(char),tickettext.length(),p);
   fclose(p);
+  command += filename;
   system(command.text());
-#endif
+
+  return FXPath::absolute(filename);
  }
+
+#define COL 3
 
 long
 TicketsBox::printTickets()
 {
-  if (!listgenflag)
-    return 0;
-  char  buf[256];
-  char  tktStr[64], misc[64];
-  ticket_input_t tkt;
-  CCL_ticket_entry te;
-  struct tm tm;
-  FXString tickettext = "";
+  char              buf[32], num[32], pdate[15], expdate[15];
+  int               faceval, nbuf;
+  char              misc[64];
+  struct tm         tm, *rtm;
+  time_t            t = time(NULL);
+  char             *notes = "";
+  ticket_input_t    tkt;
+  CCL_ticket_entry  te;
 
   getInputVals(&tkt);
-  tkt2te(te, tkt);
-  
-  FXFoldingItem *lastItem = lstTickets->getLastItem();
+  if (lstTickets->getNumItems()>0){
+    FXFoldingItem *lastItem = lstTickets->getLastItem();
+    FXString       tickettext = "<html><head><title>Mkahawa Tickets</title></head>\n<body>\n";
+    int            counter=0;
 
-  for (FXFoldingItem *tktItem = lstTickets->getFirstItem(); ; tktItem = tktItem->getNext()){
-    sscanf(tktItem->getText().text(), "%s %s", buf, te.name);
-    formatTicket(tickettext, tkt.notes, te);
-    te.tariff = stariff;
-    if (lastItem ==  tktItem)
-      break;
+    tickettext += "<table border=1 cellpadding=2 cellspacing=1 frame=void>\n";
+    for (FXFoldingItem *tktItem = lstTickets->getFirstItem(); ; tktItem = tktItem->getNext()){
+      if (!(counter % COL)){ //break up every 4 cells
+	tickettext += "<tr>";
+      }
+      tickettext += "\n <td>";
+      sscanf(tktItem->getText().text(), "%s %s", buf, te.name);
+      formatTicket(tickettext, notes, te);
+      tickettext += "</td>";
+      if (lastItem ==  tktItem){
+	tickettext += "</tr>\n";
+	break;
+      }
+      if ((counter % COL) == COL-1){
+	tickettext += "</tr>\n";
+      }
+      counter++;
+    }
+    tickettext += "</table>";
+
+    FXString fname = outputToHTML(tickettext);
+    FXString msg(_("Tickets have been saved in "));
+    msg += fname;
+    msg += "\n Open the file with any browser and print.";
+    FXMessageBox::information(this,MBOX_OK,_("Ticket Printing"), msg.text());
+    return 1;
   }
-  printString(tickettext);
-  char *msg = "Tickets have been sent to the Default Printer";
-  FXMessageBox::information(getRoot(), MBOX_OK,_("Ticket Printing"), (char *)msg);
 
   return 1;
 }
 
+
+#ifdef WIN32
+#include "strptime.h"
+#endif
 int  
 TicketsBox::getInputVals(ticket_input_t *tkt)
 {
@@ -426,9 +480,10 @@ TicketsBox::getInputVals(ticket_input_t *tkt)
   tkt->faceVal = (int)atof(tfFaceVal->getText().text())*100;
   tkt->tariff = stariff;
   tkt->dgtNr = atoi( tfDigitsNum->getText().text());
+  if (tkt->dgtNr > 12) tkt->dgtNr = 12;
   tkt->tktNr = atoi( tfNum->getText().text());
   strncpy(tkt->notes, tfNotes->getText().text(), 25);
-
+  
   return 1;
 }
 
@@ -474,12 +529,17 @@ int make_ddate_str(char *datestr, time_t *dt1, time_t *dt2)
 {
 #define DLEN 8
   char buf[17];
-  struct tm tm;
+  struct tm tm, *rtm;
 
-  bzero(buf, 17);
-  localtime_r(dt1, &tm);
+  //bzero(buf, 17);
+  memset(buf, 0, 17);
+  //localtime_r(dt1, &tm);
+  rtm = localtime(dt1);
+  tm = *rtm;
   sprintf(buf, "%02d%02d%02d",  tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);
-  localtime_r(dt2, &tm);
+  //localtime_r(dt2, &tm);
+  rtm = localtime(dt2);
+  tm = *rtm;
   sprintf(buf+DLEN, "%02d%02d%02d",  tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);
   strncpy(datestr, buf, 17);
 }
@@ -527,9 +587,19 @@ TicketsBox::onPrint(FXObject*,FXSelector,void*)
 {
   saveTickets();
   if (!printTickets()){
-    char *msg = "Nothing to print. Generate or Query First";
+    char *msg = _("Nothing to print. Generate or Query First");
     FXMessageBox::information(getRoot(), MBOX_OK,_("Ticket Printing"), (char *)msg);
   }
+  return 0;
+}
+
+long 
+TicketsBox::onSave(FXObject*,FXSelector,void*)
+{
+  saveTickets();
+  FXString msg(_("Tickets have been saved in the DB."));
+
+  FXMessageBox::information(this,MBOX_OK,_("Save Tickets"), msg.text());
   return 0;
 }
 
@@ -540,7 +610,7 @@ TicketsBox::onTicketsList(FXObject*,FXSelector,void*)
     return 0;
 }
 
-long
+/*long
 TicketsBox::onEdit(FXObject*,FXSelector,void*)
 {
   QTicketsBox  tBox(this);
@@ -552,6 +622,8 @@ TicketsBox::onEdit(FXObject*,FXSelector,void*)
 
   return 1;  
 }
+*/
+
 
 long
 TicketsBox::onClear(FXObject*,FXSelector,void*)

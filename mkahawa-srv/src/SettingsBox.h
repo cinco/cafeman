@@ -7,7 +7,7 @@
 
 enum CYBOPMODE {  PREPAID=1, POSTPAID=2 };
 enum LISTTYPE { SET_VIEWICONS=1, SET_VIEWLIST=2 };
-enum ROUNDOFF { RND_00=1, RND_05=2, RND_50=3, RND_01=4, RND_10=5 };
+enum ROUNDOFF { RND_00=1, RND_05=2, RND_50=3, RND_01=4, RND_10=5, RND_25=6 };
 
 typedef unsigned long cyb_opmode_t;
 
@@ -18,6 +18,10 @@ typedef struct{
   char           currency[10];
   long           default_tariff;
   long           poll_interval;
+  char           warnTime;
+  char           warnCredit;
+  long           warnTimes[5];
+  long           warnCredits[5];
 
 } cyber_settings_t;
 
@@ -71,6 +75,7 @@ protected:
 
   FXRadioButton  *rbtnRnd00;
   FXRadioButton  *rbtnRnd50;
+  FXRadioButton  *rbtnRnd25;
   FXRadioButton  *rbtnRnd05;
   FXRadioButton  *rbtnRnd01;
   FXRadioButton  *rbtnRnd10;

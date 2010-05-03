@@ -47,6 +47,8 @@ public:
   void clear();
   void addEmployee(int id);
   void loadEmployees();
+  void updateEmpCreds(int id, char *pwd, char *usr);
+  long drawPermDialog(FXDialogBox &dlg, EmpRecStr &e);
 public:
   long onAddEmployee(FXObject*,FXSelector,void*);
   long onDelEmployee(FXObject*,FXSelector,void*);

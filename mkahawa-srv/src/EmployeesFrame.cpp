@@ -174,30 +174,8 @@ EmployeesFrame::clear()
   emailtf->setText("");
   phonetf->setText("");
 }
-/*
-long
-EmployeesFrame::onAddEmployee(FXObject*,FXSelector,void*)
-{
-  FXString name;
-  
-  if (FXInputDialog::getString(name,this,_("Add New Employee"),
-			   _("Type the username:")) && name.length()) {
-    int id = CCL_employee_new(name.text());
-    //#ifdef DEBUG_CCLFOX
-    //printf("onAddEmployee: username = %s\n", name.text());
-    //#endif
-    if (-1 != id) {
-      CCL_employee_flags_toggle(id,EMPLOYEE_DELETED,FALSE);
-      readAllEmployees();
-      readEmployee(id);
-    } else
-      FXMessageBox::error(this,MBOX_OK,_("Error"),
-			  _("The new employee could not be created"));
-  }
 
-  return 1;
-}
-*/
+
 long
 EmployeesFrame::onDelEmployee(FXObject*,FXSelector,void*)
 {
@@ -263,32 +241,21 @@ EmployeesFrame::onApplyChanges(FXObject*,FXSelector,void*)
 }
 
 long
-EmployeesFrame::onEdit(FXObject*,FXSelector,void*)
+EmployeesFrame::drawPermDialog(FXDialogBox &dlg, EmpRecStr &e)
 {
-  FXFoldingItem *eitem = employeeslist->findItemByData((void*)editedemployee);
-  FXDialogBox dlg(this,_("Edit Staff Info"));
-  EmpRecStr e;
-  FXFoldingItem *current = employeeslist->getCurrentItem();
   FXDataTarget usrtgt(e.usr);
   FXDataTarget nametgt(e.name);
   FXDataTarget pwdtgt(e.pwd);
   FXDataTarget emailtgt(e.email);
   FXDataTarget phonetgt(e.phone);
-  FXDataTarget lvltgt(e.lvl);
-
+  //FXDataTarget lvltgt(e.lvl);
+  long retval = 0;
   
-  e.usr = _(CCL_employee_usrname_get(editedemployee));
-  e.name = _(CCL_employee_name_get(editedemployee));
-  e.email = _(CCL_employee_email_get(editedemployee));
-  e.phone = _(CCL_employee_phone_get(editedemployee));
-  e.pwd = _(CCL_employee_password_get(editedemployee));
-  e.lvl = CCL_employee_usrlvl_get(editedemployee);
-
-
   FXCheckButton *tarifeditcheck, *tarifselcheck, *memeditcheck, *memalloccheck;
   FXCheckButton *genconfcheck, *prodsellcheck, *prodeditcheck, *cashrcvcheck;
   FXCheckButton *casheditcheck, *cashdischeck, * cashcnclcheck;
   FXCheckButton *rptviewcheck, *rptsavecheck, *prodstockcheck;
+  FXCheckButton *tktviewcheck, *tktprncheck, *tktgencheck;
 
   FXVerticalFrame *vframe = new FXVerticalFrame(&dlg,LAYOUT_FILL_X|LAYOUT_FILL_Y);
   FXHorizontalFrame *hframe1 = new FXHorizontalFrame(vframe,LAYOUT_FILL_X|LAYOUT_FILL_Y);
@@ -296,7 +263,8 @@ EmployeesFrame::onEdit(FXObject*,FXSelector,void*)
   new FXLabel(hframe1,_("Username: "));
   FXTextField *usrtf = new FXTextField(hframe1,16,&usrtgt, FXDataTarget::ID_VALUE,
 					FRAME_SUNKEN|FRAME_THICK);
-  usrtf->disable();
+  if (e.usr != "")
+    usrtf->disable();
 
   new FXLabel(hframe1,_("Password: "));
   FXTextField *pwdtf = new FXTextField(hframe1,12,&pwdtgt, FXDataTarget::ID_VALUE,
@@ -349,6 +317,14 @@ EmployeesFrame::onEdit(FXObject*,FXSelector,void*)
 				    CHECKBUTTON_NORMAL|LAYOUT_LEFT);
   rptsavecheck  = new FXCheckButton(vframe2,_("Print Reports"),NULL,0,
 				    CHECKBUTTON_NORMAL|LAYOUT_LEFT);
+  tktviewcheck  = new FXCheckButton(vframe2,_("View Tickets"),NULL,0,
+				    CHECKBUTTON_NORMAL|LAYOUT_LEFT);
+  tktgencheck  = new FXCheckButton(vframe2,_("Generate Tickets"),NULL,0,
+				    CHECKBUTTON_NORMAL|LAYOUT_LEFT);
+  tktprncheck  = new FXCheckButton(vframe2,_("Print Tickets"),NULL,0,
+				    CHECKBUTTON_NORMAL|LAYOUT_LEFT);
+
+
   new FXHorizontalSeparator(vframe);
   FXHorizontalFrame *hframe = new FXHorizontalFrame(vframe,LAYOUT_FILL_X);
   new FXButton(hframe,_("Cancel"),dbIcon2,&dlg,FXDialogBox::ID_CANCEL,
@@ -376,6 +352,9 @@ EmployeesFrame::onEdit(FXObject*,FXSelector,void*)
   if (permval & PERMCASHCANCEL) cashcnclcheck->setCheck(TRUE);
   if (permval & PERMLOGSUMVIEW) rptviewcheck->setCheck(TRUE);
   if (permval & PERMLOGSUMSAVE) rptsavecheck->setCheck(TRUE);
+  if (permval & PERMTKTQRY) tktviewcheck->setCheck(TRUE);
+  if (permval & PERMTKTGEN) tktgencheck->setCheck(TRUE);
+  if (permval & PERMTKTPRN) tktprncheck->setCheck(TRUE);
  
   if (!isPermitted(PERMEMPEDIT)){
     //cannot edit own capabilities
@@ -393,6 +372,9 @@ EmployeesFrame::onEdit(FXObject*,FXSelector,void*)
     cashdischeck->disable();
     rptviewcheck->disable();
     rptsavecheck->disable();
+    tktviewcheck->disable();
+    tktprncheck->disable();
+    tktgencheck->disable();
   }
 
   if (dlg.execute() && e.usr.length() ) {
@@ -412,26 +394,16 @@ EmployeesFrame::onEdit(FXObject*,FXSelector,void*)
     if (cashcnclcheck->getCheck()) permval |= PERMCASHCANCEL;
     if (rptviewcheck->getCheck()) permval |= PERMLOGSUMVIEW;
     if (rptsavecheck->getCheck()) permval |= PERMLOGSUMSAVE;
-
-    if (!strncmp(e.usr.text(), "admin", 10)) { 
-      permval = 0xFFFFFFFF;
-    }
-    CCL_employee_info_set(editedemployee, 
-			  (char *)pwdtf->getText().text(),
-			  (char *)nametf->getText().text(),
-			  (char *)phonetf->getText().text(), 
-			  (char *)emailtf->getText().text(),
-			  permval);
-
+    if (tktviewcheck->getCheck()) permval |= PERMTKTQRY;
+    if (tktprncheck->getCheck()) permval |= PERMTKTPRN;
+    if (tktgencheck->getCheck()) permval |= PERMTKTGEN;
 #ifdef DEBUG_CCLFOX
-    printf("onEdit(): Edited Employee ID = %d\n", editedemployee); 
+    printf("drawPermDialog(): Edited Employee ID = %d\n", editedemployee); 
 #endif
-    eitem->setText( FXString(CCL_employee_usrname_get(editedemployee)) + 
-		    _("\t") + _(CCL_employee_name_get(editedemployee)) + 
-		   "\t" + CCL_employee_phone_get(editedemployee) + 
-		   "\t"+ CCL_employee_email_get(editedemployee));
-    employeeslist->updateItem(eitem);
+    e.lvl = permval;
+    retval = TRUE;
   }
+  /*
   //encrypt the password
   char pass[256];
   unsigned char digest[CCL_MD5_DIGEST_LENGTH];
@@ -441,6 +413,74 @@ EmployeesFrame::onEdit(FXObject*,FXSelector,void*)
   //now write this to data
   CCL_data_set_blob(CCL_DATA_EMPLOYEE, editedemployee, "password",  
 		    digest, CCL_MD5_DIGEST_LENGTH);
+  */
+  return retval;
+}
+
+void 
+EmployeesFrame::updateEmpCreds(int id, char *pwd, char *usr)
+{
+
+    //set password
+    char pass[256];
+    unsigned char digest[CCL_MD5_DIGEST_LENGTH];
+    
+    strncpy(pass, pwd, 256);
+    CCL_MD5((FXuchar*)pass, strlen(pass), digest);
+    //write this to data
+    CCL_data_set_blob(CCL_DATA_EMPLOYEE, id, "password",  digest,
+		      CCL_MD5_DIGEST_LENGTH);
+    if (usr){
+      //add employee name to data
+      CCL_data_set_string(CCL_DATA_EMPLOYEE, id,
+			"username", usr);
+    }
+}
+
+
+long
+EmployeesFrame::onEdit(FXObject*,FXSelector,void*)
+{
+  FXFoldingItem *eitem = employeeslist->findItemByData((void*)editedemployee);
+  FXDialogBox dlg(this,_("Edit Staff Info"));
+  EmpRecStr e;
+
+  e.usr = CCL_employee_usrname_get(editedemployee);
+  e.name = CCL_employee_name_get(editedemployee);
+  e.email = CCL_employee_email_get(editedemployee);
+  e.phone = CCL_employee_phone_get(editedemployee);
+  e.pwd = CCL_employee_password_get(editedemployee);
+  e.lvl = CCL_employee_usrlvl_get(editedemployee);
+#ifdef DEBUG_CCLFOX
+  printf("onEdit(): Edited Employee ID = %d\n", editedemployee); 
+#endif
+  if (drawPermDialog(dlg, e)) {
+    eitem->setText( FXString(CCL_employee_usrname_get(editedemployee)) + 
+		    _("\t") + _(CCL_employee_name_get(editedemployee)) + 
+		    "\t" + CCL_employee_phone_get(editedemployee) + 
+		    "\t"+ CCL_employee_email_get(editedemployee));
+    employeeslist->updateItem(eitem);
+
+    if (!strncmp(e.usr.text(), "admin", 10)) { 
+      //      permval = 0xFFFFFFFF;
+      e.lvl = 0xFFFFFFFF;
+    }
+    /*CCL_employee_info_set(editedemployee, 
+			  (char *)pwdtf->getText().text(),
+			  (char *)nametf->getText().text(),
+			  (char *)phonetf->getText().text(), 
+			  (char *)emailtf->getText().text(),
+			  permval); */
+    CCL_employee_info_set(editedemployee, 
+			  (char *)e.pwd.text(),
+			  (char *)e.name.text(),
+			  (char *)e.phone.text(), 
+			  (char *)e.email.text(),
+			  e.lvl);
+    updateEmpCreds(editedemployee, (char *)e.pwd.text(), (char *)NULL);
+    //now update the dialogs
+    readEmployee(editedemployee);
+  }
 
   return 1;
 }
@@ -526,8 +566,9 @@ EmployeesFrame::onResetPass(FXObject*,FXSelector,void*)
 
   if (FXInputDialog::getString(pstr,this,_("Set Password"),
 			   _("Type the password: ")) && pstr.length()) {
-    bzero(pwdstr, 20);
-    strncpy(pwdstr, pstr.text(), 20);
+    //bzero(pwdstr, 20);
+    memset(pwdstr,0,20);
+	strncpy(pwdstr, pstr.text(), 20);
   }
 
   snprintf(password,sizeof(password)/sizeof(char),"%d",editedemployee);
@@ -585,129 +626,24 @@ EmployeesFrame::addEmployee(int id)
   CCL_free(email);
 }
 
+
 long
 EmployeesFrame::onNewEmployee(FXObject*,FXSelector,void*)
 {
   FXDialogBox dlg(this,_("Staff Member Info"));
-  EmpRecStr e;
+  EmpRecStr e = {"","","","","",0};
 
-  FXFoldingItem *current = employeeslist->getCurrentItem();
-  FXDataTarget usrtgt(e.usr);
-  FXDataTarget nametgt(e.name);
-  FXDataTarget pwdtgt(e.pwd);
-  FXDataTarget emailtgt(e.email);
-  FXDataTarget phonetgt(e.phone);
-  FXDataTarget lvltgt(e.lvl);
-
-  FXCheckButton *tarifeditcheck, *tarifselcheck, *memeditcheck, *memalloccheck;
-  FXCheckButton *genconfcheck, *prodsellcheck, *prodeditcheck, *cashrcvcheck;
-  FXCheckButton *casheditcheck, *cashdischeck, * cashcnclcheck;
-  FXCheckButton *rptviewcheck, *rptsavecheck, *prodstockcheck;
-
-  FXVerticalFrame *vframe = new FXVerticalFrame(&dlg,LAYOUT_FILL_X|LAYOUT_FILL_Y);
-  FXHorizontalFrame *hframe1 = new FXHorizontalFrame(vframe,LAYOUT_FILL_X|LAYOUT_FILL_Y);
-
-  new FXLabel(hframe1,_("Username: "));
-  FXTextField *usrtf = new FXTextField(hframe1,16,&usrtgt, FXDataTarget::ID_VALUE,
-					FRAME_SUNKEN|FRAME_THICK);
-  new FXLabel(hframe1,_("Password: "));
-  FXTextField *pwdtf = new FXTextField(hframe1,12,&pwdtgt, FXDataTarget::ID_VALUE,
-				       TEXTFIELD_PASSWD|FRAME_SUNKEN|FRAME_THICK);
-
-  FXHorizontalFrame *hframe2 = new FXHorizontalFrame(vframe,LAYOUT_FILL_X|LAYOUT_FILL_Y);
-  new FXLabel(hframe2,_("Full Name: "));
-  FXTextField *nametf = new FXTextField(hframe2,32,&nametgt, FXDataTarget::ID_VALUE,
-				       FRAME_SUNKEN|FRAME_THICK);
-
-  FXHorizontalFrame *hframe3 = new FXHorizontalFrame(vframe,LAYOUT_FILL_X|LAYOUT_FILL_Y);
-  new FXLabel(hframe3,_("Email: "));
-  FXTextField *emailtf = new FXTextField(hframe3,32,&emailtgt, FXDataTarget::ID_VALUE,
-					 FRAME_SUNKEN|FRAME_THICK);
-  new FXLabel(hframe3,_("Phone: "));
-  FXTextField *phonetf = new FXTextField(hframe3,16,&phonetgt, FXDataTarget::ID_VALUE,
-					 FRAME_SUNKEN|FRAME_THICK);
-  new FXLabel(vframe,_("Permissions:- "));
-  new FXHorizontalSeparator(vframe);
-  //FXRealSpinner *lvltf = new FXRealSpinner(vframe,16,&lvltgt, FXDataTarget::ID_VALUE,
-  //					    FRAME_SUNKEN|FRAME_THICK);
-  //lvltf->setRange(0,2);
-
-  FXHorizontalFrame *hframe4 = new FXHorizontalFrame(vframe,LAYOUT_FILL_X|LAYOUT_FILL_Y);
-  FXVerticalFrame *vframe1 = new FXVerticalFrame(hframe4,LAYOUT_FILL_X|LAYOUT_FILL_Y);
-  tarifeditcheck = new FXCheckButton(vframe1,_("Edit Tariffs"),NULL,0,
-				    CHECKBUTTON_NORMAL|LAYOUT_LEFT);
-  tarifselcheck = new FXCheckButton(vframe1,_("Change Tariffs"),NULL,0,
-				    CHECKBUTTON_NORMAL|LAYOUT_LEFT);
-  memeditcheck  = new FXCheckButton(vframe1,_("Edit Member Info"),NULL,0,
-				    CHECKBUTTON_NORMAL|LAYOUT_LEFT);
-  memalloccheck  = new FXCheckButton(vframe1,_("Set Member Clients"),NULL,0,
-				    CHECKBUTTON_NORMAL|LAYOUT_LEFT);
-  genconfcheck  = new FXCheckButton(vframe1,_("General Configuration"),NULL,0,
-				    CHECKBUTTON_NORMAL|LAYOUT_LEFT);
-  prodsellcheck  = new FXCheckButton(vframe1,_("Sell Products"),NULL,0,
-				    CHECKBUTTON_NORMAL|LAYOUT_LEFT);
-  prodeditcheck  = new FXCheckButton(vframe1,_("Edit Products"),NULL,0,
-				    CHECKBUTTON_NORMAL|LAYOUT_LEFT);
-  prodstockcheck  = new FXCheckButton(vframe1,_("Stock Products"),NULL,0,
-				    CHECKBUTTON_NORMAL|LAYOUT_LEFT);
-  FXVerticalFrame *vframe2 = new FXVerticalFrame(hframe4,LAYOUT_FILL_X|LAYOUT_FILL_Y);
-  cashrcvcheck  = new FXCheckButton(vframe2,_("Receive Payments"),NULL,0,
-				    CHECKBUTTON_NORMAL|LAYOUT_LEFT);
-  casheditcheck  = new FXCheckButton(vframe2,_("Edit Payments"),NULL,0,
-				    CHECKBUTTON_NORMAL|LAYOUT_LEFT);
-  cashdischeck  = new FXCheckButton(vframe2,_("Give Discounts"),NULL,0,
-				    CHECKBUTTON_NORMAL|LAYOUT_LEFT);
-  cashcnclcheck  = new FXCheckButton(vframe2,_("Cancel Payments"),NULL,0,
-				    CHECKBUTTON_NORMAL|LAYOUT_LEFT);
-  rptviewcheck  = new FXCheckButton(vframe2,_("View Reports"),NULL,0,
-				    CHECKBUTTON_NORMAL|LAYOUT_LEFT);
-  rptsavecheck  = new FXCheckButton(vframe2,_("Print Reports"),NULL,0,
-				    CHECKBUTTON_NORMAL|LAYOUT_LEFT);
-  new FXHorizontalSeparator(vframe);
-  FXHorizontalFrame *hframe = new FXHorizontalFrame(vframe,LAYOUT_FILL_X);
-  new FXButton(hframe,_("Cancel"),dbIcon2,&dlg,FXDialogBox::ID_CANCEL,
-	       BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_LEFT);
-  new FXButton(hframe,_("Accept"),dbIcon2,&dlg,FXDialogBox::ID_ACCEPT,
-	       BUTTON_TOOLBAR|FRAME_RAISED|LAYOUT_RIGHT);
-
-  if (dlg.execute() && e.usr.length() ) {
-    long permval = 0L;
-    //get permissions
-    if (tarifeditcheck->getCheck()) permval |= PERMTARIFEDIT;
-    if (tarifselcheck->getCheck()) permval |= PERMTARIFSELECT;
-    if (memeditcheck->getCheck()) permval |= PERMMBREDIT;
-    if (memalloccheck->getCheck()) permval |= PERMMBRALLOC;
-    if (genconfcheck->getCheck()) permval |= PERMGENCONF;
-    if (prodsellcheck->getCheck()) permval |= PERMPRODSELL;
-    if (prodeditcheck->getCheck()) permval |= PERMPRODEDIT;
-    if (prodstockcheck->getCheck()) permval |= PERMPRODSTOCK;
-    if (cashrcvcheck->getCheck()) permval |= PERMCASHRECEIVE;
-    if (casheditcheck->getCheck()) permval |= PERMCASHEDIT;
-    if (cashdischeck->getCheck()) permval |= PERMCASHDISCOUNT;
-    if (cashcnclcheck->getCheck()) permval |= PERMCASHCANCEL;
-    if (rptviewcheck->getCheck()) permval |= PERMLOGSUMVIEW;
-    if (rptsavecheck->getCheck()) permval |= PERMLOGSUMSAVE;
+  if (drawPermDialog(dlg, e)) {
     //write in the database
     int id = CCL_employee_new((char *)e.usr.text(), (char *)e.name.text(), 
 			      (char *)e.pwd.text(), (char *)e.phone.text(), 
-			      (char *)e.email.text(), permval, e_inf.empID);
-
-    char pass[256];
-    unsigned char digest[CCL_MD5_DIGEST_LENGTH];
-    
-    strncpy(pass, e.pwd.text(), 256);
-    CCL_MD5((FXuchar*)pass, strlen(pass), digest);
-    //write this to data
-    CCL_data_set_blob(CCL_DATA_EMPLOYEE, id, "password",  digest,
-		      CCL_MD5_DIGEST_LENGTH);
-    //add employee name to data
-    CCL_data_set_string(CCL_DATA_EMPLOYEE, id,
-			"username", (char *)e.usr.text());
-
+			      (char *)e.email.text(), e.lvl, e_inf.empID);
+    //update credentials
+    updateEmpCreds(id, (char *)e.pwd.text(), (char *)e.usr.text());
+    addEmployee(id);
 #ifdef DEBUG_CCLFOX
     printf("onNewEmployee(): ID = %d: userID: %s\n", id, e.usr.text()); 
 #endif
-    addEmployee(id);
   }
 
   return 1;
