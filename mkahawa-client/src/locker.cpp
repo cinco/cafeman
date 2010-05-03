@@ -20,6 +20,9 @@ using namespace FX;
 
 //#define DEBUG_IMAGE
 //#define DEBUG_DRAW
+//#define DEBUG_DIR
+//#define DEBUG_KEY
+
 
 extern CCLCFox *cclcfox;
 extern unsigned char *locker_gif;
@@ -28,8 +31,10 @@ extern unsigned char *ticket_btn_gif;
 extern unsigned char *postpay_btn_gif;
 
 extern unsigned char *passwd_pad_gif;
-extern unsigned char *member_pad_gif;
-extern unsigned char *ticket_pad_gif;
+extern unsigned char *login_btn_gif;
+extern unsigned char *blank_inp_gif;
+extern unsigned char *logo_gif;
+
 #ifdef MACOSX
 extern Locker *locker;
 #endif
@@ -221,34 +226,59 @@ Locker::onHandleMacOSXEvents(FXObject*,FXSelector,void*)
 }
 #endif
 
+
+void 
+Locker::loadPixes(const char *imgFname, void *pixdata, FXGIFIcon **icon)
+{
+  if (FXStat::exists(imgFname)) {
+    *icon = new FXGIFIcon(getApp());
+    FXFileStream stream;
+
+    stream.open(imgFname,FXStreamLoad);
+    (*icon)->loadPixels(stream);
+    stream.close();
+#ifdef DEBUG_IMAGE
+    printf("loadPixes(): Loaded file %s: {%d} [%d,%d]\n", imgFname,
+	   (*icon)->id(), (*icon)->getWidth(), (*icon)->getHeight());
+#endif    
+  } 
+  else{ 
+    *icon = new FXGIFIcon(getApp(),pixdata);
+#ifdef DEBUG_IMAGE
+    printf("Locker(): Retrieved {%s} from pstpix: {%d} [%d,%d]\n", imgFname, 
+	   (*icon)->id(), (*icon)->getWidth(), (*icon)->getHeight());
+#endif    
+  }
+}
+
 Locker::Locker(FXApp * app):FXShell(app,0,0,0,0,0)
 {
   void *imgpix = (void *)locker_gif;
   void *mbrpix = (void *)member_btn_gif;
   void *tktpix = (void *)ticket_btn_gif;
   void *pstpix = (void *)postpay_btn_gif;
-  void *ptktpix = (void *)ticket_pad_gif;
-  void *pmbrpix = (void *)member_pad_gif;
-  void *ppwdpix = (void *)passwd_pad_gif;
   
+  void *ppwdpix = (void *)passwd_pad_gif;
+  void *loginpix = (void *)login_btn_gif;
+  void *binppix = (void *)blank_inp_gif;
+  void *logopix = (void *)logo_gif;
+
   enable();
   ctext = fxstrdup(_("Click here to start"));
   mid = -1;
-  input.clear();
+  minput.clear();
   mlogin.clear();
-  font = new FXFont(getApp(),"arial",20,FXFont::Bold);
+  font = new FXFont(getApp(),"arial",10,FXFont::Bold);
 
   box.h = 80;
   box.w = 200;
   box.x = getRoot()->getDefaultWidth()/2 - box.w/2;
   box.y = getRoot()->getDefaultHeight()/2 - box.h/2;
 
-  //#define DEBUG_DIR
 
 #ifdef DEBUG_DIR
   printf("Current Directory: %s\n", FXSystem::getCurrentDirectory().text());
 #endif
-
   // If "lockpix.gif" exists, lets show it when the screen is locked
   if (FXStat::exists("lockpix.gif")) {
     lockpix = new FXGIFImage(getApp(),NULL,IMAGE_OPAQUE);
@@ -269,143 +299,26 @@ Locker::Locker(FXApp * app):FXShell(app,0,0,0,0,0)
 	   lockpix->id(), lockpix->getWidth(), lockpix->getHeight());
 #endif    
   }
-  if (FXStat::exists("postpay-btn.gif")) {
-    //imgPostpay = new FXGIFImage(getApp(),NULL,IMAGE_ALPHAGUESS);
-    imgPostpay = new FXGIFImage(getApp(),NULL,IMAGE_DITHER);
-    FXFileStream stream;
-
-    stream.open("postpay-btn.gif",FXStreamLoad);
-    imgPostpay->loadPixels(stream);
-    stream.close();
-#ifdef DEBUG_IMAGE
-    printf("Locker(): Loaded imgPostpay from file: {%d} [%d,%d]\n", 
-	   imgPostpay->id(), imgPostpay->getWidth(), imgPostpay->getHeight());
-#endif    
-  } 
-  else{ 
-    //imgPostpay = new FXGIFImage(getApp(),pstpix,IMAGE_OPAQUE);
-    imgPostpay = new FXGIFImage(getApp(),pstpix,IMAGE_DITHER);
-#ifdef DEBUG_IMAGE
-    printf("Locker(): Retrieved imgPostpay from pstpix: {%d} [%d,%d]\n", 
-	   imgPostpay->id(), imgPostpay->getWidth(), imgPostpay->getHeight());
-#endif    
-  }
-  pwd_box.h = imgPostpay->getHeight();
-  pwd_box.w = imgPostpay->getWidth();
-  
-  if (FXStat::exists("ticket-btn.gif")) {
-    imgTicket = new FXGIFImage(getApp(),NULL,IMAGE_ALPHAGUESS);
-    //imgTicket = new FXGIFImage(getApp(),NULL,IMAGE_OPAQUE);
-    FXFileStream stream;
-
-    stream.open("ticket-btn.gif",FXStreamLoad);
-    imgTicket->loadPixels(stream);
-    stream.close();
-#ifdef DEBUG_IMAGE
-    printf("Locker(): Loaded imgTicket from file: {%d} [%d,%d]\n", 
-	   imgTicket->id(), imgTicket->getWidth(), imgTicket->getHeight());
-#endif    
-  } else {
-    //imgTicket = new FXGIFImage(getApp(),tktpix,IMAGE_OPAQUE);
-    imgTicket = new FXGIFImage(getApp(),tktpix,IMAGE_ALPHAGUESS);
-#ifdef DEBUG_IMAGE
-    printf("Locker(): Retrieve imgTicket from tktpix: {%d} [%d,%d]\n", 
-	   imgTicket->id(), imgTicket->getWidth(), imgTicket->getHeight());
-#endif    
-  }
+  loadPixes("postpay_btn.gif", pstpix, &imgPostpay);
+  pst_box.h = imgPostpay->getHeight();
+  pst_box.w = imgPostpay->getWidth();
+  loadPixes("ticket_btn.gif", tktpix, &imgTicket);
   tkt_box.h = imgTicket->getHeight();
   tkt_box.w = imgTicket->getWidth();
-  // MEMBER Button
-  if (FXStat::exists("member-btn.gif")) {
-    //imgMember = new FXGIFImage(getApp(),NULL,IMAGE_ALPHACOLOR);
-    imgMember = new FXGIFImage(getApp(),NULL,IMAGE_ALPHAGUESS);
-    FXFileStream stream;
-
-    stream.open("member-btn.gif",FXStreamLoad);
-    imgMember->loadPixels(stream);
-    stream.close();
-#ifdef DEBUG_IMAGE
-    printf("Locker(): Loaded imgMember from file: {%d} [%d,%d]\n", 
-	   imgMember->id(), imgMember->getWidth(), imgMember->getHeight());
-#endif    
-  } 
-  else{
-    // If not, lets show the CCL logo
-    //imgMember = new FXGIFImage(getApp(),mbrpix,IMAGE_OPAQUE);
-    imgMember = new FXGIFImage(getApp(),mbrpix,IMAGE_ALPHAGUESS);
-#ifdef DEBUG_IMAGE
-    printf("Locker(): Retrieved imgMember from mbrpix: {%d} [%d,%d]\n", 
-	   imgMember->id(), imgMember->getWidth(), imgMember->getHeight());
-#endif
-  }
+  loadPixes("member_btn.gif", mbrpix, &imgMember);
   mbr_box.h = imgMember->getHeight();
   mbr_box.w = imgMember->getWidth();
-
-  //TICKET PAD
-  if (FXStat::exists("ticket_pad.gif")) {
-    imgTicketPad = new FXGIFImage(getApp(),NULL,IMAGE_OPAQUE);
-    FXFileStream stream;
-    stream.open("ticket_pad.gif",FXStreamLoad);
-    imgTicketPad->loadPixels(stream);
-    stream.close();
-#ifdef DEBUG_IMAGE
-    printf("Locker(): Loaded imgTicketPad from file: {%d} [%d,%d]\n", 
-	   imgTicketPad->id(), imgTicketPad->getWidth(), imgTicketPad->getHeight());
-#endif    
-  } 
-  else{
-    // If not, lets show the CCL logo
-    imgTicketPad = new FXGIFImage(getApp(),ptktpix,IMAGE_OPAQUE);
-#ifdef DEBUG_IMAGE
-    printf("Locker(): Retrieved imgTicketPad from ptktpix: {%d} [%d,%d]\n", 
-	   imgTicketPad->id(), imgTicketPad->getWidth(), imgTicketPad->getHeight());
-#endif
-  }
-
-  //USERNAME PAD
-  if (FXStat::exists("member_pad.gif")) {
-    imgMemberPad = new FXGIFImage(getApp(),NULL,IMAGE_OPAQUE);
-    FXFileStream stream;
-
-    stream.open("member_pad.gif",FXStreamLoad);
-    imgMemberPad->loadPixels(stream);
-    stream.close();
-#ifdef DEBUG_IMAGE
-    printf("Locker(): Loaded imgMemberPad from file: {%d} [%d,%d]\n", 
-	   imgMemberPad->id(), imgMemberPad->getWidth(), imgMemberPad->getHeight());
-#endif    
-  } 
-  else{
-    // If not, lets show the CCL logo
-    imgMemberPad = new FXGIFImage(getApp(),pmbrpix,IMAGE_OPAQUE);
-#ifdef DEBUG_IMAGE
-    printf("Locker(): Retrieved imgMemberPad from pmbrpix: {%d} [%d,%d]\n", 
-	   imgMemberPad->id(), imgMemberPad->getWidth(), imgMemberPad->getHeight());
-#endif
-  }
-
-  //PASSWORD PAD
-  if (FXStat::exists("passwd_pad.gif")) {
-    imgPasswdPad = new FXGIFImage(getApp(),NULL,IMAGE_OPAQUE);
-    FXFileStream stream;
-
-    stream.open("passwd_pad.gif",FXStreamLoad);
-    imgPasswdPad->loadPixels(stream);
-    stream.close();
-#ifdef DEBUG_IMAGE
-    printf("Locker(): Loaded imgPasswdPad from file: {%d} [%d,%d]\n", 
-	   imgPasswdPad->id(), imgPasswdPad->getWidth(), imgPasswdPad->getHeight());
-#endif    
-  } 
-  else{
-    // If not, lets show the CCL logo
-    imgPasswdPad = new FXGIFImage(getApp(),ppwdpix,IMAGE_OPAQUE);
-#ifdef DEBUG_IMAGE
-    printf("Locker(): Retrieved imgPasswdPad from ppwdpix: {%d} [%d,%d]\n", 
-	   imgPasswdPad->id(), imgPasswdPad->getWidth(), imgPasswdPad->getHeight());
-#endif
-  }
-
+  loadPixes("passwd_pad.gif", ppwdpix, &imgPasswdPad);
+  loadPixes("login_btn.gif", loginpix, &imgLogin);
+  rcTktLogin.h = imgLogin->getHeight();
+  rcTktLogin.w = imgLogin->getWidth();
+  rcMbrLogin.h = imgLogin->getHeight();
+  rcMbrLogin.w = imgLogin->getWidth();
+  loadPixes("blank_input.gif", binppix, &imgBlankInp);
+  inp_box.h = imgBlankInp->getHeight();
+  inp_box.w = imgBlankInp->getWidth();
+  imgLogo = new FXGIFIcon(getApp(), logopix);
+  dltxt.isSet = FALSE;
   allowmemberlogin = FALSE;
   allowticketlogin = FALSE;
   allowuserlogin = FALSE;
@@ -413,12 +326,12 @@ Locker::Locker(FXApp * app):FXShell(app,0,0,0,0,0)
 
 Locker::~Locker()
 {
-  delete imgTicketPad;
-  delete imgMemberPad;
   delete imgPasswdPad;
+  delete imgBlankInp;
   delete imgTicket;
   delete imgPostpay;
   delete imgMember;
+  delete imgLogo;
   delete lockpix;
   delete font;
 
@@ -445,9 +358,9 @@ Locker::create()
   imgMember->create();
   imgPostpay->create();
   imgTicket->create();
-  imgTicketPad->create();
-  imgMemberPad->create();
   imgPasswdPad->create();
+  imgBlankInp->create();
+  imgLogo->create();
 
   font->create();
 }
@@ -466,9 +379,9 @@ Locker::allowTicketLogin(bool allow)
   allowticketlogin = allow;
   if (!allowticketlogin) {
     mid = -1;
-    input.clear();
+    minput.clear();
     mlogin.clear();
-    clearPasswordBox();
+    clearInputBox();
   }
   repaint();
   update();
@@ -480,9 +393,9 @@ Locker::allowMemberLogin(bool allow)
   allowmemberlogin = allow;
   if (!allowmemberlogin) {
     mid = -1;
-    input.clear();
+    minput.clear();
     mlogin.clear();
-    clearPasswordBox();
+    clearInputBox();
   }
   repaint();
   update();
@@ -656,72 +569,87 @@ Locker::unlock()
     img_ctrl->playImages((void *)this);
 }
 
-#define TXT_BOX_W    (160)
-#define TXT_BOX_H    (25)
+#define TXT_BOX_W    (130)
+#define TXT_BOX_H    (20)
 void
-Locker::drawPasswordBox(FXEvent* event)
+Locker::drawInputBox(FXEvent* event)
 {
-  FXString txt = input + "|";
-  if (cclcfox->getMemberLoginState() == MEMBER_LOGIN_PWD)
+  FXString txt;
+  if (cclcfox->getLoginMode() == OPMODE_TICKET){
+    txt = tinput + "|";
+  }
+  else if (cclcfox->getMemberLoginState() == MEMBER_LOGIN_PWD){
+    txt = minput + "|";
     txt.replace(0,txt.length()-1,'*',txt.length()-1);
+  }
+  else {
+    txt = minput + "|";
+  }
   int iwidth = font->getTextWidth(txt.text());
   FXDCWindow dc(this,event);
-
   dc.begin(this);
-  struct {int x, y, w, h;} txt_box = {inp_box.x+25,inp_box.y+27,TXT_BOX_W,TXT_BOX_H};
-  dc.setClipRectangle(txt_box.x,txt_box.y,txt_box.w+1,txt_box.h+1);
+  struct {int x, y, w, h;} txt_box = {inp_box.x,inp_box.y,TXT_BOX_W,TXT_BOX_H};
+  dc.setClipRectangle(txt_box.x,txt_box.y,txt_box.w,txt_box.h);
   dc.setForeground(FXRGB(255,255,255));
   dc.fillRectangle(txt_box.x,txt_box.y,txt_box.w,txt_box.h);
-  dc.drawRectangle(txt_box.x,txt_box.y,txt_box.w,txt_box.h);
   dc.setForeground(FXRGB(0,0,0));
+  dc.drawRectangle(txt_box.x,txt_box.y,txt_box.w,txt_box.h);
   dc.setFont(font);
   dc.drawText(txt_box.x + txt_box.w/2 - iwidth/2,txt_box.y+16,txt.text(),txt.length());
   dc.end();
 }
 
 void
-Locker::clearPasswordBox()
+Locker::initLogoText(FXEvent* event)
+{
+  FXDCWindow dc(this,event);
+  FXColor  bg;
+
+  dltxt.isSet = TRUE;
+  dltxt.font = new FXFont(getApp(), "verdana",12,FXFont::Bold | FXFont::Italic);
+  dltxt.font->create();
+  dltxt.txt = "mkahawa cyber software - from - www.unwiretechnologies.net";
+  dltxt.w = dltxt.font->getTextWidth(dltxt.txt);
+  dltxt.h = dltxt.font->getTextHeight(dltxt.txt);
+  dltxt.x = (width - (dltxt.w))/2;
+  dltxt.y = height - (dltxt.h+3);
+  bg = dc.readPixel(dltxt.x,dltxt.y);
+  dltxt.fgcol = FXRGB(255-FXREDVAL(bg), 255-FXGREENVAL(bg), 255-FXBLUEVAL(bg));
+  printf("intLogoText(): (%d, %d), %0x08 -> %0x08\n", dltxt.x, dltxt.y, bg, dltxt.fgcol);
+}
+
+void
+Locker::writeLogoText(FXEvent* event)
+{
+  FXDCWindow dc(this,event);
+  dc.begin(this);
+  dc.setForeground(dltxt.fgcol);
+  dc.setFont(dltxt.font);
+  dc.drawText(dltxt.x, dltxt.y+16, dltxt.txt);
+  dc.end();
+}
+
+
+void
+Locker::clearInputBox()
 {
   struct {int x, y, w, h;} txt_box = {inp_box.x+25,inp_box.y+27,TXT_BOX_W,TXT_BOX_H};
-  //update(inp_box.x,inp_box.y,inp_box.w+1,inp_box.h+1);
-  //update(txt_box.x,txt_box.y,txt_box.w+1,txt_box.h+1);
   update(inp_box.x,inp_box.y,TXT_BOX_W+1,TXT_BOX_H+1);
 }
 
 void
 Locker::drawPostpayItems(FXEvent *ev)
 {
-   FXDCWindow dc(this,ev);
-  dc.begin(this);
-  //pwd_box.x = (width - imgPostpay->getWidth()) / 2;
-  //  pwd_box.y = (height - imgPostpay->getHeight()) / 2 - imgPostpay->getHeight();
-  pwd_box.x = (width - imgPostpay->getWidth()) / 2 - imgPostpay->getWidth();
-  pwd_box.y = 0;
-
-#ifdef DEBUG_IMAGE
-  printf("Locker::drawPostpayItems(): userlogin image: (%d,%d) -> [%d,%d]\n", pwd_box.x, pwd_box.y, pwd_box.w, pwd_box.h);
-#endif    
-  dc.drawImage(imgPostpay, pwd_box.x, pwd_box.y);  
-  dc.end();
-
-  /*
-  int textheight = font->getTextHeight(ctext,strlen(ctext));
-  int textwidth = font->getTextWidth(ctext,strlen(ctext));
-  int width = getRoot()->getDefaultWidth();
-  int height = getRoot()->getDefaultHeight();
   FXDCWindow dc(this,ev);
-
   dc.begin(this);
-  dc.setForeground(FXRGB(50,50,50));
-  dc.fillRectangle(0,0,width,textheight);
-  dc.drawRectangle(0,0,width,textheight);
-  dc.setForeground(FXRGB(0,0,0));
-  dc.setFont(font);
-  dc.drawText((width - textwidth) / 2,textheight,ctext,strlen(ctext));
-  dc.setForeground(FXRGB(255,255,255));
-  dc.drawText((width - textwidth) / 2 - 3,textheight - 3,ctext,strlen(ctext));
+  pst_box.x = (width - imgPostpay->getWidth()) / 2;
+  pst_box.y = (height - (imgPostpay->getHeight() * 2 )) + 25;
+#ifdef DEBUG_IMAGE
+  printf("Locker::drawPostpayItems(): userlogin image: (%d,%d) -> [%d,%d]\n", 
+	 pst_box.x, pst_box.y, pst_box.w, pst_box.h);
+#endif    
+  dc.drawIcon(imgPostpay, pst_box.x, pst_box.y);  
   dc.end();
-  */
 }
 
 void
@@ -729,44 +657,53 @@ Locker::drawTicketItems(FXEvent *ev)
 {
   FXDCWindow dc(this,ev);
   dc.begin(this);
-  //tkt_box.x = (width - imgTicket->getWidth()) / 2;
-  //tkt_box.y = (height - imgTicket->getHeight()) / 2  + imgTicket->getHeight();
-  tkt_box.x = (width - imgTicket->getWidth()) / 2  + imgTicket->getWidth();
-  tkt_box.y = 0;
+  tkt_box.x = (width - imgTicket->getWidth()) / 2  + (imgTicket->getWidth() * 1.5);
+  tkt_box.y = (height - (imgTicket->getHeight() * 1.5)) + 25;
 #ifdef DEBUG_IMAGE
   printf("Locker::drawTicketItems(): ticket image: (%d,%d) -> [%d,%d]\n", 
 	 tkt_box.x, tkt_box.y, tkt_box.w, tkt_box.h);
 #endif    
-  dc.drawImage(imgTicket, tkt_box.x, tkt_box.y);
+  dc.drawIcon(imgTicket, tkt_box.x, tkt_box.y);
   if (cclcfox->getLoginMode() == OPMODE_TICKET){ //draw pad
-    inp_box.x = tkt_box.x + tkt_box.w - 20;
-    inp_box.y = tkt_box.y + 20;
-    dc.drawImage(imgTicketPad, inp_box.x, inp_box.y);
+    rcTktLogin.x = tkt_box.x + 79;
+    rcTktLogin.y = tkt_box.y + 106;
+    inp_box.x = tkt_box.x + 14;
+    inp_box.y = tkt_box.y + 69;
   }
   dc.end();
 }
+
+void
+Locker::setMemberInputBox()
+{
+  if (cclcfox->getLoginMode() == OPMODE_MEMBER){ //draw pad
+    inp_box.x = mbr_box.x + 12;
+    if (cclcfox->getMemberLoginState() == MEMBER_LOGIN_NAME){  // accept name
+      inp_box.y = mbr_box.y + 40;
+    }
+    else if (cclcfox->getMemberLoginState() == MEMBER_LOGIN_PWD){  // accept password
+      inp_box.y = mbr_box.y + 78;
+    }
+  }
+}
+
 
 void
 Locker::drawMemberItems(FXEvent *ev)
 {
   FXDCWindow dc(this,ev);
   dc.begin(this);
-  mbr_box.x = (width - imgMember->getWidth()) / 2;
-  //mbr_box.y = (height - imgMember->getHeight()) / 2;
-  mbr_box.y = 0;
+  mbr_box.x = (width - imgMember->getWidth()) / 2  - (imgMember->getWidth() * 1.5);
+  mbr_box.y = (height - (imgMember->getHeight() * 1.5)) + 25;
 #ifdef DEBUG_IMAGE
   printf("Locker::drawMemberItems():  member image: (%d,%d) -> [%d,%d]\n", 
 	 mbr_box.x, mbr_box.y, mbr_box.w, mbr_box.h);
 #endif    
-  dc.drawImage(imgMember, mbr_box.x, mbr_box.y);
-  if (cclcfox->getLoginMode() == OPMODE_MEMBER){ //draw pad
-    inp_box.x = mbr_box.x + mbr_box.w;
-    inp_box.y = mbr_box.y + 35;
-    if (cclcfox->getMemberLoginState() == MEMBER_LOGIN_NAME)  // accept name
-      dc.drawImage(imgMemberPad, inp_box.x, inp_box.y);
-    else if (cclcfox->getMemberLoginState() == MEMBER_LOGIN_PWD)  // accept password
-      dc.drawImage(imgPasswdPad, inp_box.x, inp_box.y); 
-  }
+  dc.drawIcon(imgMember, mbr_box.x, mbr_box.y);
+  rcMbrLogin.x = mbr_box.x + 79;
+  rcMbrLogin.y = mbr_box.y + 106;
+  setMemberInputBox();
+
   dc.end();
 }
 
@@ -780,8 +717,6 @@ Locker::onPaint(FXObject*,FXSelector,void* ptr)
   dc.setForeground(FXRGB(0,0,0));
   dc.fillRectangle(0, 0, getRoot()->getDefaultWidth(), getRoot()->getDefaultHeight());
   dc.drawImage(lockpix, (width-lockpix->getWidth())/2, (height-lockpix->getHeight())/2);
-  dc.end();
-
   if (allowmemberlogin){
     drawMemberItems(event);
   }
@@ -791,6 +726,13 @@ Locker::onPaint(FXObject*,FXSelector,void* ptr)
   if (allowuserlogin){
     drawPostpayItems(event);
   }
+  //draw logo
+  dc.drawIcon(imgLogo, 50, height-130);
+  dc.end();
+  if (!dltxt.isSet)
+    initLogoText(event);
+  writeLogoText(event);
+
   return 1;
 }
 
@@ -811,49 +753,71 @@ long
 Locker::onButtonRelease(FXObject*,FXSelector,void* ptr)
 {
   FXEvent *event = (FXEvent *) ptr;
-
-  /*  if (allowuserlogin && font->getTextHeight(ctext) >= event->win_y) {
-    mid = -1;
-    input.clear();
-    mlogin.clear();
+  if (allowuserlogin && isInBox(event->win_x, event->win_y,
+				pst_box.x, pst_box.y,
+				pst_box.w, pst_box.h)) {
     cclcfox->setLoginMode(OPMODE_POSTPAY);
     cclcfox->userStart();
-    }*/
-  if (!cclcfox->getLoginMode()){
-    if (allowuserlogin && isInBox(event->win_x, event->win_y,
-				  pwd_box.x, pwd_box.y,
-				  pwd_box.w, pwd_box.h)) {
-      mid = -1;
-      input.clear();
+  }
+  //ticket login
+  else if (allowticketlogin && isInBox(event->win_x, event->win_y,
+				       rcTktLogin.x, rcTktLogin.y,
+				       rcTktLogin.w, rcTktLogin.h)){
+    cclcfox->unlockWithPass(tinput);
+    cclcfox->setLoginMode(OPMODE_TICKET);
+    tinput.clear();
+    drawTicketItems(event);
+  }
+  // Ticket ID
+  else if (allowticketlogin && isInBox(event->win_x, event->win_y,
+				       tkt_box.x, tkt_box.y,
+				       tkt_box.w, tkt_box.h)){
+    
+    if (cclcfox->getLoginMode() != OPMODE_TICKET)
+      tinput.clear();
+    cclcfox->setLoginMode(OPMODE_TICKET);
+    drawTicketItems(event);
+  }
+  //member login
+  else if (allowmemberlogin && isInBox(event->win_x, event->win_y,
+				       rcMbrLogin.x, rcMbrLogin.y,
+				       rcMbrLogin.w, rcMbrLogin.h)) {
+    //Try password
+    cclcfox->unlockWithPass(mlogin, minput);
+    //init vars - just in case login failed
+    minput.clear();
+    mlogin.clear();
+    cclcfox->setLoginMode(OPMODE_MEMBER);
+    cclcfox->setMemberLoginState(MEMBER_LOGIN_NAME);
+    drawMemberItems(event);
+  }
+  //member pad clicked 
+  else if (allowmemberlogin && isInBox(event->win_x, event->win_y,
+				       mbr_box.x, mbr_box.y,
+				       mbr_box.w, mbr_box.h)) {
+    //clear if coming from another window
+    if (cclcfox->getLoginMode() != OPMODE_MEMBER){
       mlogin.clear();
-      cclcfox->setLoginMode(OPMODE_POSTPAY);
-      cclcfox->userStart();
-    }
-    else if (allowticketlogin && isInBox(event->win_x, event->win_y,
-					 tkt_box.x, tkt_box.y,
-					 tkt_box.w, tkt_box.h)) {
-      mid = -1;
-      input.clear();
-      mlogin.clear();
-      cclcfox->setLoginMode(OPMODE_TICKET);
-      drawTicketItems(event);
-    }
-    else if (allowmemberlogin && isInBox(event->win_x, event->win_y,
-					 mbr_box.x, mbr_box.y,
-					 mbr_box.w, mbr_box.h)) {
-      mid = -1;
-      input.clear();
-      mlogin.clear();
-      cclcfox->setLoginMode(OPMODE_MEMBER);
-      cclcfox->setMemberLoginState(MEMBER_LOGIN_NAME);
+      minput.clear();
       drawMemberItems(event);
     }
+      //member password clicked
+    if (isInBox(event->win_x, event->win_y, mbr_box.x, mbr_box.y, mbr_box.w, mbr_box.h)) {
+      cclcfox->setLoginMode(OPMODE_MEMBER);
+      cclcfox->setMemberLoginState(MEMBER_LOGIN_NAME);
+    }
+    //member name clicked
+    else if (isInBox(event->win_x, event->win_y, pwd_box.x, pwd_box.y, pwd_box.w, pwd_box.h)){
+	cclcfox->setLoginMode(OPMODE_MEMBER);
+	cclcfox->setMemberLoginState(MEMBER_LOGIN_PWD);
+    }
+    //draw the cursor or original content
+    setMemberInputBox();
+    drawInputBox(event);
   }
-
+  //
   return 1;
 }
-
-//#define DEBUG_KEY
 
 long
 Locker::onKeyPress(FXObject*,FXSelector,void* ptr)
@@ -866,59 +830,72 @@ Locker::onKeyPress(FXObject*,FXSelector,void* ptr)
 #endif
   if (!cclcfox->getLoginMode() || cclcfox->getLoginMode()==OPMODE_POSTPAY)  // no mode / user start
     return 1;  
+
+  //start processing keys 
+  //Normal character key
   if ((event->code >= 0x0020 && event->code <= 0x00FF) 
       || (event->code >= 0xFFB0 && event->code <= 0xFFB9)) {
-    input.append(event->text);
-    drawPasswordBox(event);
+    if( cclcfox->getLoginMode() == OPMODE_TICKET )
+      tinput.append(event->text);
+    else
+      minput.append(event->text);
+    drawInputBox(event);
 #ifdef DEBUG_KEY
-    printf("Locker::onKeyPress() input (%s)\n", input.text());
+    printf("Locker::onKeyPress() minput,tinput(%s,%s) \n", minput.text(), tinput.text());
 #endif
   } 
+  //Escape key - clear the text
   else if (event->code == KEY_Escape) {
-    input.clear();
-    mlogin.clear();
+    if( cclcfox->getLoginMode() == OPMODE_TICKET )
+      tinput.clear();
+    else{
+      minput.clear();
+      mlogin.clear();
+    }
     if (allowmemberlogin || allowticketlogin){
       cclcfox->setLoginMode(0);
       cclcfox->setMemberLoginState(0);
-      //clearPasswordBox();
     }
-    //onPaint(this,NULL,event);
     update();
   } 
+  //Backspace key
   else if (event->code == KEY_BackSpace || event->code == KEY_Delete) {
-    input.trunc(input.length() - 1);
-    drawPasswordBox(event);
+    if( cclcfox->getLoginMode() == OPMODE_TICKET )
+      tinput.trunc(minput.length() - 1);
+    else
+      minput.trunc(minput.length() - 1);
+    drawInputBox(event);
   } 
+  //Enter / Return Key
   else if (event->code == KEY_KP_Enter || event->code == KEY_Return) {
     if (cclcfox->getLoginMode() == OPMODE_MEMBER){ //member login
 #ifdef DEBUG_KEY
       printf("Locker::onKeyPress() MemberLoginState (%d)\n", cclcfox->getMemberLoginState());
 #endif
       if (cclcfox->getMemberLoginState() == MEMBER_LOGIN_NAME) { //username
-	if (input.length()) {
-	  mlogin = input;
+	if (minput.length()) {
+	  mlogin = minput;
 	  cclcfox->setMemberLoginState(MEMBER_LOGIN_PWD);
-	  //update();
-	  drawMemberItems(event);
-	  input.clear();
+	  //drawMemberItems(event);
+	  minput.clear();
+	  setMemberInputBox();
+	  drawInputBox(event);
 	}
       } 
       else {  // entered the password
-	cclcfox->unlockWithPass(mlogin,input);
+	cclcfox->unlockWithPass(mlogin,minput);
 	cclcfox->setMemberLoginState(MEMBER_LOGIN_NAME);
-	  //update();
 	drawMemberItems(event);
-	input.clear();
+	minput.clear();
 	mlogin.clear();
       }
     }
     else{  //ticket login
-      cclcfox->unlockWithPass(input);
-      input.clear();
-      drawPasswordBox(event);
-      clearPasswordBox();
+      cclcfox->unlockWithPass(tinput);
+      tinput.clear();
+      drawInputBox(event);
+      clearInputBox();
     }
   }
-  
   return 1;
 }

@@ -42,7 +42,8 @@ protected:
   FXbool	    active;
   FXbool	    networking;
   time_t	    stime;
-  int		    timeout;
+  int		    client_timeout;
+  int               time_warned;
   int               ack_assist;
   unsigned int      poll_interval;
   UpdateInfo        cui;
@@ -91,7 +92,7 @@ public:
   long process_update_data();
   void setOpMode(unsigned int opmode) { op_mode = opmode; }
   unsigned long getOpMode() { return op_mode; };
-  void setLoginMode(unsigned int loginmode) { login_mode = loginmode; }
+  void setLoginMode(unsigned int loginmode);
   unsigned long getLoginMode() { return login_mode; }
   void setMemberLoginState(unsigned int state) { mbr_login_state = state; }
   unsigned long getMemberLoginState() { return mbr_login_state; }

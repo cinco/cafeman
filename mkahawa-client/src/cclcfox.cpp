@@ -9,6 +9,7 @@ using namespace FX;
 #  include <winuser.h>
 #else
 #  include <pthread.h>
+#  include <sys/signal.h>
 #endif
 
 //#define DEBUG 1
@@ -22,11 +23,12 @@ extern Grabber    *grabber;
 struct CHUNK *chunk;
 void print_hash(unsigned char *hash, int len);
 
+int thread_msg_in = 0;
 #ifdef WIN32
-DWORD      th, chatthr;
+DWORD      th=0, chatthr;
 DWORD WINAPI dispMessage(LPVOID message);
 #else
-pthread_t    th, chatthr;
+pthread_t    th=0, chatthr;
 void *dispMessage(void * message);
 #endif
 
@@ -141,7 +143,7 @@ CCLCFox::CCLCFox()
   active      = FALSE;
   stime       = 0;
   networking  = FALSE;
-  timeout     = 0;
+  client_timeout  = 0;
   poll_interval = 5000;
   clientwin->getApp()->addTimeout(this,CCLCFox::ID_TIMER,1000);
   CCLCFox::cclc = this;
@@ -260,7 +262,8 @@ CCLCFox::start()
   clientwin->setOwed("0.00");
   clientwin->setProducts("0.00");
   clientwin->enableHelpBtn();
-  timeout = 0;
+  client_timeout = 0;
+  time_warned = 0;
   active = TRUE;
   initPrintPolling();
   clientwin->getApp()->addTimeout(this,CCLCFox::ID_POLLPRINT,5000);
@@ -286,6 +289,7 @@ CCLCFox::userExit()
 {
   if (active){
     CCLC_send_cmd(CC_USEREXIT,NULL,0);
+    lockScreen();
 #ifdef DEBUG
     printf("User Exited\n");
 #endif
@@ -401,16 +405,20 @@ CCLCFox::showMessage(void * message)
 DWORD WINAPI
 dispMessage(LPVOID message)
 #else
-void
-*dispMessage(void * message)
+void *
+dispMessage(void * message)
 #endif
 {
-  FXMessageBox::information(grabber->getRoot(),
-  			MBOX_OK,_("Message From Manager"), (char *)message);
+  FXString msgstr((char *)message);
+
+  thread_msg_in = 1;
+  clientwin->dispMessage(msgstr, 30);
+  thread_msg_in = 0;
+
 #ifdef WIN32
-	return 0;
+  return 0;
 #else	
-	return (void *)1;			
+  return (void *)0;			
 #endif
 }
 
@@ -531,6 +539,16 @@ CCLCFox::exitProgram()
   exit(0);
 }
 
+void 
+CCLCFox::setLoginMode(unsigned int loginmode) 
+{ 
+  login_mode = loginmode;
+  if (login_mode == OPMODE_TICKET  || login_mode == OPMODE_MEMBER)
+    clientwin->setOwedLbl("Balance:");
+  else 
+    clientwin->setOwedLbl("Owed:");
+}
+
 void
 CCLCFox::execCommand(FXuint cmd,const void *data,FXuint datasize)
 {
@@ -568,16 +586,31 @@ CCLCFox::execCommand(FXuint cmd,const void *data,FXuint datasize)
       stime = time(NULL) - CCLC_ntohl(*((int *) data));
       break;
     case CS_SETTIMEOUT:
-      timeout = CCLC_ntohl(*((int *) data));
+      client_timeout = CCLC_ntohl(*((int *) data));
+      time_warned = 0;
       break;
     case CS_DISPLAYMESSAGE:
+      if (!thread_msg_in){
+	dispMessage((char *)data);
+      }
+	/*{
+#ifdef WIN32
+	TerminateThread(th, 0);
+#else
+	pthread_cancel(th);
+#endif
+	thread_msg_in = 0;
+      }
 #ifdef WIN32
       CreateThread(NULL, 0,
-                   dispMessage,
-                   (LPVOID)data, 0, &th);
+		   dispMessage,
+		   (LPVOID)data, 0, &th);
+      CloseHandle(th);
 #else
       pthread_create(&th, NULL, &dispMessage, (void *)data);
+      pthread_detach(th);
 #endif
+	*/
       break;
     case CS_QUITCLIENT:
       exitProgram();
@@ -688,8 +721,17 @@ CCLCFox::execCommand(FXuint cmd,const void *data,FXuint datasize)
       printf("Set Admin Screen\n");
 #endif
       break;
+      /*
+    case CS_SETTIMEWARNING:
+      hdata = CCLC_ntohl(*(FXuint *) data);
+#ifdef DEBUG
+      printf("Set client time warnings\n");
+#endif
+      break;
+      */
   }
 }
+#define WARNING_TIME 120
 
 long
 CCLCFox::onTimer(FXObject*,FXSelector,void*)
@@ -711,8 +753,27 @@ CCLCFox::onTimer(FXObject*,FXSelector,void*)
     clientwin->setTime(buf);
     if (updateState != ONUPDATESTATE)  //quiet during update
       CCLC_send_cmd(CC_GETOWED,NULL,0);
-    if (0 < timeout && usedtime > timeout)
-      userExit();
+    
+    if (0 < client_timeout){
+      //#define DEBUG_TIMEOUT
+#ifdef DEBUG_TIMEOUT
+      printf ("onTimer(): time_warned=%d usedtime=%d client_timeout=%d\n", 
+	      time_warned, usedtime, client_timeout);
+#endif      
+      if (usedtime > client_timeout) // time exceeded
+	userExit();
+      else if ( (client_timeout - usedtime) < WARNING_TIME &&  !time_warned ){
+	//WARNING_TIME to go
+	int wtime  = WARNING_TIME;
+	char wstr[64];
+	
+	sprintf(wstr, "You have less than %d mins to browse.", wtime/60);
+	time_warned = 1;
+	dispMessage(wstr);
+	//poll every last second
+	poll_interval = 1000;
+      }
+    }
   }
   clientwin->getApp()->addTimeout(this,CCLCFox::ID_TIMER,poll_interval);
 

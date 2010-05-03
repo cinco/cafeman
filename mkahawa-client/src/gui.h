@@ -39,6 +39,7 @@ FXDECLARE(ClientWin)
 protected:
   FXLabel	    *timelbl;
   FXLabel	    *owedlbl;
+  FXLabel	    *lblBtnOwed;
   FXLabel	    *productslbl;
   FXButton	    *setpassbtn;
   FXButton	    *exitbtn;
@@ -60,12 +61,13 @@ public:
   void enableHelpBtn();
   void disableHelpBtn();
   void enableAssist(bool);
-
 public:
   void setPasswordEnabled(int enabled = 1);
   void setOwed(const FXString &text);
+  void setOwedLbl(const FXString &text);
   void setProducts(const FXString &text);
   void setTime(const FXString &text);
+  void dispMessage(FXString &msgstr, int timeout);
 public:
   long onSignal(FXObject*,FXSelector,void*);
   long onExitBtn(FXObject*,FXSelector,void*);
@@ -74,6 +76,40 @@ public:
 public:
   enum {
     ID_SIGNAL = FXShell::ID_LAST,ID_EXITBTN,ID_SETPASS,ID_HELPBTN,
+    ID_LAST
+  };
+};
+
+
+class MessageWin : public FXShell
+{
+FXDECLARE(MessageWin)
+protected:
+  FXLabel	    *lblSender;
+  FXLabel	    *lblMessage;
+  FXButton	    *btnOk;
+  FXButton	    *btnCancel;
+  FXButton          *btnExit;
+
+protected:
+  MessageWin(){}
+public:
+  MessageWin(FXApp *app);
+  ~MessageWin();
+  virtual bool doesOverrideRedirect() const;
+  void create();
+  int getDefaultWidth();
+  int getDefaultHeight();
+public:
+  void dispMessage(FXString &msgstr, int timeout);
+public:
+  long onSignal(FXObject*,FXSelector,void*);
+  long onBtnOk(FXObject*,FXSelector,void*);
+  long onBtnCancel(FXObject*,FXSelector,void*);
+  long onBtnExit(FXObject*,FXSelector,void*);
+public:
+  enum {
+    ID_SIGNAL = FXShell::ID_LAST,ID_OKBTN, ID_EXITBTN,ID_CANCELBTN,
     ID_LAST
   };
 };

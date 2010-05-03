@@ -1,6 +1,9 @@
 #ifndef WIN32
 #  include <X11/Xlib.h>
 #  include <X11/keysymdef.h>
+#ifdef HAVE_NOTIFICATION
+#  include <libnotify/notify.h>
+#endif
 #else
 #  include <windows.h>
 #  include <winuser.h>
@@ -58,11 +61,22 @@ FXDEFMAP(ClientWin) ClientWinMap[] =
 
 FXIMPLEMENT(ClientWin,FXShell,ClientWinMap,ARRAYNUMBER(ClientWinMap))
 
+FXDEFMAP(MessageWin) MessageWinMap[] =
+{
+  FXMAPFUNC(SEL_SIGNAL,MessageWin::ID_SIGNAL,MessageWin::onSignal),
+  FXMAPFUNC(SEL_COMMAND,MessageWin::ID_EXITBTN,MessageWin::onBtnExit),
+  FXMAPFUNC(SEL_COMMAND,MessageWin::ID_OKBTN,MessageWin::onBtnOk),
+  FXMAPFUNC(SEL_COMMAND,MessageWin::ID_CANCELBTN,MessageWin::onBtnCancel)
+};
+
+FXIMPLEMENT(MessageWin,FXShell,MessageWinMap,ARRAYNUMBER(MessageWinMap))
+
 Grabber::Grabber(FXApp * app)
 :FXShell(app,0,0,20,0,0)
 {
   enable();
-  grabbericon = new FXGIFIcon(getApp(),grabber_gif,0,IMAGE_OPAQUE);
+  //grabbericon = new FXGIFIcon(getApp(),grabber_gif,0,IMAGE_OPAQUE);
+  grabbericon = new FXGIFIcon(getApp(),grabber_gif);
 }
 
 Grabber::~Grabber()
@@ -167,11 +181,11 @@ Grabber::onPaint(FXObject*,FXSelector,void* ptr)
 {
   FXEvent *event = (FXEvent *) ptr;
   FXDCWindow dc(this,event);
-
-  dc.setForeground(FXRGB(0,0,0));
-  dc.fillRectangle(0,0,getDefaultWidth(),getDefaultHeight());
+  dc.begin(this);
+  //dc.setForeground(FXRGB(0,0,0));
+  //dc.fillRectangle(0,0,getDefaultWidth(),getDefaultHeight());
   dc.drawIcon(grabbericon,0,0);
-
+  dc.end();
   return 1;
 }
 
@@ -185,13 +199,16 @@ Grabber::onMotion(FXObject*,FXSelector,void* ptr)
     int newy = event->root_y - grabpt.y;
     int rootw = getRoot()->getDefaultWidth();
     int rooty = getRoot()->getDefaultHeight();
+    int dx = clientwin->getWidth();
+    int dy = clientwin->getHeight();
 
-    if (newx > rootw - clientwin->getWidth())
-      newx = rootw - clientwin->getWidth();
+    dx = dy = 15;  //This hack allows grabber to be pushed almost offscreen
+    if (newx > rootw - dx)
+      newx = rootw - dx;
     else if (newx <= 0)
       newx = 0;
-    if (newy > rooty - clientwin->getHeight())
-      newy = rooty - clientwin->getHeight() - getHeight();
+    if (newy > rooty - dy)
+      newy = rooty - dy;
     else if (newy <= 0)
       newy = 0;
 
@@ -227,7 +244,8 @@ Grabber::onBtnRelease(FXObject*,FXSelector,void* ptr)
   if (!event->moved) {
     if (clientwin->shown()) {
       clientwin->hide();
-    } else {
+    } 
+    else {
       clientwin->show();
     }
   }
@@ -265,7 +283,9 @@ ClientWin::ClientWin(FXApp * app)
   vframe2 =
     new FXVerticalFrame(hframe1,LAYOUT_FILL_Y|LAYOUT_FILL_X,0,0,0,0,
 			0,0,0,0,0,0);
-  FXLabel *label2 = new FXLabel(vframe2,_("Owed:"),NULL,LABEL_NORMAL,
+  //FXLabel *label2 = new FXLabel(vframe2,_("Owed:"),NULL,LABEL_NORMAL,
+  //			0,0,0,0,0,0,0,0);
+  lblBtnOwed = new FXLabel(vframe2,_("Owed:"),NULL,LABEL_NORMAL,
 				0,0,0,0,0,0,0,0);
 
   owedlbl = new FXLabel(vframe2,"00.00",NULL,
@@ -303,7 +323,8 @@ ClientWin::ClientWin(FXApp * app)
   FXColor labelcolor = FXRGB(200,200,200);
 
   label1->setBackColor(backcolor);
-  label2->setBackColor(backcolor);
+//label2->setBackColor(backcolor);
+  lblBtnOwed->setBackColor(backcolor);
   label3->setBackColor(backcolor);
   vframe->setBackColor(backcolor);
   hframe1->setBackColor(backcolor);
@@ -330,6 +351,55 @@ ClientWin::ClientWin(FXApp * app)
 ClientWin::~ClientWin()
 {
 }
+
+void
+ClientWin::dispMessage(FXString &msgstr, int timeout)
+{
+  //FXMessageBox::information(getRoot(),
+  //			    MBOX_OK,_("Admin Message!"), msgstr.text());
+#ifdef HAVE_NOTIFICATION
+  NotifyNotification* notification;
+  gboolean            success = true;
+  GError*             error = NULL;
+
+  //if (notify_init ("mkahawa-client"))
+  {
+    notify_init("mkahawa-client");
+    /* try the mkahawa-client notification */
+    notification = notify_notification_new (
+					    "Message from Cyber Admin:",
+					    msgstr.text(),
+					    "/usr/share/pixmaps/mkahawa-icon.png",
+					    NULL);
+    error = NULL;
+    notify_notification_set_timeout(notification, timeout * 1000);
+    success = notify_notification_show (notification, &error);
+    notify_uninit();
+  }
+  if (!success)
+    {
+    //use alternative
+#endif
+  FXDialogBox dialog(getRoot(),_("Admin Message"));
+  FXLabel lbl1(&dialog,_("Message from Administrator"));
+  FXLabel lbl2(&dialog, msgstr);
+  FXVerticalFrame *vframe =
+    new FXVerticalFrame(&dialog,LAYOUT_FILL_X|LAYOUT_FILL_Y,0,0,0,0,0,0,0,0,0,0);
+  FXHorizontalFrame *hframe =
+    new FXHorizontalFrame(vframe,LAYOUT_FILL_X|LAYOUT_FILL_Y);
+  FXButton okbtn(hframe,_("   Ok   "),NULL,&dialog,FXDialogBox::ID_ACCEPT, 
+		 LAYOUT_TOP|LAYOUT_CENTER_X);
+  okbtn.setWidth(100);
+  if (dialog.execute(PLACEMENT_SCREEN)){
+    // do nothing
+  }
+
+#ifdef HAVE_NOTIFICATION
+}
+#endif
+  
+}
+
 
 bool
 ClientWin::doesOverrideRedirect() const
@@ -358,6 +428,12 @@ void
 ClientWin::setOwed(const FXString & text)
 {
   owedlbl->setText(text);
+}
+
+void
+ClientWin::setOwedLbl(const FXString & text)
+{
+  lblBtnOwed->setText(text);
 }
 
 void
@@ -463,10 +539,81 @@ ClientWin::onSetPassword(FXObject*,FXSelector,void*)
 			  _("The two given passwords were different"));
 
   }
-
   setpassbtn->enable();
   exitbtn->enable();
   cclcfox->showInfo();
- 
   return 1;
+}
+
+MessageWin::MessageWin(FXApp *app)
+:FXShell(app,0,0,20,0,0)
+{
+  enable();
+}
+
+MessageWin::~MessageWin()
+{
+  //delete grabbericon;
+}
+
+void
+MessageWin::create()
+{
+  FXShell::create();
+  show();
+#ifdef WIN32
+  SetWindowPos((HWND) id(),HWND_TOPMOST,0,0,0,0,SWP_NOSIZE|SWP_NOREPOSITION);
+#endif
+}
+
+bool
+MessageWin::doesOverrideRedirect() const
+{
+  return TRUE;
+}
+
+
+long 
+MessageWin::onSignal(FXObject*,FXSelector,void*)
+{
+  return 1;
+}
+
+long 
+MessageWin::onBtnOk(FXObject*,FXSelector,void*)
+{
+
+  return 1;
+}
+
+long 
+MessageWin::onBtnCancel(FXObject*,FXSelector,void*)
+{
+
+  return 1;
+}
+
+long 
+MessageWin::onBtnExit(FXObject*,FXSelector,void*)
+{
+
+  return 1;
+}
+
+int 
+MessageWin::getDefaultWidth()
+{
+  return 200;
+}
+
+int 
+MessageWin::getDefaultHeight()
+{
+  return 150;
+}
+
+void 
+MessageWin::dispMessage(FXString &msgstr, int timeout)
+{
+
 }

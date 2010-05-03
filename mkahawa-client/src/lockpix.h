@@ -16,6 +16,12 @@ unsigned char *passwd_pad_gif;
 unsigned char *member_pad_gif;
 unsigned char *ticket_pad_gif;
 
+
+unsigned char  *login_btn_gif;
+unsigned char  *blank_inp_gif;
+unsigned char  *logo_gif;
+
+
 int init_img(char *libname, const char *version);
 
 
