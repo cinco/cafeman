@@ -1,6 +1,6 @@
 m4_define([libccls_major_version], [0])
 m4_define([libccls_minor_version], [8])
-m4_define([libccls_micro_version], [0])
+m4_define([libccls_micro_version], [2])
 m4_define([libccls_interface_age], [0])
 
 m4_define([libccls_lt_current],
@@ -12,7 +12,7 @@ AC_INIT(configure.in)
 
 LIBCCLS_MAJOR_VERSION=0
 LIBCCLS_MINOR_VERSION=8
-LIBCCLS_PATCH_LEVEL=0
+LIBCCLS_PATCH_LEVEL=2
   
 VERSION=$LIBCCLS_MAJOR_VERSION.$LIBCCLS_MINOR_VERSION.$LIBCCLS_PATCH_LEVEL
 

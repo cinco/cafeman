@@ -4,7 +4,7 @@
 #include "ccls.h"
 #include "ccl_private.h"
 
-enum ROUNDOFF { RND_00=1, RND_05=2, RND_50=3, RND_01=4, RND_10=5 };
+enum ROUNDOFF { RND_00=1, RND_05=2, RND_50=3, RND_01=4, RND_10=5, RND_25=6 };
 
 /*
 #define DEBUG_LIBCCL 1
@@ -823,35 +823,6 @@ CCL_client_data_get(gint client)
 guint
 CCL_round_cash(int cash)
 {
-  /*
-  switch((enum ROUNDOFF)ccl->rndoff){
-  case RND_00:
-    if ((cash % 100) >= 50)
-      cash += 100 - cash % 100;
-    else if ((cash % 100) < 50)
-      cash -= cash % 100;
-    break;
-  case RND_05:
-    if (cash % 5 >= 3)
-      cash += 5 - cash % 5;
-    else if (cash % 5 < 3)
-      cash -= cash % 5;
-    break;
-  case RND_10:
-    if ((cash % 10) >= 5)
-      cash += 10 - cash % 10;
-    else if ((cash % 10) < 5)
-      cash -= cash % 10;
-    break;
-  case RND_50:
-    if (cash % 50 >= 30)
-      cash += 50 - cash % 50;
-    else if (cash % 50 < 30)
-      cash -= cash % 50;
-    break;
-  }
-
-  */
   switch((enum ROUNDOFF)ccl->rndoff){
   case RND_00:
     cash += 100 - cash % 100;
@@ -861,6 +832,9 @@ CCL_round_cash(int cash)
     break;
   case RND_10:
     cash += 10 - cash % 10;
+    break;
+  case RND_25:
+    cash += 25 - cash % 25;
     break;
   case RND_50:
     cash += 50 - cash % 50;
