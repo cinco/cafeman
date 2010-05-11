@@ -825,19 +825,24 @@ CCL_round_cash(int cash)
 {
   switch((enum ROUNDOFF)ccl->rndoff){
   case RND_00:
-    cash += 100 - cash % 100;
+    if (cash % 100)
+      cash += 100 - cash % 100;
     break;
   case RND_05:
-    cash += 5 - cash % 5;
+    if (cash % 5)
+      cash += 5 - cash % 5;
     break;
   case RND_10:
-    cash += 10 - cash % 10;
+    if (cash % 10)
+      cash += 10 - cash % 10;
     break;
   case RND_25:
-    cash += 25 - cash % 25;
+    if (cash % 25)
+      cash += 25 - cash % 25;
     break;
   case RND_50:
-    cash += 50 - cash % 50;
+    if (cash % 50)
+      cash += 50 - cash % 50;
     break;
   default:
     cash += 1;
