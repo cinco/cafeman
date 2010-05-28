@@ -381,7 +381,7 @@ TarifFrame::onAddPart(FXObject*,FXSelector,void*)
 long
 TarifFrame::onDelPart(FXObject*,FXSelector,void*)
 {
-  int id;
+  long id;
   FXFoldingItem *current = tariflist->getCurrentItem();
 
   if (!isPermitted(PERMTARIFEDIT)){
@@ -389,7 +389,7 @@ TarifFrame::onDelPart(FXObject*,FXSelector,void*)
     return 0;
   }
   if (current)
-    id = (int) (tariflist->getItemData(current));
+    id = (long) (tariflist->getItemData(current));
   else
     return 1;
 
@@ -535,7 +535,7 @@ TarifFrame::onPartSelect(FXObject*,FXSelector,void*)
   FXFoldingItem *current = tariflist->getCurrentItem();
 
   if (current) {
-    editedpart = (int) (tariflist->getItemData(current));
+    editedpart = (long) (tariflist->getItemData(current));
     readTarifPart(editedpart);
   }
 
@@ -605,7 +605,7 @@ TarifFrame::onSetTarif(FXObject*,FXSelector,void*)
     FXFoldingItem *sitem = tlist->getCurrentItem();
 
     if (sitem) {
-      int starif = (int)(sitem->getData());
+      long starif = (long)(sitem->getData());
  
       CCL_tarif_set(starif);
       CCL_data_set_int(CCL_DATA_NONE,0,"tarif/default",starif);

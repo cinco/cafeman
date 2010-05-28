@@ -179,12 +179,12 @@ EmployeesFrame::clear()
 long
 EmployeesFrame::onDelEmployee(FXObject*,FXSelector,void*)
 {
-  int id;
+  long id;
   FXFoldingItem *current = employeeslist->getCurrentItem();
   const char *name;
 
   if (current)
-    id = (int) (employeeslist->getItemData(current));
+    id = (long) (employeeslist->getItemData(current));
   else
     return 1;
   name = CCL_employee_usrname_get(id);
@@ -233,7 +233,7 @@ EmployeesFrame::onApplyChanges(FXObject*,FXSelector,void*)
     //					     newlogin.text()))
     // CCL_data_set_string(CCL_DATA_EMPLOYEE,editedemployee,"login_name",
     //			  newlogin.text());
-    eitem->setText(FXStringVal(editedemployee) + "\t" + CCL_employee_usrname_get(editedemployee));
+    eitem->setText(FXStringVal((FXint)editedemployee) + "\t" + CCL_employee_usrname_get(editedemployee));
     employeeslist->updateItem(eitem);
   }
   
@@ -492,7 +492,7 @@ EmployeesFrame::onEmployeeSelect(FXObject*,FXSelector,void*)
   FXFoldingItem *current = employeeslist->getCurrentItem();
 
   if (current) {
-    editedemployee = (int) (employeeslist->getItemData(current));
+    editedemployee = (long) (employeeslist->getItemData(current));
     //usrlvlset = CCL_employee_usrlvl_get(editedemployee);
     readEmployee(editedemployee);
 #ifdef DEBUG_CCLFOX
@@ -551,7 +551,7 @@ EmployeesFrame::onSetUsrlvl(FXObject*,FXSelector,void*)
     FXFoldingItem *sitem = tlist->getCurrentItem();
 
     if (sitem)
-      usrlvlset = (int)(sitem->getData());
+      usrlvlset = (long)(sitem->getData());
   }
 
   return 1;

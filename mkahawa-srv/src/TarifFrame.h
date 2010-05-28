@@ -21,7 +21,7 @@ protected:
   FXFoldingList  *pricelist;
   FXSpinner	 *perminafter;
 private:
-  int		  editedpart;
+  long    	  editedpart;
 protected:
   TarifFrame(){}
 public:

@@ -670,7 +670,7 @@ TicketsBox::onSetTarif(FXObject*,FXSelector,void*)
     FXFoldingItem *sitem = tlist->getCurrentItem();
 
     if (sitem){
-      stariff = (int)(sitem->getData());
+      stariff = (long)(sitem->getData());
       char *tName = CCL_tarif_name_get(stariff);
       lblTariff->setText(tName);
       CCL_free(tName);

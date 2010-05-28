@@ -40,7 +40,7 @@ protected:
 private:
   int		  listsavedflag;;
   int             listgenflag;
-  int             stariff;
+  long            stariff;
 protected:
   TicketsBox(){}
 public:

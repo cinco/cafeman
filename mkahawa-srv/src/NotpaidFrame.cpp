@@ -80,7 +80,7 @@ long
 NotpaidFrame::onSelected(FXObject*,FXSelector,void* ptr)
 {
   FXFoldingItem* item = (FXFoldingItem*) ptr;
-  int session = (int) item->getData();
+  long session = (long) item->getData();
 
   cashingframe->setSession(session);
   mainwin->showCashing();

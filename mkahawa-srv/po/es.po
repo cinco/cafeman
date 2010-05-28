@@ -408,7 +408,7 @@ msgstr "Salir de Mkahawa"
 
 #: ../src/CCLWin.cpp:544
 msgid "Do you really want to quit Mkahawa?"
-msgstr "Realmente desea salir de Mkahawa?"
+msgstr "¿Realmente desea salir de Mkahawa?"
 
 #: ../src/CCLWin.cpp:629
 msgid "Member"
@@ -445,7 +445,7 @@ msgstr "Cuenta Sobregirada"
 
 #: ../src/CCLWin.cpp:709
 msgid "Replenish the account first."
-msgstr "En primer lugar reponer cuenta."
+msgstr "Primero reponga la cuenta."
 
 #: ../src/CCLWin.cpp:1198 ../src/CCLWin.cpp:1266
 msgid "account has insufficient credit"
@@ -502,11 +502,11 @@ msgstr "Cliente activo"
 
 #: ../src/CCLWin.cpp:1787
 msgid "End the client session before updating."
-msgstr "Fin sesión del cliente antes de la actualización"
+msgstr "Termine la sesión del cliente antes de la actualización"
 
 #: ../src/CCLWin.cpp:1792
 msgid "Update File not found\n"
-msgstr "Actualización de la que no se encuentra\n"
+msgstr "Archivo de Actualización no se encuentra\n"
 
 #: ../src/CCLWin.cpp:1800
 msgid "Unable to open file\n"
@@ -514,7 +514,7 @@ msgstr "No se puede abrir el archivo\n"
 
 #: ../src/CCLWin.cpp:1825
 msgid "Not a Mkahawa Update File\n"
-msgstr "No es una Mkahawa actualización\n"
+msgstr "No es un archivo de actualización de Mkahawa \n"
 
 #: ../src/CCLWin.cpp:1858
 msgid "New Client Admin Password: "
@@ -530,7 +530,7 @@ msgstr "El password es invalido"
 
 #: ../src/CCLWin.cpp:1903
 msgid "Current client is being updated."
-msgstr "Cliente se actualiza"
+msgstr "El Cliente actual se ha actualizado"
 
 #: ../src/CCLWin.cpp:2023
 msgid "Adjust Timeout"
@@ -561,7 +561,7 @@ msgstr "Confirmar Acción"
 
 #: ../src/CCLWin.cpp:2189
 msgid "Apply this action to all stations?"
-msgstr "Aplicar esta estacion a todas las estaciones?"
+msgstr "Aplicar esta acción a todas las estaciones?"
 
 #: ../src/CCLWin.cpp:2192 ../src/TarifFrame.cpp:77
 msgid "Apply"
@@ -603,7 +603,7 @@ msgstr "Cantidad:"
 
 #: ../src/CCLWin.cpp:2707
 msgid "Staff Login"
-msgstr ""
+msgstr "Ingreso del Staff"
 
 #: ../src/CCLWin.cpp:2708
 msgid "User Name:"
@@ -631,7 +631,7 @@ msgstr "Bienvenido a Mkahawa administrador de Cyber"
 
 #: ../src/CCLWin.cpp:2746
 msgid "Login Failure"
-msgstr ""
+msgstr "Ingreso fallido"
 
 #: ../src/CCLWin.cpp:2748
 msgid "Invalid Username or Password"
@@ -643,7 +643,7 @@ msgstr "Salir"
 
 #: ../src/CCLWin.cpp:2764
 msgid "Do you want to log out?"
-msgstr "Quieres cerrar la sesión?"
+msgstr "¿Quieres cerrar la sesión?"
 
 #: ../src/CCLWin.cpp:2800 ../src/CCLWin.cpp:2832 ../src/CCLWin.cpp:2860
 msgid "Message to Client"
@@ -672,11 +672,11 @@ msgstr "Telefono"
 
 #: ../src/EmployeesFrame.cpp:64
 msgid "Email"
-msgstr ""
+msgstr "Email"
 
 #: ../src/EmployeesFrame.cpp:67
 msgid "Staff Details"
-msgstr "Personal Detalles"
+msgstr "Detalles de Personal"
 
 #: ../src/EmployeesFrame.cpp:70 ../src/MembersFrame.cpp:70
 #: ../src/ProductsFrame.cpp:323
@@ -685,7 +685,7 @@ msgstr "Nombre:"
 
 #: ../src/EmployeesFrame.cpp:73
 msgid "E-Mail:"
-msgstr ""
+msgstr "E-Mail"
 
 #: ../src/EmployeesFrame.cpp:76
 msgid "Phone Number:"
@@ -701,7 +701,7 @@ msgstr "El Administrador no puede ser eliminado"
 
 #: ../src/EmployeesFrame.cpp:269
 msgid "Edit Staff Info"
-msgstr "Editar la informacion de"
+msgstr "Editar la info del personal"
 
 #: ../src/EmployeesFrame.cpp:296 ../src/EmployeesFrame.cpp:611
 msgid "Username: "
@@ -709,7 +709,7 @@ msgstr "Usuario:"
 
 #: ../src/EmployeesFrame.cpp:301 ../src/EmployeesFrame.cpp:614
 msgid "Password: "
-msgstr ""
+msgstr "Password: "
 
 #: ../src/EmployeesFrame.cpp:305 ../src/EmployeesFrame.cpp:619
 msgid "Full Name: "
@@ -717,7 +717,7 @@ msgstr "Nombre Completo:"
 
 #: ../src/EmployeesFrame.cpp:309 ../src/EmployeesFrame.cpp:624
 msgid "Email: "
-msgstr ""
+msgstr "Email"
 
 #: ../src/EmployeesFrame.cpp:312 ../src/EmployeesFrame.cpp:627
 msgid "Phone: "
@@ -741,7 +741,7 @@ msgstr "Editar Info. Socio"
 
 #: ../src/EmployeesFrame.cpp:328 ../src/EmployeesFrame.cpp:644
 msgid "Set Member Clients"
-msgstr ""
+msgstr "Hacer Socios Clientes"
 
 #: ../src/EmployeesFrame.cpp:330 ../src/EmployeesFrame.cpp:646
 msgid "General Configuration"
@@ -808,11 +808,11 @@ msgstr "Definir Password"
 
 #: ../src/EmployeesFrame.cpp:528
 msgid "Type the password: "
-msgstr "Capturar el password"
+msgstr "Capturar el password "
 
 #: ../src/EmployeesFrame.cpp:592
 msgid "Staff Member Info"
-msgstr ""
+msgstr "Info de personal"
 
 #: ../src/LogFrame.cpp:62 ../src/ReportFrame.cpp:63
 msgid "Sessions: "
@@ -871,7 +871,7 @@ msgstr "Descripción"
 
 #: ../src/LogFrame.cpp:127 ../src/ReportFrame.cpp:128
 msgid "Spent"
-msgstr ""
+msgstr "Gastado"
 
 #: ../src/LogFrame.cpp:133 ../src/ReportFrame.cpp:134
 #: ../src/TicketsBox.cpp:131 ../src/QTicketsBox.cpp:123
@@ -881,7 +881,7 @@ msgstr "Limpiar"
 #. BUTTON_NORMAL|LAYOUT_CENTER_X|LAYOUT_FILL_X);
 #: ../src/LogFrame.cpp:135 ../src/ReportFrame.cpp:137
 msgid "Refresh"
-msgstr ""
+msgstr "Refrescar"
 
 #. BUTTON_NORMAL|LAYOUT_CENTER_X| LAYOUT_FILL_X);
 #: ../src/LogFrame.cpp:147
@@ -901,7 +901,7 @@ msgstr "Guardar Reporte"
 #. BUTTON_NORMAL|LAYOUT_CENTER_X| LAYOUT_FILL_X);
 #: ../src/LogFrame.cpp:153
 msgid "Save Log"
-msgstr ""
+msgstr "Guardar Bitacora"
 
 #: ../src/LogFrame.cpp:159 ../src/MSGWin.cpp:40 ../src/ReportFrame.cpp:160
 msgid "From:"
@@ -914,7 +914,7 @@ msgstr ""
 
 #: ../src/LogFrame.cpp:171 ../src/ReportFrame.cpp:172
 msgid "Staff:"
-msgstr ""
+msgstr "Personal:"
 
 #: ../src/LogFrame.cpp:173 ../src/ReportFrame.cpp:174
 msgid "    To:"

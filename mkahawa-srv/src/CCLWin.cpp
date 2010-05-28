@@ -145,8 +145,8 @@ FXShutterItem *clientshutter;
 int
 citemSortFunc(const FXIconItem * l,const FXIconItem * r)
 {
-  const FXString lname = CCL_client_name_get((int) l->getData());
-  const FXString rname = CCL_client_name_get((int) r->getData());
+  const FXString lname = CCL_client_name_get((long) l->getData());
+  const FXString rname = CCL_client_name_get((long) r->getData());
 
   return compare(lname,rname);
 }
@@ -154,8 +154,8 @@ citemSortFunc(const FXIconItem * l,const FXIconItem * r)
 int
 clitemSortFunc(const FXFoldingItem * l,const FXFoldingItem * r)
 {
-  const FXString lname = CCL_client_name_get((int) l->getData());
-  const FXString rname = CCL_client_name_get((int) r->getData());
+  const FXString lname = CCL_client_name_get((long) l->getData());
+  const FXString rname = CCL_client_name_get((long) r->getData());
 
   return compare(lname,rname);
 }
@@ -703,7 +703,7 @@ CCLWin::setClientMember(int client)
     FXFoldingItem *sitem = mlist->getCurrentItem();
 
     if (sitem) {
-      smember = (int)(sitem->getData());
+      smember = (long)(sitem->getData());
       int enablepassbtn = FALSE;
       int credit = CCL_member_credit_get(smember);
       if (!smember){
@@ -732,7 +732,7 @@ int CCLWin::getSelectedClient()
   if (-1 == idx)
     return -1;
   else
-    return (int)(clientslist->getItemData(idx));
+    return (long)(clientslist->getItemData(idx));
 }
 
 void
@@ -897,7 +897,7 @@ CCLWin::getClientIndex(int client)
   unsigned int idx;
 
   for (idx=0; idx<num; idx++){
-    if (client == (int) (clientslist->getItemData(idx)))
+    if (client == (long) (clientslist->getItemData(idx)))
       break;
   }
   return idx;
@@ -956,7 +956,7 @@ CCLWin::getPageCount(char *cupstr, int *lclient)
   //sequential search for the client with the IP address
   num = clientslist->getNumItems();
   for (idx = 0; idx < num; idx++) {
-    *lclient = (int) (clientslist->getItemData(idx));
+    *lclient = (long) (clientslist->getItemData(idx));
 #ifdef DEBUG
     printf("[%s = %08X]\n", CCL_client_name_get(*lclient), CCL_client_ip_get(*lclient));
 #endif
@@ -1021,7 +1021,7 @@ CCLWin::getCurrentClient()
   int current = clientslist->getCurrentItem();
   if (-1 == current)
     return -1;
-  return (int) (clientslist->getItemData(current));
+  return (long) (clientslist->getItemData(current));
 }
 
 
@@ -1912,7 +1912,7 @@ CCLWin::onCommand(FXObject*,FXSelector sel,void*)
 {
   int current = clientslist->getCurrentItem();
   if (-1 == current)    return 1;
-  int client = (int) (clientslist->getItemData(current));
+  long client = (long) (clientslist->getItemData(current));
   int status = CCL_client_status_get(client);
   time_t stime;
   time_t etime;
@@ -2105,7 +2105,7 @@ CCLWin::onSwap(FXObject*,FXSelector,void*)
     timebutton->disable();
     newbutton->disable();
     delbutton->disable();
-    toSwap = (int) (clientslist->getItemData(current));
+    toSwap = (long) (clientslist->getItemData(current));
   }
   return 1;
 }
@@ -2116,7 +2116,7 @@ CCLWin::onTime(FXObject*,FXSelector,void*)
   int current = clientslist->getCurrentItem();
   if (-1 == current)
     return 1;
-  int client = (int) (clientslist->getItemData(current));
+  long client = (long) (clientslist->getItemData(current));
   int time = CCL_client_timeout_get(client) / 60;
   FXInputDialog *dlg = new FXInputDialog(this,_("Time"),_("Minutes:"),
 					 NULL,INPUTDIALOG_INTEGER);
@@ -2160,7 +2160,7 @@ CCLWin::onAllowUserLogin(FXObject*,FXSelector,void*)
   int current = clientslist->getCurrentItem();
   if (-1 == current)
     return 1;
-  int client = (int) (clientslist->getItemData(current));
+  long client = (long) (clientslist->getItemData(current));
   toggleClientSetting(client, ALLOWUSERLOGIN);
   int nallow = CCL_htonl(CCL_client_flags_get(client) & ALLOWUSERLOGIN);
   CCL_client_send_cmd(client,CS_ALLOWUSERLOGIN,&nallow,sizeof(nallow));
@@ -2187,7 +2187,7 @@ CCLWin::onEnableAssist(FXObject*,FXSelector,void*)
 
   if (-1 == current)
     return 1;
-  int client = (int) (clientslist->getItemData(current));
+  long client = (long) (clientslist->getItemData(current));
 
   //  CCL_client_flags_toggle(client,ENABLEASSIST, !(CCL_client_flags_get(client) & ENABLEASSIST));
   toggleClientSetting(client, ENABLEASSIST);
@@ -2232,11 +2232,11 @@ CCLWin::confirmAll()
 long
 CCLWin::onEnableAllAssist(FXObject*,FXSelector,void*)
 {
-  int i, client, assistval;
-  int sndassist;
+  int i, assistval, sndassist;
+  long client;
 
   int current = clientslist->getCurrentItem();
-  client = (int) (clientslist->getItemData(current));
+  client = (long) (clientslist->getItemData(current));
   assistval = !(CCL_client_flags_get(client) & ENABLEASSIST);
   sndassist = CCL_htonl(CCL_client_flags_get(client) & ENABLEASSIST);
   if (-1 == client)    return 1;
@@ -2257,7 +2257,7 @@ CCLWin::onAllowMemberLogin(FXObject*,FXSelector,void*)
 
   if (-1 == current)
     return 1;
-  int client = (int) (clientslist->getItemData(current));
+  long client = (long) (clientslist->getItemData(current));
   toggleClientSetting(client, ALLOWMEMBERLOGIN);
   int allow = CCL_htonl(CCL_client_flags_get(client) & ALLOWMEMBERLOGIN);
   CCL_client_send_cmd(client,CS_ALLOWMEMBERLOGIN,&allow,sizeof(allow));
@@ -2285,7 +2285,7 @@ CCLWin::onAllowTicketLogin(FXObject*,FXSelector,void*)
 
   if (-1 == current)
     return 1;
-  int client = (int) (clientslist->getItemData(current));
+  long client = (long) (clientslist->getItemData(current));
 
   //  CCL_client_flags_toggle(client,ALLOWTICKETLOGIN, !(CCL_client_flags_get(client) & ALLOWTICKETLOGIN));
   toggleClientSetting(client, ALLOWTICKETLOGIN);
@@ -2339,7 +2339,7 @@ CCLWin::onDelClient(FXObject*,FXSelector,void*)
   if (-1 == current)
     return 1;
 
-  int client = (int) (clientslist->getItemData(current));
+  long client = (long) (clientslist->getItemData(current));
   //confirm deletion first
   FXHorizontalFrame *hframe3 =
     new FXHorizontalFrame(vframe,LAYOUT_FILL_X|LAYOUT_FILL_Y);
@@ -2396,8 +2396,8 @@ CCLWin::onListShutter(FXObject* fxo,FXSelector fxs,void* ptr)
 long
 CCLWin::onClientSelected(FXObject*,FXSelector,void* ptr)
 {
-  int idx = (int) ptr;
-  int client = (int) (clientslist->getItemData(idx));
+  long idx = (long) ptr;
+  long client = (long) (clientslist->getItemData(idx));
 
   if (-1 != toSwap) {
     int oldidx = clientslist->findItem(CCL_client_name_get(toSwap));
@@ -2411,7 +2411,7 @@ CCLWin::onClientSelected(FXObject*,FXSelector,void* ptr)
   }
 
   idx = clientslist->getCurrentItem();
-  client = (int) (clientslist->getItemData(idx));
+  client = (long) (clientslist->getItemData(idx));
   updateInfo(client);
   productsframe->updateClientProducts(client);
   showProducts();
@@ -2422,7 +2422,7 @@ long
 CCLWin::onClientSelected2(FXObject*,FXSelector,void* ptr)
 {
   FXFoldingItem *item = (FXFoldingItem *) ptr;
-  int client = (int) (clientslist2->getItemData(item));
+  long client = (long) (clientslist2->getItemData(item));
 
   if (-1 != toSwap) {
     FXFoldingItem *oldidx = clientslist2->findItem(CCL_client_name_get(toSwap));
@@ -2434,7 +2434,7 @@ CCLWin::onClientSelected2(FXObject*,FXSelector,void* ptr)
     onSwap(NULL,0,NULL);	// Reenable buttons
   }
   item = clientslist2->getCurrentItem();
-  client = (int) (clientslist2->getItemData(item));
+  client = (long) (clientslist2->getItemData(item));
   updateInfo(client);
   productsframe->updateClientProducts(client);
   showProducts();
@@ -2447,7 +2447,7 @@ CCLWin::onShowClientMenu(FXObject*,FXSelector,void* ptr)
   FXEvent *event = (FXEvent *) ptr;
   int idx = clientslist->getItemAt(event->click_x,event->click_y);
   if (-1 != idx) { /* menu for client x */
-    int client = (int) clientslist->getItemData(idx);
+    long client = (long) clientslist->getItemData(idx);
     clmenu_caption->setText(CCL_client_name_get(client));
     int settings = CCL_data_get_int(CCL_DATA_CLIENT, client, "client_settings", -1);
     
@@ -2488,7 +2488,7 @@ CCLWin::onShowClientMenu2(FXObject*,FXSelector,void* ptr)
   FXEvent *event = (FXEvent *) ptr;
   FXFoldingItem *item = clientslist2->getItemAt(event->click_x,event->click_y);
   if (item != NULL) { /* menu for client x */
-    int client = (int) clientslist2->getItemData(item);
+    long client = (long) clientslist2->getItemData(item);
     clmenu_caption->setText(CCL_client_name_get(client));
     if (CCL_client_flags_get(client) & ALLOWUSERLOGIN)
       clmenu_allowuserlogin_check->setCheck(TRUE);
@@ -2525,11 +2525,11 @@ CCLWin::onTimerTick(FXObject*,FXSelector,void*)
   static int counter = 0;
 
   if (ListType == LV_ICONLIST){
-    if (int num = clientslist->getNumItems()) {
-      int client, idx;
+    if (long num = clientslist->getNumItems()) {
+      long client, idx;
       
       for (idx = 0; idx < num; idx++) {
-	client = (int) (clientslist->getItemData(idx));
+	client = (long) (clientslist->getItemData(idx));
 	updateClientIcon(client);
 	//obtain summary at the same time
       }
@@ -2544,14 +2544,14 @@ CCLWin::onTimerTick(FXObject*,FXSelector,void*)
 #ifdef DEBUG_GUI
     printf("LV_DETAILS\n");
 #endif
-    if (int num = clientslist2->getNumItems()) {
-      int idx, client;      
+    if (long num = clientslist2->getNumItems()) {
+      long idx, client;      
       char buf[128];
 
       //clientslist2->clearItems();
       for (FXFoldingItem * i = clientslist2->getFirstItem(); 
 	   NULL != i; i = i->getNext()) {
-	client = (int) (clientslist2->getItemData(i));
+	client = (long) (clientslist2->getItemData(i));
 	getClientInfoStr(client, buf, 128);
 	//clientslist2->prependItem(NULL, buf, NULL, NULL, (void *)client);
 	i->setText(_(buf));
@@ -2668,15 +2668,15 @@ CCLWin::onProductAdd(FXObject*,FXSelector,void* ptr)
 {
   FXFoldingItem *child = (FXFoldingItem *) ptr;
   FXFoldingItem *prnt = child->getParent();
-  int idx = clientslist->getCurrentItem();
+  long idx = clientslist->getCurrentItem();
 
   if (!prnt || -1 == idx)
     return 0;
-  int client = (int) (clientslist->getItemData(idx));
+  long client = (long) (clientslist->getItemData(idx));
   int amount = 0;
   if (FXInputDialog::getInteger(amount,this,_("Add Products"),
 				_("Enter the quantity:")) && amount >= 1) {
-    int pid = (int) child->getData();
+    long pid = (long) child->getData();
     CCL_client_product_add(client,pid,amount);
     productsframe->updateClientProducts(client);
   }
@@ -2687,14 +2687,14 @@ long
 CCLWin::onProductRemove(FXObject*,FXSelector,void* ptr)
 {
   FXFoldingItem *item = (FXFoldingItem *) ptr;
-  int idx = clientslist->getCurrentItem();
+  long idx = clientslist->getCurrentItem();
 
   if (-1 == idx) return 0;
-  int client = (int) (clientslist->getItemData(idx));
+  long client = (long) (clientslist->getItemData(idx));
   int amount = 0;
   if (FXInputDialog::getInteger(amount,this,_("Remove Products"),
 				_("Quantity:")) && amount >= 1) {
-    int pid = (int) item->getData();
+    long pid = (long) item->getData();
     CCL_client_product_sub(client,pid,amount);
     productsframe->updateClientProducts(client);
   }
@@ -2812,10 +2812,10 @@ CCLWin::onMsgClient(FXObject*, FXSelector, void*)
 {
   char     *cmsg; 
   FXString  result;
-  int       current = clientslist->getCurrentItem();
+  long       current = clientslist->getCurrentItem();
 
   if (-1 == current) return 1;
-  int client = (int)(clientslist->getItemData(current));
+  long client = (long)(clientslist->getItemData(current));
   if (FXInputDialog::getString(result,this,_("Message to Client"), 
 			       _("Message:")) && result.length()) {
     char *cmsg = fxstrdup(result.text());
@@ -2841,10 +2841,10 @@ CCLWin::onMsgServer(FXObject*, FXSelector, void*)
 {
   char     *cmsg; 
   FXString  result;
-  int       current = clientslist->getCurrentItem();
+  long      current = clientslist->getCurrentItem();
 
   if (-1 == current) return 1;
-  int client = (int)(clientslist->getItemData(current));
+  long client = (long)(clientslist->getItemData(current));
 
   if (FXInputDialog::getString(result,this,_("Message to Client"),
 			       _("Message:")) && result.length()) {
@@ -2873,7 +2873,7 @@ CCLWin::onAlertClient(FXObject*, FXSelector, void*)
   int       current = clientslist->getCurrentItem();
 
   if (-1 == current) return 1;
-  int client = (int)(clientslist->getItemData(current));
+  long client = (long)(clientslist->getItemData(current));
   if (FXInputDialog::getString(result,this,_("Message to Client"), 
 			       _("Message:")) && result.length()) {
     strncpy(cmsg, result.text(), 256);

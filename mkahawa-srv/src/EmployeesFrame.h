@@ -30,8 +30,8 @@ protected:
   FXTextField	 *phonetf;
   FXTextField	 *logintf;
 private:
-  int		  editedemployee;
-  int		  usrlvlset;
+  long		  editedemployee;
+  long   	  usrlvlset;
 protected:
   EmployeesFrame(){}
   void drawEmployeeDialog(FXDialogBox *, EmpRecStr *);

@@ -227,7 +227,7 @@ ProductsFrame::delProduct(int id)
   if (parent) {
     child = parent->getFirst();
     while (child) {
-      if (((int) (child->getData())) == id) {
+      if (((long) (child->getData())) == id) {
 	prodlist->removeItem(child);
 	child = NULL;
       } else
@@ -359,7 +359,7 @@ ProductsFrame::onEditProduct(FXObject*,FXSelector,void*)
   FXFoldingItem *current = prodlist->getCurrentItem();
 
   if (current && current->getParent()) {
-    int pid = (int) (current->getData());
+    long pid = (long) (current->getData());
     double price = 0.0;
     char *cod = CCL_data_get_string(CCL_DATA_PRODUCT,pid,"code",NULL);
     FXString code = cod;
@@ -421,11 +421,11 @@ ProductsFrame::onNewSale(FXObject*,FXSelector,void*)
 long
 ProductsFrame::onSetStock(FXObject*,FXSelector,void*)
 {
-  int pid;
+  long pid;
   FXFoldingItem *current = prodlist->getCurrentItem();
 
   if (current && current->getParent()) {
-    pid = (int) (current->getData());
+    pid = (long) (current->getData());
     int oldamount = CCL_product_stock_get(pid);
     int amount = 0;
 
@@ -469,7 +469,7 @@ ProductsFrame::onDelProduct(FXObject*,FXSelector,void*)
   if (current) {
     FXFoldingItem *parent = current->getParent();
     if (parent) {
-      int id = (int) current->getData();
+      long id = (long) current->getData();
 
       delProduct(id);
       CCL_product_delete(id);
@@ -492,7 +492,7 @@ ProductsFrame::onAddProduct(FXObject*,FXSelector,void* ptr)
     return 0;
   if (FXInputDialog::getInteger(amount,this,_("Sell Products"),
 				_("Quantity Sold:")) && amount >= 1) {
-    int pid = (int) child->getData();
+    long pid = (long) child->getData();
     unsigned int pprice;
 
     CCL_product_info_get(pid,NULL,NULL,&pprice);
@@ -529,7 +529,7 @@ ProductsFrame::onSubProduct(FXObject*,FXSelector,void* ptr)
     return 0;
   if (FXInputDialog::getInteger(amount,this,_("Return Products"),
 				_("Quantity Returned:")) && amount >= 1) {
-    int pid = (int) item->getData();
+    long pid = (long) item->getData();
     if (onsale) {
       int i;
       

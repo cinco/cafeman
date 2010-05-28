@@ -170,7 +170,7 @@ MembersFrame::readMember(int id)
   if (!CCL_member_exists(id))
     return;
 
-  editedmember = id;
+  editedmember = (long)id;
   nametf->setText(CCL_member_name_get(id));
   emailtf->setText(CCL_member_email_get(id));
   phonetf->setText(CCL_member_other_get(id));
@@ -217,11 +217,11 @@ MembersFrame::onAddMember(FXObject*,FXSelector,void*)
 long
 MembersFrame::onDelMember(FXObject*,FXSelector,void*)
 {
-  int id;
+  long id;
 
   FXFoldingItem *current = memberslist->getCurrentItem();
   if (current)
-    id = (int) (memberslist->getItemData(current));
+    id = (long) (memberslist->getItemData(current));
   else
     return 1;
   if (FXMessageBox::question(this,MBOX_YES_NO,_("Confirm"),
@@ -255,7 +255,7 @@ MembersFrame::onApplyChanges(FXObject*,FXSelector,void*)
 					     newlogin.text()))
       CCL_data_set_string(CCL_DATA_MEMBER,editedmember,"login_name",
 			  newlogin.text());
-    mitem->setText(FXStringVal(editedmember) + "\t" + CCL_member_name_get(editedmember));
+    mitem->setText(FXStringVal((FXint)editedmember) + "\t" + CCL_member_name_get(editedmember));
     memberslist->updateItem(mitem);
   }
 #ifdef DEBUG
@@ -288,7 +288,7 @@ MembersFrame::onMemberSelect(FXObject*,FXSelector,void*)
   FXFoldingItem *current = memberslist->getCurrentItem();
 
   if (current) {
-    editedmember = (int) (memberslist->getItemData(current));
+    editedmember = (long) (memberslist->getItemData(current));
     tarifset = CCL_member_tarif_get(editedmember);
     readMember(editedmember);
   }
@@ -336,7 +336,7 @@ MembersFrame::onSetTarif(FXObject*,FXSelector,void*)
     FXFoldingItem *sitem = tlist->getCurrentItem();
 
     if (sitem)
-      tarifset = (int)(sitem->getData());
+      tarifset = (long)(sitem->getData());
   }
 
   return 1;
@@ -346,12 +346,13 @@ long
 MembersFrame::onAddCredit(FXObject*,FXSelector,void*)
 {
   FXdouble  amount = 0.0;
-  int       id=0, retval;
+  long      id=0;
+  int       retval;
   char      buf[64];
 
   FXFoldingItem *current = memberslist->getCurrentItem();
   if (current)
-      id = (int) (memberslist->getItemData(current));
+      id = (long) (memberslist->getItemData(current));
   else
       return 1;
   if (FXInputDialog::getReal(amount,this,_("Add Member Credit"),
@@ -370,7 +371,8 @@ long
 MembersFrame::onSubCredit(FXObject*,FXSelector,void*)
 {
   FXdouble  amount = 0.0;
-  int       id, retval;
+  long      id;
+  int       retval;
   char      buf[64];
 
   FXFoldingItem *current = memberslist->getCurrentItem();

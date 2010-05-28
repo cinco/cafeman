@@ -86,7 +86,7 @@ private:
   int              opMode;
   int              rndOff;
   bool             inpSaved;
-  int              stariff;
+  long             stariff;
 
  
 protected:

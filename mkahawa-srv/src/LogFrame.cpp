@@ -854,7 +854,7 @@ long
 LogFrame::onSessionSelect(FXObject*,FXSelector,void*)
 {
   FXFoldingItem *current = sessionslist->getCurrentItem();
-  int session = (int) current->getData();
+  long session = (long) current->getData();
 
   cashingframe->setSession(session,FALSE);
   mainwin->showCashing();

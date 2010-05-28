@@ -25,8 +25,8 @@ protected:
   FXTextField	 *logintf;
   FXLabel        *creditlbl;
 private:
-  int		  editedmember;
-  int		  tarifset;
+  long		  editedmember;
+  long	          tarifset;
 protected:
   MembersFrame(){}
 public:

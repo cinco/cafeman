@@ -850,7 +850,7 @@ CashingFrame::onEditPrice(FXObject*,FXSelector,void*)
 long
 CashingFrame::onPrintTicketCheck(FXObject*,FXSelector,void* ptr)
 {
-  FXint print = (0 == (FXuint)ptr) ? 0 : 1;
+  FXint print = (0 == (FXlong)ptr) ? 0 : 1;
 
   getApp()->reg().writeIntEntry("CASHING","print",print);
   getApp()->reg().write();
