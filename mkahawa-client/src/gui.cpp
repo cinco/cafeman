@@ -275,7 +275,7 @@ ClientWin::ClientWin(FXApp * app)
   FXLabel *label1 = new FXLabel(vframe1,_("Time:"),NULL,LABEL_NORMAL,
 				3,0,0,0,0,0,0,0);
 
-  timelbl = new FXLabel(vframe1,"00:00",NULL,
+  timelbl = new FXLabel(vframe1,"00m00s",NULL,
 			   LAYOUT_FILL_Y|LAYOUT_FILL_X|FRAME_LINE);
 //  timelbl->setCellHeight(12);
 //  timelbl->setCellWidth(10);

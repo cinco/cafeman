@@ -544,9 +544,9 @@ CCLCFox::setLoginMode(unsigned int loginmode)
 { 
   login_mode = loginmode;
   if (login_mode == OPMODE_TICKET  || login_mode == OPMODE_MEMBER)
-    clientwin->setOwedLbl("Balance:");
+    clientwin->setOwedLbl(_("Balance:"));
   else 
-    clientwin->setOwedLbl("Owed:");
+    clientwin->setOwedLbl(_("Owed:"));
 }
 
 void
@@ -745,10 +745,10 @@ CCLCFox::onTimer(FXObject*,FXSelector,void*)
     int mins = (usedtime % 3600) / 60;
 
     if ( hours > 0)
-      snprintf(buf,8,"%.2d:%.2d",hours,mins);
+      snprintf(buf,8,"%.2dh%.2dm",hours,mins);
     else{
       int secs = usedtime % 60;
-      snprintf(buf,8,"%.2d:%.2d",mins,secs);
+      snprintf(buf,8,"%.2dm%.2ds",mins,secs);
     }
     clientwin->setTime(buf);
     if (updateState != ONUPDATESTATE)  //quiet during update
@@ -767,7 +767,7 @@ CCLCFox::onTimer(FXObject*,FXSelector,void*)
 	int wtime  = WARNING_TIME;
 	char wstr[64];
 	
-	sprintf(wstr, "You have less than %d mins to browse.", wtime/60);
+	sprintf(wstr, _("You have less than %d mins to browse."), wtime/60);
 	time_warned = 1;
 	dispMessage(wstr);
 	//poll every last second
