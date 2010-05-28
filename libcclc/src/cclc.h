@@ -1,6 +1,25 @@
 #ifndef CCLC_H
 #define CCLC_H
 
+
+#ifdef WIN32
+
+#ifdef BUILD_DLL
+     // the dll exports
+     #define EXPORT __declspec(dllexport)
+#else
+     // the exe imports
+     #define EXPORT extern cppfudge  __declspec(dllimport)
+#endif
+
+#else 
+
+#define EXPORT
+
+#endif
+
+
+
 /******************** Callback Types **********************/
 /**
  * Callback used when a message from a server is received
@@ -34,29 +53,29 @@ typedef void (*on_disconnect_cb) (void * userdata);
 extern "C"
 {
 #endif
-int	      CCLC_init(void);
-int	      CCLC_shutdown(void);
-void	      CCLC_free(void * mem);
-unsigned char *
+EXPORT int	      CCLC_init(void);
+EXPORT int	      CCLC_shutdown(void);
+EXPORT void	      CCLC_free(void * mem);
+EXPORT unsigned char *
 	      CCLC_MD5(const unsigned char * d, unsigned long n,
 		       unsigned char * md);
-unsigned      CCLC_htonl(unsigned val);
-unsigned short
+EXPORT unsigned      CCLC_htonl(unsigned val);
+EXPORT unsigned short
 	      CCLC_htons(unsigned short val);
-unsigned      CCLC_ntohl(unsigned val);
-unsigned short
+EXPORT unsigned      CCLC_ntohl(unsigned val);
+EXPORT unsigned short
 	      CCLC_ntohs(unsigned short val);
-void	      CCLC_set_on_event_callback(on_event_cb callback,
+EXPORT void	      CCLC_set_on_event_callback(on_event_cb callback,
 					 void * userdata);
-void	      CCLC_set_on_disconnect_callback(on_disconnect_cb callback,
+EXPORT void	      CCLC_set_on_disconnect_callback(on_disconnect_cb callback,
 					      void * userdata);
-int	      CCLC_SSL_init(const char * cafile, const char * certfile,
+EXPORT int	      CCLC_SSL_init(const char * cafile, const char * certfile,
 			    const char * certpass, int * error);
-int	      CCLC_networking_init(const char * server, unsigned short port,
+EXPORT int	      CCLC_networking_init(const char * server, unsigned short port,
 				   const char * myname, int * error);
-int	      CCLC_networking_shutdown(void);
-int	      CCLC_check_events(void);
-void	      CCLC_send_cmd(unsigned cmd, const void * data,
+EXPORT int	      CCLC_networking_shutdown(void);
+EXPORT int	      CCLC_check_events(void);
+EXPORT void	      CCLC_send_cmd(unsigned cmd, const void * data,
 			    unsigned datasize);
 #ifdef __cplusplus
 }
