@@ -19,7 +19,7 @@
 #define ENABLEASSIST     (1<<20)// allow assist requests from clients the session?
 #define CLIENT_CONNECTED (1<<21) // client is connected
 #define ALLOWTICKETLOGIN (1<<22)// Allow ticket holders to start the session?
-#define CLIENT_BLOCKED   (1<<23)// Allow ticket holders to start the session?
+#define CLIENT_BLOCKED   (1<<23)// Client is blocked
 
 
 #define NOTPAID		0

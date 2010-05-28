@@ -580,7 +580,8 @@ int CCLWin::appendClient(int client)
   char buf[128];
 
   if (-1 != idx)
-    return idx;
+    //is this already in the icons list?
+    return idx;  
 
   CCL_client_flags_toggle(client,CLIENT_DELETED,FALSE);
   int status = CCL_client_status_get(client);
@@ -1428,9 +1429,6 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
       
       cp = "requests for help.";
       sprintf(buf, "[ %s ] %s", CCL_client_name_get(client), cp);
-      //FXMessageBox::information(mainwin,MBOX_OK,_("Message"),buf);
-      //MSGWin *msgwin = new MSGWin(mainwin->getApp());
-      //msgwin->show();
       CCL_client_send_cmd(client,CS_CALLASSIST, NULL,0);
 #ifdef DEBUG
       printf ("Responded to Call Assist\n");
@@ -1553,8 +1551,20 @@ updateClientStatus(int client)
     CCL_client_send_cmd(client,CS_STOP,NULL,0);
     CCL_client_send_cmd(client,CS_LOCKSCREEN,NULL,0);
   }
-  //these are default settings
-  int nallowuserlogin = //ALLOWUSERLOGIN;
+  
+  int cli_setting = CCL_data_get_int(CCL_DATA_CLIENT, client, "client_settings", -1);
+  if (cli_setting == -1){ 
+    //settings have not been made. Effect default settings
+    unsigned int cs =  cyber_settings->getOpMode();
+    if (cs & OPMODE_POSTPAID)
+      CCL_client_flags_toggle(client, ALLOWUSERLOGIN, TRUE );
+    if (cs & OPMODE_TICKET)
+      CCL_client_flags_toggle(client, ALLOWTICKETLOGIN, TRUE);
+    if (cs & OPMODE_MEMBER)
+      CCL_client_flags_toggle(client, ALLOWMEMBERLOGIN, TRUE);    
+    mainwin->toggleClientSetting(client, CCL_client_flags_get(client));
+  }
+  int nallowuserlogin = 
     CCL_htonl(CCL_client_flags_get(client) & ALLOWUSERLOGIN);
   CCL_client_send_cmd(client,CS_ALLOWUSERLOGIN,&nallowuserlogin,
 		      sizeof(nallowuserlogin));
@@ -1611,10 +1621,7 @@ CCLWin::unBlockClient(int client)
   int allow;
   int cli_setting = CCL_data_get_int(CCL_DATA_CLIENT, client, "client_settings", -1);
 
-  //Flag settings
   CCL_client_flags_toggle(client, CLIENT_BLOCKED, FALSE);
-  //cli_setting &= ~CLIENT_BLOCKED;
-  //CCL_data_get_int(CCL_DATA_CLIENT, client, "client_settings", cli_setting);
   //Effect unblock  
   if (cli_setting & ALLOWUSERLOGIN) {
     CCL_client_flags_toggle(client, ALLOWUSERLOGIN, TRUE);
@@ -2145,7 +2152,6 @@ CCLWin::toggleClientSetting(int client, int flag)
 	 client, flag, preset, settings);
 #endif
   CCL_client_flags_toggle(client, flag, (settings & flag));
-
 }
 
 long
@@ -2252,7 +2258,6 @@ CCLWin::onAllowMemberLogin(FXObject*,FXSelector,void*)
   if (-1 == current)
     return 1;
   int client = (int) (clientslist->getItemData(current));
-  //CCL_client_flags_toggle(client,ALLOWMEMBERLOGIN, !(CCL_client_flags_get(client) & ALLOWMEMBERLOGIN));
   toggleClientSetting(client, ALLOWMEMBERLOGIN);
   int allow = CCL_htonl(CCL_client_flags_get(client) & ALLOWMEMBERLOGIN);
   CCL_client_send_cmd(client,CS_ALLOWMEMBERLOGIN,&allow,sizeof(allow));
@@ -2898,7 +2903,7 @@ CCLWin::sendUpdateChunk(int client, long pos)
   //  fseek(
   retval = fread(chunk.buf, 1, MAXCHUNKSIZE, upfp);
   if (!retval){
-    msgstr = "Unable to read update file\n";
+    msgstr = _("Unable to read update file\n");
 #ifdef DEBUG_UPD
     printf("sendUpdateChunk(): [retval = %d] %s\n", retval, msgstr);
 #endif
@@ -2926,7 +2931,7 @@ sendUpdateChunks(int client)
   for (pos=0; pos < mainwin->upinfo.fsize; pos += MAXCHUNKSIZE){
     retval = fread(chunk.buf, 1, MAXCHUNKSIZE, mainwin->upfp);
     if (!retval){
-      msgstr = "Unable to read update file\n";
+      msgstr = _("Unable to read update file\n");
 #ifdef DEBUG_UPD
       printf("sendUpdateChunks(): [retval = %d] %s\n", retval, msgstr);
 #endif

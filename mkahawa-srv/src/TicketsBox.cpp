@@ -123,7 +123,7 @@ TicketsBox::TicketsBox(FXComposite * parent)
   new FXHorizontalSeparator(vf2);
   lstTickets = new FXFoldingList(vf2,this,ID_TICKETSLIST,
 		      FOLDINGLIST_SINGLESELECT|LAYOUT_FILL_X|LAYOUT_FILL_Y);
-  lstTickets->appendHeader(_("No"),NULL,30);
+  lstTickets->appendHeader(_("##"),NULL,30);
   lstTickets->appendHeader(_("Ticket Number"),NULL,100);
 
   //End of Horizontal Frame 1

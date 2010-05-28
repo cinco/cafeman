@@ -56,9 +56,9 @@ show_help(const char *appname)
 static FXbool
 parse_args(int argc,char *argv[])
 {
-  FXbool withssl = TRUE;
+  FXbool withssl  = TRUE;
   char * certpass = NULL;
-  int port = 2999;
+  int    port     = 2999;
 
   int i = 1;
 
@@ -159,19 +159,23 @@ main(int argc,char *argv[])
 
   //Locale and Font Stuff
   if (plocale){
-  //  FXFont  *font =new FXFont(&app,fnt_name,10,0,0,fnt_enc,0,0);
-  //    fnt_enc = FONTENCODING_DEFAULT;
     enum FXFontEncoding  fnt_enc = FONTENCODING_UNICODE;
     char *fnt_name = NULL;
-    if (strncasecmp(plocale,"en_", 3)){ // not an english locale
+    bool  isLatinFont = TRUE;
+
+    if (!strncasecmp(plocale, "ja",2))
+      isLatinFont = FALSE;  //JAPANESE?
+    else if (!strncasecmp(plocale, "ru",2))
+      isLatinFont = FALSE;  //RUSSIAN?  
+    else if (!strncasecmp(plocale, "uk",2))
+      isLatinFont = FALSE;  //UKRAINIAN?  
+    if (!isLatinFont){ 
+      // not an alphabet locale
       fnt_enc = FONTENCODING_UNICODE;
       fnt_name = "fixed [misc]";
-      //FXFont  *font =new FXFont(&app,fnt_name,10,0,0,fnt_enc,0,0);
-      FXFont  *font = new FXFont(&app, "fixed,105,,,,iso10646-1");
+      FXFont  *font = new FXFont(&app, "fixed,90,,,,iso10646-1");
+      //FXFont  *font = new FXFont(&app, "XFree86-Bigfont");
       app.setNormalFont(font);
-    }
-    else { // english locale  --- do not set any font - use defaults
-      
     }
   } 
   app.init(argc,argv);

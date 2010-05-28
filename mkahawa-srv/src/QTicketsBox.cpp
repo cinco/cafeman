@@ -82,7 +82,7 @@ QTicketsBox::QTicketsBox(FXComposite * parent)
   lstTickets = new FXFoldingList(vf2,this,ID_TICKETSLIST,
 				 FOLDINGLIST_SINGLESELECT|LAYOUT_FILL_X|LAYOUT_FILL_Y,
 				 0,0,370,200);
-  lstTickets->appendHeader(_(""),NULL,30);
+  lstTickets->appendHeader(_("##"),NULL,30);
   lstTickets->appendHeader(_("Ticket"),NULL,100);
   lstTickets->appendHeader(_("Value"),NULL,50);
   lstTickets->appendHeader(_("Current"),NULL,50);
