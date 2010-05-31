@@ -16,9 +16,9 @@
 srcdir = .
 top_srcdir = .
 
-pkgdatadir = $(datadir)/cclcfox
-pkglibdir = $(libdir)/cclcfox
-pkgincludedir = $(includedir)/cclcfox
+pkgdatadir = $(datadir)/mkahawa_printer
+pkglibdir = $(libdir)/mkahawa_printer
+pkgincludedir = $(includedir)/mkahawa_printer
 top_builddir = .
 am__cd = CDPATH="$${ZSH_VERSION+.}$(PATH_SEPARATOR)" && cd
 INSTALL = /usr/bin/install -c
@@ -42,7 +42,11 @@ DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	mkinstalldirs
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/configure.in
+am__aclocal_m4_deps = $(top_srcdir)/m4/gettext.m4 \
+	$(top_srcdir)/m4/iconv.m4 $(top_srcdir)/m4/lib-ld.m4 \
+	$(top_srcdir)/m4/lib-link.m4 $(top_srcdir)/m4/lib-prefix.m4 \
+	$(top_srcdir)/m4/nls.m4 $(top_srcdir)/m4/po.m4 \
+	$(top_srcdir)/m4/progtest.m4 $(top_srcdir)/configure.in
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
@@ -71,20 +75,17 @@ DIST_ARCHIVES = $(distdir).tar.gz
 GZIP_ENV = --best
 distuninstallcheck_listfiles = find . -type f -print
 distcleancheck_listfiles = find . -type f -print
-ACLOCAL = ${SHELL} /home/owuor/CCL/mkahawa-printer-0.0.1/missing --run aclocal-1.9
+ACLOCAL = ${SHELL} /home/owuor/projects/mkahawa/mkahawa-printer/missing --run aclocal-1.9
 ALL_LINGUAS = 
 AMDEP_FALSE = #
 AMDEP_TRUE = 
-AMTAR = ${SHELL} /home/owuor/CCL/mkahawa-printer-0.0.1/missing --run tar
-AUTOCONF = ${SHELL} /home/owuor/CCL/mkahawa-printer-0.0.1/missing --run autoconf
-AUTOHEADER = ${SHELL} /home/owuor/CCL/mkahawa-printer-0.0.1/missing --run autoheader
-AUTOMAKE = ${SHELL} /home/owuor/CCL/mkahawa-printer-0.0.1/missing --run automake-1.9
+AMTAR = ${SHELL} /home/owuor/projects/mkahawa/mkahawa-printer/missing --run tar
+AUTOCONF = ${SHELL} /home/owuor/projects/mkahawa/mkahawa-printer/missing --run autoconf
+AUTOHEADER = ${SHELL} /home/owuor/projects/mkahawa/mkahawa-printer/missing --run autoheader
+AUTOMAKE = ${SHELL} /home/owuor/projects/mkahawa/mkahawa-printer/missing --run automake-1.9
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CCLPFOX_MAJOR_VERSION = 0
-CCLPFOX_MINOR_VERSION = 7
-CCLPFOX_PATCH_LEVEL = 1
 CFLAGS = -g -O2
 CPP = gcc -E
 CPPFLAGS = 
@@ -93,7 +94,8 @@ CXXCPP = g++ -E
 CXXDEPMODE = depmode=gcc3
 CXXFLAGS = -g -O2
 CYGPATH_W = echo
-DEFS = -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE=\"cclcfox\" -DVERSION=\"0.7.1\" -DENABLE_NLS=1 -DHAVE_GETTEXT=1 -DHAVE_DCGETTEXT=1 -DHAVE_LIBFOX_1_6=1 -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_LIBCCLC=1
+DATADIRNAME = share
+DEFS = -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DPACKAGE=\"mkahawa_printer\" -DVERSION=\"0.0.2\" -DENABLE_NLS=1 -DHAVE_GETTEXT=1 -DHAVE_DCGETTEXT=1 -DHAVE_LIBFOX_1_6=1 -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_LIBCCLC=1
 DEPDIR = .deps
 ECHO_C = 
 ECHO_N = -n
@@ -110,15 +112,13 @@ INTLLIBS =
 INTLTOOL_CAVES_RULE = %.caves:     %.caves.in     $(INTLTOOL_MERGE) $(wildcard $(top_srcdir)/po/*.po) ; LC_ALL=C $(INTLTOOL_MERGE) -d -u -c $(top_builddir)/po/.intltool-merge-cache $(top_srcdir)/po $< $@
 INTLTOOL_DESKTOP_RULE = %.desktop:   %.desktop.in   $(INTLTOOL_MERGE) $(wildcard $(top_srcdir)/po/*.po) ; LC_ALL=C $(INTLTOOL_MERGE) -d -u -c $(top_builddir)/po/.intltool-merge-cache $(top_srcdir)/po $< $@
 INTLTOOL_DIRECTORY_RULE = %.directory: %.directory.in $(INTLTOOL_MERGE) $(wildcard $(top_srcdir)/po/*.po) ; LC_ALL=C $(INTLTOOL_MERGE) -d -u -c $(top_builddir)/po/.intltool-merge-cache $(top_srcdir)/po $< $@
-INTLTOOL_EXTRACT = $(top_builddir)/intltool-extract
-INTLTOOL_ICONV = /usr/bin/iconv
+INTLTOOL_EXTRACT = /usr/bin/intltool-extract
 INTLTOOL_KBD_RULE = %.kbd:       %.kbd.in       $(INTLTOOL_MERGE) $(wildcard $(top_srcdir)/po/*.po) ; LC_ALL=C $(INTLTOOL_MERGE) -x -u -m -c $(top_builddir)/po/.intltool-merge-cache $(top_srcdir)/po $< $@
 INTLTOOL_KEYS_RULE = %.keys:      %.keys.in      $(INTLTOOL_MERGE) $(wildcard $(top_srcdir)/po/*.po) ; LC_ALL=C $(INTLTOOL_MERGE) -k -u -c $(top_builddir)/po/.intltool-merge-cache $(top_srcdir)/po $< $@
-INTLTOOL_MERGE = $(top_builddir)/intltool-merge
-INTLTOOL_MSGFMT = /usr/bin/msgfmt
-INTLTOOL_MSGMERGE = /usr/bin/msgmerge
+INTLTOOL_MERGE = /usr/bin/intltool-merge
 INTLTOOL_OAF_RULE = %.oaf:       %.oaf.in       $(INTLTOOL_MERGE) $(wildcard $(top_srcdir)/po/*.po) ; LC_ALL=C $(INTLTOOL_MERGE) -o -p $(top_srcdir)/po $< $@
 INTLTOOL_PERL = /usr/bin/perl
+INTLTOOL_POLICY_RULE = %.policy:    %.policy.in    $(INTLTOOL_MERGE) $(wildcard $(top_srcdir)/po/*.po) ; LC_ALL=C $(INTLTOOL_MERGE) -x -u -c $(top_builddir)/po/.intltool-merge-cache $(top_srcdir)/po $< $@
 INTLTOOL_PONG_RULE = %.pong:      %.pong.in      $(INTLTOOL_MERGE) $(wildcard $(top_srcdir)/po/*.po) ; LC_ALL=C $(INTLTOOL_MERGE) -x -u -c $(top_builddir)/po/.intltool-merge-cache $(top_srcdir)/po $< $@
 INTLTOOL_PROP_RULE = %.prop:      %.prop.in      $(INTLTOOL_MERGE) $(wildcard $(top_srcdir)/po/*.po) ; LC_ALL=C $(INTLTOOL_MERGE) -d -u -c $(top_builddir)/po/.intltool-merge-cache $(top_srcdir)/po $< $@
 INTLTOOL_SCHEMAS_RULE = %.schemas:   %.schemas.in   $(INTLTOOL_MERGE) $(wildcard $(top_srcdir)/po/*.po) ; LC_ALL=C $(INTLTOOL_MERGE) -s -u -c $(top_builddir)/po/.intltool-merge-cache $(top_srcdir)/po $< $@
@@ -128,9 +128,8 @@ INTLTOOL_SHEET_RULE = %.sheet:     %.sheet.in     $(INTLTOOL_MERGE) $(wildcard $
 INTLTOOL_SOUNDLIST_RULE = %.soundlist: %.soundlist.in $(INTLTOOL_MERGE) $(wildcard $(top_srcdir)/po/*.po) ; LC_ALL=C $(INTLTOOL_MERGE) -d -u -c $(top_builddir)/po/.intltool-merge-cache $(top_srcdir)/po $< $@
 INTLTOOL_THEME_RULE = %.theme:     %.theme.in     $(INTLTOOL_MERGE) $(wildcard $(top_srcdir)/po/*.po) ; LC_ALL=C $(INTLTOOL_MERGE) -d -u -c $(top_builddir)/po/.intltool-merge-cache $(top_srcdir)/po $< $@
 INTLTOOL_UI_RULE = %.ui:        %.ui.in        $(INTLTOOL_MERGE) $(wildcard $(top_srcdir)/po/*.po) ; LC_ALL=C $(INTLTOOL_MERGE) -x -u -c $(top_builddir)/po/.intltool-merge-cache $(top_srcdir)/po $< $@
-INTLTOOL_UPDATE = $(top_builddir)/intltool-update
+INTLTOOL_UPDATE = /usr/bin/intltool-update
 INTLTOOL_XAM_RULE = %.xam:       %.xml.in       $(INTLTOOL_MERGE) $(wildcard $(top_srcdir)/po/*.po) ; LC_ALL=C $(INTLTOOL_MERGE) -x -u -c $(top_builddir)/po/.intltool-merge-cache $(top_srcdir)/po $< $@
-INTLTOOL_XGETTEXT = /usr/bin/xgettext
 INTLTOOL_XML_NOMERGE_RULE = %.xml:       %.xml.in       $(INTLTOOL_MERGE) ; LC_ALL=C $(INTLTOOL_MERGE) -x -u /tmp $< $@
 INTLTOOL_XML_RULE = %.xml:       %.xml.in       $(INTLTOOL_MERGE) $(wildcard $(top_srcdir)/po/*.po) ; LC_ALL=C $(INTLTOOL_MERGE) -x -u -c $(top_builddir)/po/.intltool-merge-cache $(top_srcdir)/po $< $@
 INTL_MACOSX_LIBS = 
@@ -143,16 +142,20 @@ LTLIBICONV = -liconv
 LTLIBINTL = 
 LTLIBOBJS = 
 MACOSX_LIBS = 
-MAKEINFO = ${SHELL} /home/owuor/CCL/mkahawa-printer-0.0.1/missing --run makeinfo
+MAKEINFO = ${SHELL} /home/owuor/projects/mkahawa/mkahawa-printer/missing --run makeinfo
+MKAHAWA_PRN_MAJOR_VERSION = 0
+MKAHAWA_PRN_MINOR_VERSION = 0
+MKAHAWA_PRN_PATCH_LEVEL = 2
 MKINSTALLDIRS = $(top_builddir)/./mkinstalldirs
 MSGFMT = /usr/bin/msgfmt
 MSGMERGE = /usr/bin/msgmerge
 OBJEXT = o
-PACKAGE = cclcfox
+PACKAGE = mkahawa_printer
 PACKAGE_BUGREPORT = 
 PACKAGE_NAME = 
 PACKAGE_STRING = 
 PACKAGE_TARNAME = 
+PACKAGE_URL = 
 PACKAGE_VERSION = 
 PATH_SEPARATOR = :
 POSUB = po
@@ -160,7 +163,7 @@ SET_MAKE =
 SHELL = /bin/bash
 STRIP = 
 USE_NLS = yes
-VERSION = 0.7.1
+VERSION = 0.0.2
 XGETTEXT = /usr/bin/xgettext
 XMKMF = 
 X_BASE_LIBS = -lX11
@@ -199,7 +202,7 @@ host_vendor = pc
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = /home/owuor/CCL/mkahawa-printer-0.0.1/install-sh
+install_sh = /home/owuor/projects/mkahawa/mkahawa-printer/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -215,7 +218,7 @@ sbindir = ${exec_prefix}/sbin
 sharedstatedir = ${prefix}/com
 sysconfdir = ${prefix}/etc
 target_alias = 
-SUBDIRS = m4  m4 src po
+SUBDIRS = m4 src po
 ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = config.rpath \
 	     mkinstalldirs \
@@ -396,7 +399,7 @@ distclean-tags:
 distdir: $(DISTFILES)
 	$(am__remove_distdir)
 	mkdir $(distdir)
-	$(mkdir_p) $(distdir)/po
+	$(mkdir_p) $(distdir)/m4 $(distdir)/po
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \

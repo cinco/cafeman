@@ -7,7 +7,6 @@ gui.cpp \
 gui.h \
 locker.cpp \
 locker.h \
-lockpix.cpp \
 lockpix.h \
 cmds.h \
 main.cpp
