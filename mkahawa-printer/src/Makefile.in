@@ -53,7 +53,7 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_mkahawa_printer_OBJECTS = mkahawa-printer.$(OBJEXT) gui.$(OBJEXT) \
-	locker.$(OBJEXT) main.$(OBJEXT)
+	locker.$(OBJEXT) lockpix.$(OBJEXT) main.$(OBJEXT)
 mkahawa_printer_OBJECTS = $(am_mkahawa_printer_OBJECTS)
 mkahawa_printer_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
@@ -224,6 +224,7 @@ gui.h \
 locker.cpp \
 locker.h \
 lockpix.h \
+lockpix.cpp \
 cmds.h \
 main.cpp
 
@@ -296,6 +297,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gui.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/locker.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lockpix.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mkahawa-printer.Po@am__quote@
 

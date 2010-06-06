@@ -8,6 +8,7 @@ gui.h \
 locker.cpp \
 locker.h \
 lockpix.h \
+lockpix.cpp \
 cmds.h \
 main.cpp
 
