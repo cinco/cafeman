@@ -26,5 +26,6 @@
 #define PAID		(1<<0)
 #define CANCELED	(1<<1)
 #define WITH_DISCOUNT	(1<<2)
+#define ISTICKET        (1<<3)
 
 #endif

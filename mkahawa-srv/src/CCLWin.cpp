@@ -50,7 +50,7 @@ FXGIFIcon *dbIcon3;
 //#define DEBUG_TICKET
 //#define DEBUG_CREDIT
 //#define DEBUG_PRINT
-#define DEBUG_WARN
+//#define DEBUG_WARN
 //#define  DEBUG_CALLBACK
 //#define DEBUG_SETTINGS
 
@@ -1271,9 +1271,9 @@ onEventCallback(int client,FXuint cmd,void *data,FXuint size,void *userdata)
 		  CCL_client_start(client);
 		}
 		CCL_client_member_set(client,memberid);
+		CCL_member_flags_toggle(memberid, MEMBER_LOGGEDIN, TRUE); //mark as logged in
 		CCL_client_flags_toggle(client,USERSTOP,FALSE);
 		updateClientStatus(client);
-		CCL_member_flags_toggle(memberid, MEMBER_LOGGEDIN, TRUE); //mark as logged in
 	      }
 	    }
 	    else{

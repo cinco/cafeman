@@ -18,6 +18,8 @@ using namespace FX;
 
 
 //#define DEBUG
+//#define DEBUG_TICKET 
+
 extern FXGIFIcon *dbIcon01;
 extern FXGIFIcon *dbIcon0;
 extern FXGIFIcon *dbIcon1;
@@ -483,6 +485,10 @@ TicketsBox::getInputVals(ticket_input_t *tkt)
   if (tkt->dgtNr > 12) tkt->dgtNr = 12;
   tkt->tktNr = atoi( tfNum->getText().text());
   strncpy(tkt->notes, tfNotes->getText().text(), 25);
+
+#ifdef DEBUG_TICKET
+  printf ("TicketsBox::getInputVals(): tarif = %d, stariff: %d\n", tkt->tariff, stariff);
+#endif
   
   return 1;
 }
@@ -568,7 +574,7 @@ TicketsBox::saveTickets()
     if (id > 0 ){
       sprintf(buf, "insert into tickets (id,name,pdate,tarif,stdate,expdate,empid,faceval,credit,flags) values (%d, '%s', %ld, %d, %ld, %ld, %d, %d, %d, %d)", id, tktStr, time(NULL), tkt.tariff, tkt.stDate,
 	      tkt.expDate, e_inf.empID, tkt.faceVal, tkt.faceVal, MEMBER_TICKET);
-#ifdef DEBUG
+#ifdef DEBUG_TICKET
       printf("%s\n", buf); 
 #endif
       CCL_member_ticket_new(-1, buf);

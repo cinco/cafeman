@@ -90,11 +90,6 @@ QTicketsBox::QTicketsBox(FXComposite * parent)
   lstTickets->appendHeader(_("Expiry"),NULL,60);
   //End of Horizontal Frame 2 & GUI
   new FXHorizontalSeparator(this);
-  
-
-
-
-
 
   //Labels & TextFields  field
   //Radio Buttons
@@ -426,6 +421,22 @@ QTicketsBox::create_query(qticket_input_t *qtkt, qticket_qry_t *qry)
   return 0;
 }
   
+
+int
+getLiveCredit(int member, int dbcredit)
+{
+  FXuint client, owed, owed_val;
+
+  for (int i=0; client = CCL_client_get_nth(i); i++){
+	  if (member == CCL_client_member_get(client)){
+		owed = CCL_client_owed_terminal(client);
+		owed_val = dbcredit - owed;
+		return owed_val;
+	  }
+  }
+  return dbcredit;
+}
+
 int 
 QTicketsBox::exec_query(qticket_qry_t *qry)
 {
@@ -433,7 +444,7 @@ QTicketsBox::exec_query(qticket_qry_t *qry)
   char ticketStr[50], buf[128];
   CCL_ticket_entry *te = NULL;
   char pdate[64], expdate[64];
-
+  int credit;
 
   lstTickets->clearItems();
 #ifdef DEBUG
@@ -444,9 +455,13 @@ QTicketsBox::exec_query(qticket_qry_t *qry)
   for (i=0; i<num; i++){
     strftime(pdate,64,"%d/%m/%y",localtime(&(te[i].stdate)));
     strftime(expdate,64,"%d/%m/%y",localtime(&(te[i].enddate)));
-    snprintf(buf,128,"%d\t%s\t%.2f\t%.2f\t%s\t%s",i+1,
+    /*    snprintf(buf,128,"%d\t%s\t%.2f\t%.2f\t%s\t%s",i+1,
 	     te[i].name, te[i].faceval/100.0, te[i].credit/100.0, 
-	     pdate, expdate);
+	     pdate, expdate); */
+    credit = getLiveCredit(te[i].id, te[i].credit);
+    snprintf(buf,128,"%d\t%s\t%.2f\t%.2f\t%s\t%s",i+1,
+	     te[i].name, te[i].faceval/100.0, credit/100.0, 
+	     pdate, expdate); 
     lstTickets->appendItem(NULL,buf,NULL,NULL,(void *)te[i].id);
   }
   CCL_free(te);
@@ -471,9 +486,13 @@ QTicketsBox::onQuery(FXObject*,FXSelector,void*)
   qticket_input_t tkt;
   qticket_qry_t   qry;
 
-  //bzero((void *)&tkt, sizeof(tkt));
+  //update the credits
+  /*  char *sqlstr = "update tickets set credit = (select credit from members where id = tickets.id)";
+  CCL_ticket_entry *te = NULL;
+  int nr = CCL_member_tickets_get(sqlstr, &te);
+  CCL_free(te);*/
+  //now re-read the values
   memset((void *)&tkt, 0, sizeof(tkt));
-  //bzero((void *)&qry, sizeof(qry));
   memset((void *)&qry, 0, sizeof(qry));
   getInputVals(&tkt);
   create_query(&tkt, &qry);
