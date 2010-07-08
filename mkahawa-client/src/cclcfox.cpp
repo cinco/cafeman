@@ -593,24 +593,6 @@ CCLCFox::execCommand(FXuint cmd,const void *data,FXuint datasize)
       if (!thread_msg_in){
 	dispMessage((char *)data);
       }
-	/*{
-#ifdef WIN32
-	TerminateThread(th, 0);
-#else
-	pthread_cancel(th);
-#endif
-	thread_msg_in = 0;
-      }
-#ifdef WIN32
-      CreateThread(NULL, 0,
-		   dispMessage,
-		   (LPVOID)data, 0, &th);
-      CloseHandle(th);
-#else
-      pthread_create(&th, NULL, &dispMessage, (void *)data);
-      pthread_detach(th);
-#endif
-	*/
       break;
     case CS_QUITCLIENT:
       exitProgram();

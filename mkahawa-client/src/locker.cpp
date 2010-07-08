@@ -615,7 +615,9 @@ Locker::initLogoText(FXEvent* event)
   dltxt.y = height - (dltxt.h+3);
   bg = dc.readPixel(dltxt.x,dltxt.y);
   dltxt.fgcol = FXRGB(255-FXREDVAL(bg), 255-FXGREENVAL(bg), 255-FXBLUEVAL(bg));
+#ifdef DEBUG_DRAW
   printf("intLogoText(): (%d, %d), %0x08 -> %0x08\n", dltxt.x, dltxt.y, bg, dltxt.fgcol);
+#endif
 }
 
 void

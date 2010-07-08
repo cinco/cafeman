@@ -1,6 +1,10 @@
 bin_PROGRAMS=mkahawa-client
 
 mkahawa_client_SOURCES= \
+util.c \
+cclc.c  \
+cclc.h   \
+cclc_private.h \
 cclcfox.cpp \
 cclcfox.h \
 gui.cpp \

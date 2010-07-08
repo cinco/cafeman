@@ -2431,7 +2431,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 MKAHAWA_CLIENT_MAJOR_VERSION=0
 MKAHAWA_CLIENT_MINOR_VERSION=0
-MKAHAWA_CLIENT_PATCH_LEVEL=4
+MKAHAWA_CLIENT_PATCH_LEVEL=5
 
 VERSION=$MKAHAWA_CLIENT_MAJOR_VERSION.$MKAHAWA_CLIENT_MINOR_VERSION.$MKAHAWA_CLIENT_PATCH_LEVEL
 
@@ -8993,13 +8993,14 @@ else
 fi
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for CCLC_init in -lcclc" >&5
-$as_echo_n "checking for CCLC_init in -lcclc... " >&6; }
-if test "${ac_cv_lib_cclc_CCLC_init+set}" = set; then :
+#AC_CHECK_HEADER(cclc.h,,AC_MSG_ERROR([please install libcclc headers]))
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for SSL_new in -lssl" >&5
+$as_echo_n "checking for SSL_new in -lssl... " >&6; }
+if test "${ac_cv_lib_ssl_SSL_new+set}" = set; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lcclc  $LIBS"
+LIBS="-lssl  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -9009,42 +9010,42 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char CCLC_init ();
+char SSL_new ();
 int
 main ()
 {
-return CCLC_init ();
+return SSL_new ();
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_cclc_CCLC_init=yes
+  ac_cv_lib_ssl_SSL_new=yes
 else
-  ac_cv_lib_cclc_CCLC_init=no
+  ac_cv_lib_ssl_SSL_new=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_cclc_CCLC_init" >&5
-$as_echo "$ac_cv_lib_cclc_CCLC_init" >&6; }
-if test "x$ac_cv_lib_cclc_CCLC_init" = x""yes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ssl_SSL_new" >&5
+$as_echo "$ac_cv_lib_ssl_SSL_new" >&6; }
+if test "x$ac_cv_lib_ssl_SSL_new" = x""yes; then :
   cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBCCLC 1
+#define HAVE_LIBSSL 1
 _ACEOF
 
-  LIBS="-lcclc $LIBS"
+  LIBS="-lssl $LIBS"
 
 else
-  as_fn_error "please install libcclc" "$LINENO" 5
+  as_fn_error "please install openssl" "$LINENO" 5
 fi
 
-ac_fn_cxx_check_header_mongrel "$LINENO" "cclc.h" "ac_cv_header_cclc_h" "$ac_includes_default"
-if test "x$ac_cv_header_cclc_h" = x""yes; then :
+ac_fn_cxx_check_header_mongrel "$LINENO" "openssl/ssl.h" "ac_cv_header_openssl_ssl_h" "$ac_includes_default"
+if test "x$ac_cv_header_openssl_ssl_h" = x""yes; then :
 
 else
-  as_fn_error "please install libcclc headers" "$LINENO" 5
+  as_fn_error "please install openssl headers" "$LINENO" 5
 fi
 
 

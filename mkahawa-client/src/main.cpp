@@ -20,10 +20,10 @@ static int runMainLoop(FXApp *app);
 #include "locker.h"
 extern int init_img(char *libname, const char *version);
 
-CCLCFox *cclcfox;
-ClientWin *clientwin;
-Locker *locker;
-Grabber *grabber;
+CCLCFox    *cclcfox;
+ClientWin  *clientwin;
+Locker     *locker;
+Grabber    *grabber;
 
 static char * server = NULL;
 static char * myname = NULL;
@@ -117,7 +117,6 @@ main(int argc,char *argv[])
   }
 
   FXApp app("mkahawa","mkahawa Cyber Timer");
-
   if (!homedir)
 #ifndef WIN32
     FXSystem::setCurrentDirectory(FXSystem::getHomeDirectory() + "/.mkahawa/");
@@ -143,10 +142,10 @@ main(int argc,char *argv[])
   init_img("/usr/local/lib/libmkwimg.so","1.0");
 
   app.init(argc,argv);
-  clientwin = new ClientWin(&app);
-  grabber = new Grabber(&app);
-  locker = new Locker(&app);
-  cclcfox = new CCLCFox();
+  clientwin  = new ClientWin(&app);
+  grabber    = new Grabber(&app);
+  locker     = new Locker(&app);
+  cclcfox    = new CCLCFox();
   app.create();
 
   cclcfox->initNetworking(server,port,myname);

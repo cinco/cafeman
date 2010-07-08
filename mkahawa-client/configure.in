@@ -3,7 +3,7 @@ AC_INIT(configure.in)
 dnl Product Release Number
 MKAHAWA_CLIENT_MAJOR_VERSION=0
 MKAHAWA_CLIENT_MINOR_VERSION=0
-MKAHAWA_CLIENT_PATCH_LEVEL=4
+MKAHAWA_CLIENT_PATCH_LEVEL=5
 
 dnl Combined Product Release Number
 VERSION=$MKAHAWA_CLIENT_MAJOR_VERSION.$MKAHAWA_CLIENT_MINOR_VERSION.$MKAHAWA_CLIENT_PATCH_LEVEL
@@ -186,8 +186,9 @@ if test "x$FOX-1.6" = "xyes" ; then
   LIBS="${LIBS} -lfox1.6"
 fi
 AC_CHECK_HEADER(fox-1.6/fx.h,,AC_MSG_ERROR([please install fox 1.6 headers]))
-AC_CHECK_LIB(cclc,CCLC_init,,AC_MSG_ERROR([please install libcclc]))
-AC_CHECK_HEADER(cclc.h,,AC_MSG_ERROR([please install libcclc headers]))
+#AC_CHECK_HEADER(cclc.h,,AC_MSG_ERROR([please install libcclc headers]))
+AC_CHECK_LIB(ssl, SSL_new,,AC_MSG_ERROR([please install openssl]))
+AC_CHECK_HEADER(openssl/ssl.h,,AC_MSG_ERROR([please install openssl headers]))
 
 
 
