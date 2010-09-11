@@ -50,7 +50,7 @@ svr_req_start_by_member (const gchar *mbr_name,
   DEBUG_PRINT("svr_req_start_by_member(): [%s]\n", "entry");
 
 
-  /***  FIX ME FIX ME  FIX ME   - no encryption because of no SSL support ***/
+  /***  FIX ME FIX ME  FIX ME   - no encryption yet ***/
 
   retval =  mca_app_send_cmd(mca, MC_MEMBER_START, &n_profile, sizeof(n_profile));
 
