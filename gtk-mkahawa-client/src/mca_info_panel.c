@@ -379,8 +379,11 @@ mca_ipnl_display_info (gchar *infostr)
   notification = notify_notification_new (
 					  "Message from Cyber Admin:",
 					  infostr,
-					  PACKAGE_DATA_DIR"/pixmaps/mkahawa-icon.png",
-					  NULL);
+					  PACKAGE_DATA_DIR"/pixmaps/mkahawa-icon.png"
+#if !defined(NOTIFY_VERSION_MINOR) || (NOTIFY_VERSION_MAJOR == 0 && NOTIFY_VERSION_MINOR < 7)
+                                            , NULL
+#endif
+					  );
   notify_notification_set_timeout(notification, ipnl->notify_timeout * 1000);
   success = notify_notification_show (notification, &error);
   notify_uninit();
