@@ -366,11 +366,15 @@ ClientWin::dispMessage(FXString &msgstr, int timeout)
   {
     notify_init("mkahawa-client");
     /* try the mkahawa-client notification */
+
     notification = notify_notification_new (
 					    "Message from Cyber Admin:",
 					    msgstr.text(),
-					    "/usr/share/pixmaps/mkahawa-icon.png",
-					    NULL);
+					    "/usr/share/pixmaps/mkahawa-icon.png"
+#if !defined(NOTIFY_VERSION_MINOR) || (NOTIFY_VERSION_MAJOR == 0 && NOTIFY_VERSION_MINOR < 7)
+                                            , NULL
+#endif
+					    );
     error = NULL;
     notify_notification_set_timeout(notification, timeout * 1000);
     success = notify_notification_show (notification, &error);
