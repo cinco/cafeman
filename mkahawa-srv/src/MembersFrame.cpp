@@ -140,7 +140,7 @@ MembersFrame::setPerms(long perm)
 void
 MembersFrame::readAllMembers(const char * filter)
 {
-  int id;
+  long id;
   const char *name;
   char buf[128];
   FXString regexp = ".*";
@@ -155,7 +155,7 @@ MembersFrame::readAllMembers(const char * filter)
     //if (!(CCL_member_flags_get(id) & (MEMBER_DELETED))) {
       name = CCL_member_name_get(id);
       if (rex.match(name)) {
-	snprintf(buf,128,"%d\t%s",id,name);
+	snprintf(buf,128,"%ld\t%s",id,name);
 	memberslist->appendItem(NULL,buf,NULL,NULL,(void *)id);
       }
     }
@@ -326,10 +326,10 @@ MembersFrame::onSetTarif(FXObject*,FXSelector,void*)
     name = CCL_tarif_name_get(t);
     snprintf(buf,256,"%d\t%s",t,name);
     CCL_free(name);
-    tlist->appendItem(NULL,buf,NULL,NULL,(void*)t);
+    tlist->appendItem(NULL,buf,NULL,NULL,(void*)(long)t);
   }
 
-  FXFoldingItem *ctitem = tlist->findItemByData((void*)tarif);
+  FXFoldingItem *ctitem = tlist->findItemByData((void*)(long)tarif);
   if (ctitem) tlist->selectItem(ctitem);
 
   if (dlg.execute()) {
@@ -377,7 +377,7 @@ MembersFrame::onSubCredit(FXObject*,FXSelector,void*)
 
   FXFoldingItem *current = memberslist->getCurrentItem();
   if (current)
-      id = (int) (memberslist->getItemData(current));
+    id = (long) (memberslist->getItemData(current));
   else
       return 1;
 
@@ -405,7 +405,7 @@ MembersFrame::onResetPass(FXObject*,FXSelector,void*)
   FXuchar digest[CCL_MD5_DIGEST_LENGTH];
   char password[256];
 
-  snprintf(password,sizeof(password)/sizeof(char),"%d",editedmember);
+  snprintf(password,sizeof(password)/sizeof(char),"%ld",editedmember);
   CCL_MD5((FXuchar*)password,strlen(password),digest);
   CCL_data_set_blob(CCL_DATA_MEMBER,editedmember,"password",digest,
 		    CCL_MD5_DIGEST_LENGTH);

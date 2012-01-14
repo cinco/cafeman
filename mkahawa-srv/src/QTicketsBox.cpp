@@ -669,7 +669,7 @@ long
 QTicketsBox::onDelete(FXObject*,FXSelector,void*)
 {
   char buf[512];
-  int  id;
+  long  id;
   if (lstTickets->getNumItems()==0)
     return -1;
   FXFoldingItem *lastItem = lstTickets->getLastItem();
@@ -677,10 +677,10 @@ QTicketsBox::onDelete(FXObject*,FXSelector,void*)
   if (FXMessageBox::question(this,MBOX_YES_NO,_("Confirm"),
 			     _("Do you really want to delete all these tickets?")) == MBOX_CLICKED_YES) {
     for (FXFoldingItem *tktItem = lstTickets->getFirstItem(); ; tktItem = tktItem->getNext()){
-      id = (int) tktItem->getData();
+      id = (long) tktItem->getData();
       if (id >0 ){
 	CCL_member_flags_toggle(id,MEMBER_DELETED,TRUE);
-	sprintf(buf, "delete from tickets where id = %d", id);
+	sprintf(buf, "delete from tickets where id = %ld", id);
 #ifdef DEBUG
 	printf("QTicketsBox::onDelete(): %s\n", buf);
 #endif

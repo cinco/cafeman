@@ -2742,8 +2742,9 @@ CCLWin::employeeLogin(FXObject*,FXSelector,void*)
   FXbool retval; 
   okbtn.setWidth(100);
   cancelbtn.setWidth(100);
+  
   retval = FALSE;
-  usrname.setFocus();
+  //usrname.setFocus();
   do{
     if (dialog.execute(PLACEMENT_OWNER)) {
       FXButton *btn;
