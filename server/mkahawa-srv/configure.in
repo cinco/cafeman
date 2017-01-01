@@ -71,7 +71,10 @@ AC_CHECK_LIB(FOX-1.6,fxfindfox,,AC_MSG_ERROR([please install fox 1.6]))
 AC_CHECK_HEADER(fox-1.6/fx.h,,AC_MSG_ERROR([please install fox 1.6 headers]))
 AC_CHECK_LIB(ccls,CCL_init,,AC_MSG_ERROR([please install libccls]))
 AC_CHECK_HEADER(ccls.h,,AC_MSG_ERROR([please install libccls headers]))
-  
+AC_CHECK_LIB(pthread,pthread_create,,AC_MSG_ERROR([please install pthread]))
+AC_CHECK_HEADER(pthread.h,,AC_MSG_ERROR([please install pthread headers]))
+
+
 dnl Done.
 AC_OUTPUT([ po/Makefile.in m4/Makefile
 Makefile
