@@ -22,11 +22,11 @@ These steps only applies to Debian or other Debian-based distribution.
 
 	This will install the following files:
 
-	/usr/local/lib/libccls.so.0.8.2
-	/usr/local/lib/libccls.so.0
-	/usr/local/lib/libccls.so
-	/usr/local/include/ccls.h
-	/usr/local/bin/mkahawa-srv
+		/usr/local/lib/libccls.so.0.8.2
+		/usr/local/lib/libccls.so.0
+		/usr/local/lib/libccls.so
+		/usr/local/include/ccls.h
+		/usr/local/bin/mkahawa-srv
 
 3. Add path to the shared object (i.e libccls.so):
 
